@@ -43,150 +43,17 @@ const themeToQuoteMapping = {
   death: ["Creation and Responsibility", "Revenge", "Isolation and Alienation"]
 }
 
-// Quote data organized by text and theme
-const quotesByText = {
-  frankenstein: {
-    "Creation and Responsibility": [
-      {
-        quote: "I ought to be thy Adam, but I am rather the fallen angel.",
-        context: "The creature comparing himself to Satan from Paradise Lost",
-      },
-      {
-        quote: "Did I request thee, Maker, from my clay to mould me, man?",
-        context: "Epigraph from Paradise Lost that questions creator's responsibility",
-      },
-      {
-        quote:
-          "Learn from me, if not by my precepts, at least by my example, how dangerous is the acquirement of knowledge.",
-        context: "Victor warning about the dangers of unchecked ambition",
-      },
-      {
-        quote: "Accursed creator! Why did you form a monster so hideous that even you turned from me in disgust?",
-        context: "The creature confronting Victor about his abandonment",
-      },
-    ],
-    "Isolation and Alienation": [
-      {
-        quote: "I am alone and miserable; man will not associate with me.",
-        context: "The creature lamenting his isolation from society",
-      },
-      {
-        quote: "Even broken in spirit as he is, no one can feel more deeply than he does the beauties of nature.",
-        context: "Description of Victor finding solace in nature despite his isolation",
-      },
-      {
-        quote: "I, the miserable and the abandoned, am an abortion, to be spurned at, and kicked, and trampled on.",
-        context: "The creature's self-description after being rejected by society",
-      },
-    ],
-    "Nature vs. Science": [
-      {
-        quote: "The world was to me a secret which I desired to divine.",
-        context: "Victor describing his scientific curiosity",
-      },
-      {
-        quote:
-          "A new species would bless me as its creator and source; many happy and excellent natures would owe their being to me.",
-        context: "Victor's ambition to create new life",
-      },
-      {
-        quote: "The different accidents of life are not so changeable as the feelings of human nature.",
-        context: "Reflection on the unpredictability of human emotions compared to natural events",
-      },
-    ],
-  },
-  "1984": {
-    Totalitarianism: [
-      {
-        quote: "Big Brother is watching you.",
-        context: "The ubiquitous Party slogan representing constant surveillance",
-      },
-      {
-        quote: "War is peace. Freedom is slavery. Ignorance is strength.",
-        context: "The Party's contradictory slogans that represent doublethink",
-      },
-      {
-        quote: "If you want a picture of the future, imagine a boot stamping on a human face—forever.",
-        context: "O'Brien describing the Party's vision of power",
-      },
-    ],
-    "Individual vs. Society": [
-      {
-        quote: "Freedom is the freedom to say that two plus two make four. If that is granted, all else follows.",
-        context: "Winston's belief in objective truth as resistance",
-      },
-      {
-        quote: "Perhaps one did not want to be loved so much as to be understood.",
-        context: "Winston reflecting on his relationship with Julia",
-      },
-      {
-        quote:
-          "Until they become conscious they will never rebel, and until after they have rebelled they cannot become conscious.",
-        context: "Winston's thoughts about the proles' potential for revolution",
-      },
-    ],
-    "Language and Truth": [
-      {
-        quote:
-          "The purpose of Newspeak was not only to provide a medium of expression for the world-view and mental habits proper to the devotees of Ingsoc, but to make all other modes of thought impossible.",
-        context: "Explanation of how language controls thought",
-      },
-      {
-        quote: "Who controls the past controls the future. Who controls the present controls the past.",
-        context: "Party slogan about historical revisionism",
-      },
-      {
-        quote:
-          "Doublethink means the power of holding two contradictory beliefs in one's mind simultaneously, and accepting both of them.",
-        context: "Explanation of the psychological manipulation required by the Party",
-      },
-    ],
-  },
-  // Additional texts would be added here with their themes and quotes
-  "great-gatsby": {
-    "The American Dream": [
-      {
-        quote: "Gatsby believed in the green light, the orgastic future that year by year recedes before us.",
-        context: "Nick's reflection on Gatsby's hope and the elusiveness of the American Dream",
-      },
-      {
-        quote: "They're a rotten crowd. You're worth the whole damn bunch put together.",
-        context: "Nick's comment to Gatsby, contrasting him with the wealthy elite",
-      },
-    ],
-    "Wealth and Class": [
-      {
-        quote: "Her voice is full of money.",
-        context: "Gatsby's description of Daisy, highlighting the allure of wealth",
-      },
-      {
-        quote: "I like large parties. They're so intimate. At small parties there isn't any privacy.",
-        context: "Jordan Baker's ironic comment on social gatherings",
-      },
-    ],
-  },
-  hamlet: {
-    Revenge: [
-      {
-        quote: "The time is out of joint. O cursèd spite, That ever I was born to set it right!",
-        context: "Hamlet lamenting his duty to avenge his father",
-      },
-      {
-        quote: "To be, or not to be, that is the question.",
-        context: "Hamlet contemplating existence and action",
-      },
-    ],
-    "Appearance vs. Reality": [
-      {
-        quote: "One may smile, and smile, and be a villain.",
-        context: "Hamlet reflecting on Claudius's deceptive nature",
-      },
-      {
-        quote: "God hath given you one face, and you make yourself another.",
-        context: "Hamlet accusing Ophelia of deception",
-      },
-    ],
-  },
+// Quote interface for database quotes
+interface DatabaseQuote {
+  id: number;
+  book_id: string;
+  theme: string;
+  quote_text: string;
+  context: string;
+  page_reference?: string;
+  chapter_reference?: string;
+  literary_techniques?: string[];
+  importance_level: number;
 }
 
 // Past exam questions organized by theme and text
@@ -356,6 +223,8 @@ export default function EssayMode() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [lastAnalyzedContent, setLastAnalyzedContent] = useState("")
   const [showGradingModal, setShowGradingModal] = useState(false)
+  const [quotes, setQuotes] = useState<DatabaseQuote[]>([])
+  const [quotesLoading, setQuotesLoading] = useState(false)
 
   // Check if user has selected a book
   useEffect(() => {
@@ -367,6 +236,36 @@ export default function EssayMode() {
       })
     }
   }, [selectedBook, user, toast])
+
+  // Load quotes when book changes
+  useEffect(() => {
+    if (selectedBook) {
+      loadQuotes()
+    }
+  }, [selectedBook])
+
+  // Function to load quotes from database
+  const loadQuotes = async () => {
+    if (!selectedBook) return
+
+    setQuotesLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.append('bookId', selectedBook.id)
+      
+      const response = await fetch(`/api/quotes?${params.toString()}`)
+      if (response.ok) {
+        const quotesData = await response.json()
+        setQuotes(quotesData)
+      } else {
+        console.error('Failed to fetch quotes')
+      }
+    } catch (error) {
+      console.error('Error loading quotes:', error)
+    } finally {
+      setQuotesLoading(false)
+    }
+  }
 
   // Load saved draft if available
   useEffect(() => {
@@ -915,47 +814,92 @@ export default function EssayMode() {
         </div>
 
         <ScrollArea className="flex-1">
-          {selectedBook && quotesByText[selectedBook.id] ? (
+          {quotesLoading ? (
+            <div className="p-4 text-center text-muted-foreground">Loading quotes...</div>
+          ) : quotes.length > 0 ? (
             <Accordion type="multiple" className="px-4 pt-2">
-              {Object.entries(quotesByText[selectedBook.id])
-                .filter(([theme, quotes]) => {
-                  // Filter quotes based on selected theme
+              {(() => {
+                // Group quotes by theme
+                const quotesByTheme = quotes.reduce((acc, quote) => {
+                  if (!acc[quote.theme]) acc[quote.theme] = []
+                  acc[quote.theme].push(quote)
+                  return acc
+                }, {} as Record<string, DatabaseQuote[]>)
+
+                // Filter themes based on selected theme
+                const filteredThemes = Object.entries(quotesByTheme).filter(([theme, quotes]) => {
                   if (selectedTheme && themeToQuoteMapping[selectedTheme.id]) {
-                    return themeToQuoteMapping[selectedTheme.id].includes(theme)
+                    return themeToQuoteMapping[selectedTheme.id].includes(theme) || 
+                           theme === selectedTheme.title
                   }
-                  return true // Show all if no theme selected or no mapping
+                  return true
                 })
-                .map(([theme, quotes]) => (
+
+                if (filteredThemes.length === 0) {
+                  return (
+                    <div className="p-4 text-center text-muted-foreground">
+                      <p className="text-sm">No quotes found for the selected filters.</p>
+                      {selectedTheme && (
+                        <p className="text-xs mt-2">Try selecting a different theme or contact admin to add quotes for "{selectedTheme.title}".</p>
+                      )}
+                    </div>
+                  )
+                }
+
+                return filteredThemes.map(([theme, themeQuotes]) => (
                   <AccordionItem key={theme} value={theme}>
                     <AccordionTrigger className="text-sm font-medium py-3">
-                      {theme}
-                      {selectedTheme && themeToQuoteMapping[selectedTheme.id]?.includes(theme) && (
+                      {theme} ({themeQuotes.length})
+                      {selectedTheme && (themeToQuoteMapping[selectedTheme.id]?.includes(theme) || theme === selectedTheme.title) && (
                         <Badge variant="secondary" className="ml-2 text-xs">Relevant</Badge>
                       )}
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-4">
-                        {quotes.map((quoteObj, index) => (
-                          <div key={index} className="bg-background rounded-md p-3 text-sm">
-                            <p className="italic">"{quoteObj.quote}"</p>
+                        {themeQuotes
+                          .sort((a, b) => b.importance_level - a.importance_level) // Sort by importance
+                          .map((quoteObj) => (
+                          <div key={quoteObj.id} className="bg-background rounded-md p-3 text-sm">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex gap-1">
+                                {Array.from({ length: quoteObj.importance_level }).map((_, i) => (
+                                  <span key={i} className="text-yellow-500 text-xs">★</span>
+                                ))}
+                              </div>
+                              {(quoteObj.page_reference || quoteObj.chapter_reference) && (
+                                <div className="text-xs text-muted-foreground">
+                                  {quoteObj.chapter_reference && <span>{quoteObj.chapter_reference}</span>}
+                                  {quoteObj.chapter_reference && quoteObj.page_reference && <span>, </span>}
+                                  {quoteObj.page_reference && <span>{quoteObj.page_reference}</span>}
+                                </div>
+                              )}
+                            </div>
+                            <blockquote className="italic border-l-2 border-primary/20 pl-2">
+                              "{quoteObj.quote_text}"
+                            </blockquote>
                             <p className="text-xs text-muted-foreground mt-2">{quoteObj.context}</p>
+                            {quoteObj.literary_techniques && quoteObj.literary_techniques.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {quoteObj.literary_techniques.map((technique, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {technique}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
-                ))}
-              {selectedTheme && Object.entries(quotesByText[selectedBook.id])
-                .filter(([theme, quotes]) => themeToQuoteMapping[selectedTheme.id]?.includes(theme))
-                .length === 0 && (
-                <div className="p-4 text-center text-muted-foreground">
-                  <p className="text-sm">No quotes specifically mapped to the "{selectedTheme.title}" theme.</p>
-                  <p className="text-xs mt-2">All available quotes are shown above.</p>
-                </div>
-              )}
+                ))
+              })()}
             </Accordion>
           ) : (
-            <div className="p-4 text-center text-muted-foreground">No quotes available for this book.</div>
+            <div className="p-4 text-center text-muted-foreground">
+              <p className="text-sm">No quotes available for this book.</p>
+              <p className="text-xs mt-2">Contact admin to add quotes for better essay support.</p>
+            </div>
           )}
         </ScrollArea>
 

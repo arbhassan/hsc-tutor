@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
@@ -55,74 +55,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const refreshProfile = async () => {
-    if (!user) return
-    
-    const profileData = await fetchProfile(user.id)
-    setProfile(profileData)
-    
-    if (profileData?.selected_book_id) {
-      try {
-        const book = await getBookById(profileData.selected_book_id)
-        setSelectedBook(book)
-      } catch (error) {
-        console.error('Error fetching selected book:', error)
+  const loadUserData = async (currentUser: User | null) => {
+    if (!currentUser) {
+      setProfile(null)
+      setSelectedBook(null)
+      return
+    }
+
+    try {
+      // Fetch profile
+      const profileData = await fetchProfile(currentUser.id)
+      setProfile(profileData)
+
+      // Fetch selected book if profile has one
+      if (profileData?.selected_book_id) {
+        try {
+          const book = await getBookById(profileData.selected_book_id)
+          setSelectedBook(book)
+        } catch (error) {
+          console.error('Error fetching selected book:', error)
+          setSelectedBook(null)
+        }
+      } else {
         setSelectedBook(null)
       }
+    } catch (error) {
+      console.error('Error loading user data:', error)
+      setProfile(null)
+      setSelectedBook(null)
     }
   }
 
+  const refreshProfile = async () => {
+    if (!user) return
+    await loadUserData(user)
+  }
+
+  // Handle initial session
   useEffect(() => {
     let isMounted = true
 
-    // Get initial session
     const getInitialSession = async () => {
       try {
-        console.log('AuthContext: Getting initial session...')
         const { data: { session }, error } = await supabase.auth.getSession()
         
-        console.log('AuthContext: Session result:', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userEmail: session?.user?.email,
-          error: error?.message
-        })
-        
         if (!isMounted) return
-        
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-        
-        if (currentUser) {
-          console.log('AuthContext: User found, fetching profile...')
-          // Fetch profile data in the background
-          const profileData = await fetchProfile(currentUser.id)
-          
-          if (!isMounted) return
-          
-          setProfile(profileData)
-          
-          if (profileData?.selected_book_id) {
-            try {
-              const book = await getBookById(profileData.selected_book_id)
-              if (isMounted) {
-                setSelectedBook(book)
-              }
-            } catch (error) {
-              console.error('Error fetching selected book:', error)
-              if (isMounted) {
-                setSelectedBook(null)
-              }
-            }
-          }
+
+        if (error) {
+          console.error('Error getting session:', error)
+          setUser(null)
+          setProfile(null)
+          setSelectedBook(null)
         } else {
-          console.log('AuthContext: No user found in session')
+          const currentUser = session?.user ?? null
+          setUser(currentUser)
+          await loadUserData(currentUser)
         }
       } catch (error) {
-        console.error('AuthContext: Error getting initial session:', error)
+        console.error('Error in getInitialSession:', error)
+        if (isMounted) {
+          setUser(null)
+          setProfile(null)
+          setSelectedBook(null)
+        }
       } finally {
         if (isMounted) {
-          console.log('AuthContext: Setting loading to false')
           setLoading(false)
         }
       }
@@ -130,71 +127,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession()
 
-    // Listen for auth changes
+    return () => {
+      isMounted = false
+    }
+  }, [supabase.auth])
+
+  // Handle auth state changes
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('AuthContext: Auth state changed:', {
-          event,
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userEmail: session?.user?.email
-        })
-        
-        if (!isMounted) return
-        
         const currentUser = session?.user ?? null
         setUser(currentUser)
         
-        if (currentUser) {
-          console.log('AuthContext: Loading profile for authenticated user...')
-          const profileData = await fetchProfile(currentUser.id)
-          
-          if (!isMounted) return
-          
-          setProfile(profileData)
-          console.log('AuthContext: Profile loaded:', !!profileData)
-          
-          if (profileData?.selected_book_id) {
-            try {
-              const book = await getBookById(profileData.selected_book_id)
-              if (isMounted) {
-                setSelectedBook(book)
-                console.log('AuthContext: Selected book loaded:', book?.title)
-              }
-            } catch (error) {
-              console.error('Error fetching selected book:', error)
-              if (isMounted) {
-                setSelectedBook(null)
-              }
-            }
-          }
-        } else {
-          console.log('AuthContext: Clearing user data')
-          if (isMounted) {
-            setProfile(null)
-            setSelectedBook(null)
-          }
-        }
+        // Load user data in the background
+        loadUserData(currentUser)
         
-        // IMPORTANT: Always set loading to false after processing auth state change
-        if (isMounted) {
-          console.log('AuthContext: Auth state change complete, setting loading to false')
-          setLoading(false)
-        }
+        // Ensure loading is false after auth state change
+        setLoading(false)
       }
     )
 
     return () => {
-      isMounted = false
       subscription.unsubscribe()
     }
   }, [supabase.auth])
 
   const signOut = async () => {
-    console.log('AuthContext: Signing out...')
-    await supabase.auth.signOut()
-    setProfile(null)
-    setSelectedBook(null)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      setProfile(null)
+      setSelectedBook(null)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   const value = {

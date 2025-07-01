@@ -310,6 +310,36 @@ export default function AdminPage() {
             </div>
           </CardContent>
         </Card>
+{/* 
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Quote Management
+            </CardTitle>
+            <CardDescription>
+              Add and organize quotes by text and theme for essay mode
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => router.push('/admin/quotes')}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                View Quotes
+              </Button>
+              <Button 
+                onClick={() => router.push('/admin/quotes?action=create')}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Quote
+              </Button>
+            </div>
+          </CardContent>
+        </Card> */}
 
         
       </div>
