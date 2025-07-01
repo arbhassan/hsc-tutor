@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +23,6 @@ import {
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
-  const router = useRouter()
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalFlashcardSets: 0,
@@ -32,33 +30,12 @@ export default function AdminPage() {
     totalPassages: 0,
   })
   const [statsLoading, setStatsLoading] = useState(true)
-  const [statsLoaded, setStatsLoaded] = useState(false)
-
-  // Debug authentication state
-  useEffect(() => {
-    console.log('Admin Page - Auth State:', {
-      authLoading,
-      user: user ? {
-        id: user.id,
-        email: user.email,
-        authenticated: !!user
-      } : null,
-      userExists: !!user,
-      statsLoading,
-      statsLoaded
-    })
-  }, [user, authLoading, statsLoading, statsLoaded])
 
   const loadStats = async () => {
-    if (statsLoaded) return // Prevent duplicate loading
-    
     try {
-      console.log('Admin Page - Loading stats...')
       setStatsLoading(true)
       const statsData = await adminService.getStats()
       setStats(statsData)
-      setStatsLoaded(true)
-      console.log('Admin Page - Stats loaded successfully:', statsData)
     } catch (error) {
       console.error('Error loading stats:', error)
       toast({
@@ -71,61 +48,19 @@ export default function AdminPage() {
     }
   }
 
-  // Handle authentication and redirect
+  // Load stats when component mounts and user is available
   useEffect(() => {
-    // Don't do anything while auth is still loading
-    if (authLoading) {
-      console.log('Admin Page - Still loading auth...')
-      return
-    }
-    
-    if (!user) {
-      console.log('Admin Page - No user found, redirecting to signin')
-      router.push('/auth/signin')
-      return
-    }
-    
-    console.log('Admin Page - User authenticated')
-  }, [user, authLoading, router])
-
-  // Load stats when user becomes available
-  useEffect(() => {
-    if (!authLoading && user && !statsLoaded) {
-      console.log('Admin Page - User available, loading stats')
+    if (!authLoading && user) {
       loadStats()
     }
-  }, [user, authLoading, statsLoaded])
+  }, [user, authLoading])
 
-  // Retry loading stats if user is available but stats failed to load
-  useEffect(() => {
-    if (!authLoading && user && !statsLoading && !statsLoaded) {
-      console.log('Admin Page - Retrying stats load')
-      const timer = setTimeout(() => {
-        loadStats()
-      }, 1000) // Retry after 1 second
-      
-      return () => clearTimeout(timer)
-    }
-  }, [user, authLoading, statsLoading, statsLoaded])
-
-  // Show loading spinner while auth is loading OR stats are loading
-  if (authLoading || (user && statsLoading)) {
+  // Show loading spinner while auth or stats are loading
+  if (authLoading || statsLoading) {
     return (
       <div className="container mx-auto py-8 px-4 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-muted-foreground">
-          {authLoading ? "Loading..." : "Loading statistics..."}
-        </p>
-      </div>
-    )
-  }
-
-  // Show access denied if not authenticated
-  if (!user) {
-    return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-        <p>Please sign in to access the admin panel.</p>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     )
   }

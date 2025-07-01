@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,11 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Get the redirect URL from query parameters
+  const redirectTo = searchParams.get('redirectTo') || '/'
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +37,8 @@ export default function SignInPage() {
       if (error) {
         setError(error.message)
       } else {
-        router.push("/")
+        // Redirect to the intended page or home
+        router.push(redirectTo)
         router.refresh()
       }
     } catch (error) {

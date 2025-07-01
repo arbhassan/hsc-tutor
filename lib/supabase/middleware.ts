@@ -43,22 +43,8 @@ export async function updateSession(request: NextRequest) {
     '/debug'
   ]
   
-  // Define routes that should handle auth client-side (but still require auth)
-  const clientAuthRoutes = [
-    '/admin',
-    '/practice-zone',
-    '/knowledge-bank',
-    '/progress'
-  ]
-  
   // Check if the current path is a public route
   const isPublicRoute = publicRoutes.some(route => 
-    request.nextUrl.pathname === route || 
-    request.nextUrl.pathname.startsWith(route + '/')
-  )
-  
-  // Check if the current path should handle auth client-side
-  const isClientAuthRoute = clientAuthRoutes.some(route => 
     request.nextUrl.pathname === route || 
     request.nextUrl.pathname.startsWith(route + '/')
   )
@@ -66,15 +52,17 @@ export async function updateSession(request: NextRequest) {
   // Check if the user is trying to access auth pages
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
   
-  if (!user && !isAuthPage && !isPublicRoute && !isClientAuthRoute) {
-    // no user, not an auth page, not a public route, and not a client auth route - redirect to signin
+  // Redirect unauthenticated users to login for all protected routes
+  if (!user && !isAuthPage && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/signin'
+    // Add the current URL as a redirect parameter so we can redirect back after login
+    url.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(url)
   }
 
+  // Redirect authenticated users away from auth pages
   if (user && isAuthPage) {
-    // user is logged in but trying to access auth pages, redirect to home
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
