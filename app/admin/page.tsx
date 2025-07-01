@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 
 export default function AdminPage() {
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
   const [stats, setStats] = useState({
@@ -31,24 +31,50 @@ export default function AdminPage() {
     totalUsers: 0,
     totalPassages: 0,
   })
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsLoaded, setStatsLoaded] = useState(false)
 
   // Debug authentication state
   useEffect(() => {
     console.log('Admin Page - Auth State:', {
-      loading,
+      authLoading,
       user: user ? {
         id: user.id,
         email: user.email,
         authenticated: !!user
       } : null,
-      userExists: !!user
+      userExists: !!user,
+      statsLoading,
+      statsLoaded
     })
-  }, [user, loading])
+  }, [user, authLoading, statsLoading, statsLoaded])
 
-  // Check if user is admin and load stats
+  const loadStats = async () => {
+    if (statsLoaded) return // Prevent duplicate loading
+    
+    try {
+      console.log('Admin Page - Loading stats...')
+      setStatsLoading(true)
+      const statsData = await adminService.getStats()
+      setStats(statsData)
+      setStatsLoaded(true)
+      console.log('Admin Page - Stats loaded successfully:', statsData)
+    } catch (error) {
+      console.error('Error loading stats:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load statistics",
+        variant: "destructive",
+      })
+    } finally {
+      setStatsLoading(false)
+    }
+  }
+
+  // Handle authentication and redirect
   useEffect(() => {
-    // Don't do anything while loading
-    if (loading) {
+    // Don't do anything while auth is still loading
+    if (authLoading) {
       console.log('Admin Page - Still loading auth...')
       return
     }
@@ -59,32 +85,37 @@ export default function AdminPage() {
       return
     }
     
-    console.log('Admin Page - User authenticated, loading stats')
-    // Add admin role check here if implemented
-    // For now, we'll allow any authenticated user to access admin
-    loadStats()
-  }, [user, loading, router])
+    console.log('Admin Page - User authenticated')
+  }, [user, authLoading, router])
 
-  const loadStats = async () => {
-    try {
-      const statsData = await adminService.getStats()
-      setStats(statsData)
-    } catch (error) {
-      console.error('Error loading stats:', error)
-      toast({
-        title: "Error",
-        description: "Failed to load statistics",
-        variant: "destructive",
-      })
+  // Load stats when user becomes available
+  useEffect(() => {
+    if (!authLoading && user && !statsLoaded) {
+      console.log('Admin Page - User available, loading stats')
+      loadStats()
     }
-  }
+  }, [user, authLoading, statsLoaded])
 
-  // Show loading spinner while auth is loading
-  if (loading) {
+  // Retry loading stats if user is available but stats failed to load
+  useEffect(() => {
+    if (!authLoading && user && !statsLoading && !statsLoaded) {
+      console.log('Admin Page - Retrying stats load')
+      const timer = setTimeout(() => {
+        loadStats()
+      }, 1000) // Retry after 1 second
+      
+      return () => clearTimeout(timer)
+    }
+  }, [user, authLoading, statsLoading, statsLoaded])
+
+  // Show loading spinner while auth is loading OR stats are loading
+  if (authLoading || (user && statsLoading)) {
     return (
       <div className="container mx-auto py-8 px-4 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">
+          {authLoading ? "Loading..." : "Loading statistics..."}
+        </p>
       </div>
     )
   }

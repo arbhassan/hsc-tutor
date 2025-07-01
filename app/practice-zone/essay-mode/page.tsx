@@ -368,22 +368,6 @@ export default function EssayMode() {
     }
   }, [selectedBook, user, toast])
 
-  // Show message if no book is selected
-  if (!selectedBook && user) {
-    return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <h1 className="text-3xl font-bold mb-6">Essay Mode</h1>
-        <div className="max-w-md mx-auto">
-          <Alert>
-            <AlertDescription>
-              You need to select a book to access Essay Mode. Please complete your profile setup first.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    )
-  }
-
   // Load saved draft if available
   useEffect(() => {
     const savedEssay = localStorage.getItem("essayDraft")
@@ -683,6 +667,22 @@ export default function EssayMode() {
   // Dismiss individual feedback
   const dismissFeedback = (id) => {
     setAiFeedback(prev => prev.filter(feedback => feedback.id !== id))
+  }
+
+  // Show message if no book is selected
+  if (!selectedBook && user) {
+    return (
+      <div className="container mx-auto py-8 px-4 text-center">
+        <h1 className="text-3xl font-bold mb-6">Essay Mode</h1>
+        <div className="max-w-md mx-auto">
+          <Alert>
+            <AlertDescription>
+              You need to select a book to access Essay Mode. Please complete your profile setup first.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    )
   }
 
   // Start screen (modified)
