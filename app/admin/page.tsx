@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { adminService } from "@/lib/services/admin-service"
+import { useRouter } from "next/navigation"
 import {
   BookOpen,
   CreditCard,
@@ -18,11 +19,13 @@ import {
   Eye,
   FileText,
   Monitor,
+  Lock,
 } from "lucide-react"
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
   const [stats, setStats] = useState({
     totalBooks: 0,
     totalFlashcardSets: 0,
@@ -282,8 +285,19 @@ export default function AdminPage() {
       <div className="mt-8 p-4 bg-muted/50 rounded-lg">
         <h3 className="font-medium mb-2">Quick Stats</h3>
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <span>Logged in as: <Badge variant="outline">{user.email}</Badge></span>
+          <span>Logged in as: <Badge variant="outline">{user?.email}</Badge></span>
           <span>Role: <Badge variant="outline">Admin</Badge></span>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              sessionStorage.removeItem('adminPasswordVerified')
+              window.location.reload()
+            }}
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Lock Dashboard
+          </Button>
         </div>
       </div>
     </div>

@@ -300,7 +300,7 @@ export default function EssayMode() {
     return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
   }
 
-  // AI Feedback Analysis
+  // Feedback Analysis
   const analyzeEssayWithAI = async (content) => {
     if (!content.trim() || content === lastAnalyzedContent || isAnalyzing) return
     
@@ -394,7 +394,7 @@ export default function EssayMode() {
           }
         }
       } else if (method === "ai") {
-        // Use AI generation
+        // Use custom generation
         const response = await fetch('/api/generate-questions', {
           method: 'POST',
           headers: {
@@ -411,7 +411,7 @@ export default function EssayMode() {
           const questions = await response.json()
           setGeneratedQuestions(questions)
         } else {
-          throw new Error('AI generation failed')
+          throw new Error('Question generation failed')
         }
       }
     } catch (error) {
@@ -558,7 +558,7 @@ export default function EssayMode() {
     setStage("theme-selection")
   }
 
-  // Clear AI feedback
+  // Clear feedback
   const clearAiFeedback = () => {
     setAiFeedback([])
   }
@@ -589,7 +589,7 @@ export default function EssayMode() {
     return (
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-6">Essay Mode</h1>
-        <p className="text-lg mb-8">Practice writing essays with AI-powered feedback and theme-based question generation.</p>
+        <p className="text-lg mb-8">Practice writing essays with intelligent feedback and theme-based question generation.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {savedDraft && (
@@ -614,28 +614,28 @@ export default function EssayMode() {
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Start New Essay</CardTitle>
-              <CardDescription>Begin a new AI-assisted essay practice session.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Select a theme and text, then get AI-generated questions and real-time feedback.</p>
-              <ul className="mt-4 space-y-2">
-                <li className="flex items-center">
-                  <Check size={16} className="mr-2 text-green-500" /> Theme-based question generation
-                </li>
-                <li className="flex items-center">
-                  <Check size={16} className="mr-2 text-green-500" /> Live AI feedback and suggestions
-                </li>
-                <li className="flex items-center">
-                  <Check size={16} className="mr-2 text-green-500" /> Essay structure analysis
-                </li>
-                <li className="flex items-center">
-                  <Check size={16} className="mr-2 text-green-500" /> 40-minute timer with auto-save
-                </li>
-              </ul>
-            </CardContent>
+                      <Card>
+              <CardHeader>
+                <CardTitle>Start New Essay</CardTitle>
+                <CardDescription>Begin a new guided essay practice session.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>Select a theme and text, then get custom questions and real-time feedback.</p>
+                <ul className="mt-4 space-y-2">
+                  <li className="flex items-center">
+                    <Check size={16} className="mr-2 text-green-500" /> Theme-based question generation
+                  </li>
+                  <li className="flex items-center">
+                    <Check size={16} className="mr-2 text-green-500" /> Live feedback and suggestions
+                  </li>
+                  <li className="flex items-center">
+                    <Check size={16} className="mr-2 text-green-500" /> Essay structure analysis
+                  </li>
+                  <li className="flex items-center">
+                    <Check size={16} className="mr-2 text-green-500" /> 40-minute timer with auto-save
+                  </li>
+                </ul>
+              </CardContent>
             <CardFooter>
               <Button onClick={() => setStage("theme-selection")} className="w-full">
                 Start New Essay
@@ -701,10 +701,10 @@ export default function EssayMode() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Sparkles size={18} className="mr-2" />
-                  AI Generated Questions
+                  Custom Generated Questions
                 </CardTitle>
                 <CardDescription>
-                  Get custom AI-generated essay questions based on your theme and text
+                  Get custom essay questions based on your theme and text
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -717,12 +717,12 @@ export default function EssayMode() {
                   {isGeneratingQuestions && questionMethod === "ai" ? (
                     <>
                       <RefreshCw size={16} className="mr-2 animate-spin" />
-                      Generating AI Questions...
+                      Generating Questions...
                     </>
                   ) : (
                     <>
                       <Sparkles size={16} className="mr-2" />
-                      Generate AI Questions
+                      Generate Questions
                     </>
                   )}
                 </Button>
@@ -768,7 +768,7 @@ export default function EssayMode() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Choose Your Essay Question</h2>
               <Badge variant={questionMethod === "ai" ? "default" : "secondary"}>
-                {questionMethod === "ai" ? "AI Generated" : "Past Exam Questions"}
+                {questionMethod === "ai" ? "Custom Generated" : "Past Exam Questions"}
               </Badge>
             </div>
             {generatedQuestions.map((question, index) => (
@@ -801,7 +801,7 @@ export default function EssayMode() {
 
 
 
-   // Practice screen (enhanced with AI feedback)
+   // Practice screen (enhanced with feedback)
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* Left sidebar - Quote Bank */}
@@ -913,7 +913,7 @@ export default function EssayMode() {
         </div>
       </div>
 
-      {/* Main content - Essay writing area with AI feedback */}
+              {/* Main content - Essay writing area with feedback */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center">
           <div>
@@ -930,13 +930,13 @@ export default function EssayMode() {
           </div>
         </div>
 
-        {/* AI Feedback Tab */}
+        {/* Feedback Tab */}
         {showAiFeedback && (
           <div className="bg-blue-50 border-b p-3">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-medium flex items-center text-blue-700">
                 <MessageCircle size={16} className="mr-2" />
-                AI Writing Assistant
+                Writing Assistant
                 {isAnalyzing && <RefreshCw size={14} className="ml-2 animate-spin" />}
               </h3>
               <div className="flex items-center space-x-2">
@@ -951,7 +951,7 @@ export default function EssayMode() {
             
             <ScrollArea className="h-32">
               {aiFeedback.length === 0 ? (
-                <p className="text-sm text-blue-600">Start writing to get AI feedback on your essay structure and content...</p>
+                <p className="text-sm text-blue-600">Start writing to get feedback on your essay structure and content...</p>
               ) : (
                 <div className="space-y-2">
                   {aiFeedback.slice(-6).map((feedback) => (
@@ -1019,7 +1019,7 @@ export default function EssayMode() {
             {!showAiFeedback && (
               <Button size="sm" variant="outline" onClick={() => setShowAiFeedback(true)}>
                 <MessageCircle size={14} className="mr-1" />
-                Show AI Feedback
+                Show Feedback
               </Button>
             )}
             <Button onClick={handleSubmitEssay} className="flex items-center">

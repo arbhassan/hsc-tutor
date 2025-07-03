@@ -92,7 +92,7 @@ export default function ExamSimulatorPage() {
   const [wordCount, setWordCount] = useState(0)
   const [showSubmitSectionDialog, setShowSubmitSectionDialog] = useState(false)
   const [showSubmitExamDialog, setShowSubmitExamDialog] = useState(false)
-  const [showTimeWarning, setShowTimeWarning] = useState(false)
+
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [customExamTime, setCustomExamTime] = useState(examConfig.totalTime)
   const [showInstructions, setShowInstructions] = useState(false)
@@ -187,14 +187,7 @@ export default function ExamSimulatorPage() {
     return () => clearInterval(timerRef.current)
   }, [examStarted, readingTimeActive, isPaused, examSubmitted])
 
-  // Time warning effect
-  useEffect(() => {
-    if (remainingTime === 300 && currentSection !== "results") {
-      // 5 minutes warning
-      setShowTimeWarning(true)
-      setTimeout(() => setShowTimeWarning(false), 5000)
-    }
-  }, [remainingTime, currentSection])
+
 
   // Format time as mm:ss
   const formatTime = (seconds) => {
@@ -1002,19 +995,6 @@ export default function ExamSimulatorPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {/* Time Warning Alert */}
-        {showTimeWarning && (
-          <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md flex items-center shadow-lg">
-            <AlertTriangle className="h-5 w-5 mr-2" />
-            <span>
-              <strong>Warning:</strong> 5 minutes remaining!
-            </span>
-            <button onClick={() => setShowTimeWarning(false)} className="ml-4 text-red-700 hover:text-red-900">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
       </div>
     )
   }
@@ -1215,19 +1195,6 @@ export default function ExamSimulatorPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {/* Time Warning Alert */}
-        {showTimeWarning && (
-          <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md flex items-center shadow-lg">
-            <AlertTriangle className="h-5 w-5 mr-2" />
-            <span>
-              <strong>Warning:</strong> 5 minutes remaining!
-            </span>
-            <button onClick={() => setShowTimeWarning(false)} className="ml-4 text-red-700 hover:text-red-900">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
       </div>
     )
   }

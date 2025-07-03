@@ -324,9 +324,11 @@ export default function IntroductionsGuidePage() {
                 <span>A preview of the key points you would develop in your essay</span>
               </li>
             </ul>
-            <Button>
-              View Sample Response <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/knowledge-bank/essay-guide/sample-responses/macbeth-ambition">
+              <Button>
+                View Sample Response <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
 
           {/* Next Steps */}

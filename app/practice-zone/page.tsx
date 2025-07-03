@@ -29,14 +29,14 @@ export default function PracticeZonePage() {
 
           <PracticeCard
             title="Essay Mode"
-            description="Practice essay writing with your prescribed texts and get AI feedback."
+            description="Practice essay writing with your prescribed texts and get detailed feedback."
             icon={<FileText className="h-6 w-6" />}
             href="/practice-zone/essay-mode"
             features={[
               "Complete Standard & Advanced text lists",
               "Question deconstruction guides",
               "Thematic quote references",
-              "Detailed AI feedback",
+              "Detailed feedback",
             ]}
           />
 
@@ -50,6 +50,19 @@ export default function PracticeZonePage() {
               "Create custom flashcard sets",
               "Track mastery progress",
               "Import/export study materials",
+            ]}
+          />
+
+          <PracticeCard
+            title="Interactive Essay Builder"
+            description="Step-by-step essay writing practice with AI guidance and random questions."
+            icon={<BookOpen className="h-6 w-6" />}
+            href="/practice-zone/interactive-builder"
+            features={[
+              "Random question generation",
+              "Step-by-step introduction guidance",
+              "Quote-based body paragraph practice",
+              "AI feedback and tips",
             ]}
           />
         </div>

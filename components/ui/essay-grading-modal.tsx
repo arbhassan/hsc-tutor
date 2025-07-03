@@ -317,15 +317,7 @@ export default function EssayGradingModal({
           )}
         </ScrollArea>
 
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className="flex space-x-2">
-            {grade && (
-              <Button variant="outline" onClick={gradeEssay} disabled={isGrading}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Re-grade
-              </Button>
-            )}
-          </div>
+        <div className="flex justify-end items-center pt-4 border-t">
           <div className="flex space-x-2">
             <Button variant="outline" onClick={handleClose}>
               Close

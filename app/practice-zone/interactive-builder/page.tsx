@@ -16,94 +16,110 @@ import {
   CheckCircle,
   AlertCircle,
   TrendingUp,
+  Shuffle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/lib/auth-context"
 
-// Sample data for the interactive builder - themes and quotes mapped by book ID
-
-const THEMES = {
+// Sample questions for different texts
+const ESSAY_QUESTIONS = {
   "1984": [
-    { id: "language", name: "Language and Control" },
-    { id: "surveillance", name: "Surveillance and Privacy" },
-    { id: "totalitarianism", name: "Totalitarianism and Power" },
-    { id: "resistance", name: "Resistance and Rebellion" },
+    "How does Orwell explore the theme of surveillance and its impact on individual freedom?",
+    "Analyze the role of language as a tool of oppression in 1984.",
+    "To what extent does Winston's rebellion represent hope for humanity?",
+    "How does Orwell present the relationship between truth and power?",
+    "Examine the significance of the past in shaping the present in 1984."
   ],
   hamlet: [
-    { id: "revenge", name: "Revenge and Justice" },
-    { id: "madness", name: "Madness and Sanity" },
-    { id: "corruption", name: "Corruption and Decay" },
-    { id: "appearance", name: "Appearance vs. Reality" },
+    "How does Shakespeare explore the theme of revenge through Hamlet's character?",
+    "Analyze the role of madness in Hamlet - both real and performed.",
+    "To what extent is Hamlet a victim of circumstance?",
+    "How does Shakespeare present the corruption of the Danish court?",
+    "Examine the significance of appearance versus reality in Hamlet."
   ],
   gatsby: [
-    { id: "american-dream", name: "The American Dream" },
-    { id: "wealth", name: "Wealth and Class" },
-    { id: "past", name: "The Past and Memory" },
-    { id: "illusion", name: "Illusion vs. Reality" },
+    "How does Fitzgerald critique the American Dream through Jay Gatsby's story?",
+    "Analyze the role of social class and wealth in The Great Gatsby.",
+    "To what extent is Gatsby a tragic hero?",
+    "How does Fitzgerald present the moral decay of 1920s America?",
+    "Examine the significance of the past in shaping the characters' present."
   ],
   frankenstein: [
-    { id: "creation", name: "Creation and Responsibility" },
-    { id: "isolation", name: "Isolation and Alienation" },
-    { id: "ambition", name: "Ambition and Hubris" },
-    { id: "nature", name: "Nature vs. Nurture" },
+    "How does Shelley explore the dangers of unchecked ambition?",
+    "Analyze the theme of isolation and its effects on the characters.",
+    "To what extent is Victor Frankenstein responsible for the creature's actions?",
+    "How does Shelley present the relationship between creator and creation?",
+    "Examine the role of nature versus nurture in shaping identity."
   ],
   crucible: [
-    { id: "hysteria", name: "Mass Hysteria" },
-    { id: "reputation", name: "Reputation and Integrity" },
-    { id: "power", name: "Power and Authority" },
-    { id: "guilt", name: "Guilt and Confession" },
+    "How does Miller explore the theme of mass hysteria and its consequences?",
+    "Analyze the role of reputation and integrity in The Crucible.",
+    "To what extent is John Proctor a tragic hero?",
+    "How does Miller present the abuse of power in Salem?",
+    "Examine the significance of guilt and redemption in the play."
   ],
 }
 
+// Sample quotes organized by text
 const QUOTES = {
-  "1984": {
-    language: [
-      "Don't you see that the whole aim of Newspeak is to narrow the range of thought? In the end we shall make thoughtcrime literally impossible, because there will be no words in which to express it.",
-      "The Party told you to reject the evidence of your eyes and ears. It was their final, most essential command.",
-      "If you want to keep a secret, you must also hide it from yourself.",
-    ],
-    surveillance: [
-      "Big Brother is watching you.",
-      "There was of course no way of knowing whether you were being watched at any given moment... You had to live—did live, from habit that became instinct—in the assumption that every sound you made was overheard.",
-      "Always the eyes watching you and the voice enveloping you. Asleep or awake, working or eating, indoors or out of doors, in the bath or in bed—no escape. Nothing was your own except the few cubic centimeters inside your skull.",
-    ],
-  },
-  hamlet: {
-    revenge: [
-      "The time is out of joint. O cursed spite, That ever I was born to set it right!",
-      "Now might I do it pat, now he is praying; And now I'll do't. And so he goes to heaven; And so am I revenged.",
-      "O, from this time forth, My thoughts be bloody, or be nothing worth!",
-    ],
-    madness: [
-      "I am but mad north-north-west. When the wind is southerly, I know a hawk from a handsaw.",
-      "Though this be madness, yet there is method in't.",
-      "O, what a noble mind is here o'erthrown!",
-    ],
-  },
+  "1984": [
+    "Big Brother is watching you.",
+    "War is peace. Freedom is slavery. Ignorance is strength.",
+    "Don't you see that the whole aim of Newspeak is to narrow the range of thought?",
+    "The Party told you to reject the evidence of your eyes and ears.",
+    "If you want to keep a secret, you must also hide it from yourself.",
+    "Always the eyes watching you and the voice enveloping you.",
+    "Who controls the past controls the future. Who controls the present controls the past."
+  ],
+  hamlet: [
+    "To be or not to be, that is the question.",
+    "The time is out of joint. O cursed spite, That ever I was born to set it right!",
+    "I am but mad north-north-west. When the wind is southerly, I know a hawk from a handsaw.",
+    "Though this be madness, yet there is method in't.",
+    "Something is rotten in the state of Denmark.",
+    "O, what a noble mind is here o'erthrown!",
+    "Now might I do it pat, now he is praying."
+  ],
+  gatsby: [
+    "So we beat on, boats against the current, borne back ceaselessly into the past.",
+    "Gatsby believed in the green light, the orgastic future that year by year recedes before us.",
+    "I was within and without, simultaneously enchanted and repelled by the inexhaustible variety of life.",
+    "His dream must have seemed so close that he could hardly fail to grasp it.",
+    "And so with the sunshine and the great bursts of leaves growing on the trees, just as things grow in fast movies, I had that familiar conviction that life was beginning over again with the summer."
+  ],
+  frankenstein: [
+    "I beheld the wretch—the miserable monster whom I had created.",
+    "Nothing is so painful to the human mind as a great and sudden change.",
+    "I ought to be thy Adam, but I am rather the fallen angel.",
+    "Beware; for I am fearless, and therefore powerful.",
+    "Life, although it may only be an accumulation of anguish, is dear to me, and I will defend it."
+  ],
+  crucible: [
+    "Because it is my name! Because I cannot have another in my life!",
+    "I have given you my soul; leave me my name!",
+    "We are what we always were in Salem, but now the little crazy children are jangling the keys of the kingdom.",
+    "I speak my own sins; I cannot judge another.",
+    "A fire, a fire is burning! I hear the boot of Lucifer, I see his filthy face!"
+  ]
 }
 
-// Sample techniques for PETAL paragraphs
-const TECHNIQUES = {
-  "1984": {
-    language: ["Paradox", "Metaphor", "Symbolism", "Irony"],
-    surveillance: ["Repetition", "Imagery", "Symbolism", "Hyperbole"],
-  },
-  hamlet: {
-    revenge: ["Soliloquy", "Metaphor", "Dramatic irony", "Allusion"],
-    madness: ["Wordplay", "Imagery", "Soliloquy", "Juxtaposition"],
-  },
-}
+// Literary techniques for analysis
+const TECHNIQUES = [
+  "Metaphor", "Symbolism", "Irony", "Foreshadowing", "Imagery", 
+  "Juxtaposition", "Allusion", "Repetition", "Characterization", 
+  "Setting", "Tone", "Dialogue", "Narrative perspective", "Paradox"
+]
 
 export default function InteractiveEssayBuilder() {
   const { user, selectedBook } = useAuth()
-  const [selectedTheme, setSelectedTheme] = useState("")
+  const [currentQuestion, setCurrentQuestion] = useState("")
   const [currentStep, setCurrentStep] = useState(0)
   const [essayComponent, setEssayComponent] = useState("introduction")
   const [essayContent, setEssayContent] = useState("")
@@ -137,67 +153,62 @@ export default function InteractiveEssayBuilder() {
   // Map selectedBook to the expected format
   const selectedText = selectedBook?.id || ""
 
-  // Get a random quote based on selected text and theme
+  // Generate a random question
+  const generateRandomQuestion = () => {
+    if (selectedText && ESSAY_QUESTIONS[selectedText]) {
+      const questions = ESSAY_QUESTIONS[selectedText]
+      const randomIndex = Math.floor(Math.random() * questions.length)
+      setCurrentQuestion(questions[randomIndex])
+      // Reset everything when new question is generated
+      setCurrentStep(0)
+      setEssayContent("")
+      setAiTip("")
+      setFeedback(null)
+      setShowFeedback(false)
+      setAllStepsContent({})
+    }
+  }
+
+  // Get a random quote
   const getRandomQuote = () => {
-    if (selectedText && selectedTheme && QUOTES[selectedText]?.[selectedTheme]) {
-      const quotes = QUOTES[selectedText][selectedTheme]
+    if (selectedText && QUOTES[selectedText]) {
+      const quotes = QUOTES[selectedText]
       const randomIndex = Math.floor(Math.random() * quotes.length)
       setRandomQuote(quotes[randomIndex])
 
-      // Also set a random technique for PETAL paragraphs
-      if (TECHNIQUES[selectedText]?.[selectedTheme]) {
-        const techniques = TECHNIQUES[selectedText][selectedTheme]
-        const randomTechIndex = Math.floor(Math.random() * techniques.length)
-        setRandomTechnique(techniques[randomTechIndex])
-      }
+      // Also set a random technique for body paragraphs
+      const randomTechIndex = Math.floor(Math.random() * TECHNIQUES.length)
+      setRandomTechnique(TECHNIQUES[randomTechIndex])
     }
   }
 
   // Get AI tip for current step
   const getAiTip = async () => {
-    if (!selectedText || !selectedTheme) return
+    if (!selectedText || !currentQuestion) return
     
     const textTitle = selectedBook?.title
-    const themeName = THEMES[selectedText]?.find(t => t.id === selectedTheme)?.name
-    
-    // Debug logging
-    console.log('getAiTip parameters:', {
-      component: essayComponent,
-      step: currentStep,
-      text: textTitle,
-      theme: themeName,
-      selectedText,
-      selectedTheme
-    })
-    
-    if (!textTitle || !themeName) {
-      console.error('Missing text or theme data')
-      return
-    }
     
     setIsLoadingTip(true)
     try {
-      const response = await fetch('/api/essay-tips', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          component: essayComponent,
-          step: currentStep,
-          text: textTitle,
-          theme: themeName,
-          currentContent: essayContent
-        }),
-      })
+          const response = await fetch('/api/essay-tips', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        component: essayComponent,
+        step: currentStep,
+        text: textTitle,
+        theme: currentQuestion, // API expects 'theme' parameter
+        currentContent: essayContent
+      }),
+    })
       
       if (response.ok) {
         const data = await response.json()
         setAiTip(data.tip)
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('API Error Response:', errorData)
-        throw new Error(`Failed to get AI tip: ${errorData.error || response.statusText}`)
+        throw new Error('Failed to get AI tip')
       }
     } catch (error) {
       console.error('Error getting AI tip:', error)
@@ -210,7 +221,7 @@ export default function InteractiveEssayBuilder() {
   // Get AI feedback for completed component
   const getAiFeedback = async (completeContent = null) => {
     const contentToAnalyze = completeContent || essayContent
-    if (!selectedText || !selectedTheme || !contentToAnalyze.trim()) return
+    if (!selectedText || !currentQuestion || !contentToAnalyze.trim()) return
     
     setIsLoadingFeedback(true)
     try {
@@ -222,8 +233,8 @@ export default function InteractiveEssayBuilder() {
         body: JSON.stringify({
           component: essayComponent,
           content: contentToAnalyze,
-          text: TEXTS.find(t => t.id === selectedText)?.title || selectedText,
-          theme: THEMES[selectedText]?.find(t => t.id === selectedTheme)?.name || selectedTheme,
+          text: selectedBook?.title || selectedText,
+          theme: currentQuestion, // API expects 'theme' parameter
           allStepsContent
         }),
       })
@@ -237,7 +248,6 @@ export default function InteractiveEssayBuilder() {
       }
     } catch (error) {
       console.error('Error getting AI feedback:', error)
-      // Set fallback feedback
       setFeedback({
         score: 7,
         strengths: ["Good effort on your essay component"],
@@ -250,28 +260,22 @@ export default function InteractiveEssayBuilder() {
     }
   }
 
+  // Initialize with random question and quote
+  useEffect(() => {
+    if (selectedText && !currentQuestion) {
+      generateRandomQuestion()
+      getRandomQuote()
+    }
+  }, [selectedText])
+
   // Load AI tip when step, component, or content changes
   useEffect(() => {
-    if (selectedText && selectedTheme) {
+    if (selectedText && currentQuestion) {
       getAiTip()
     }
-  }, [currentStep, essayComponent, selectedText, selectedTheme])
+  }, [currentStep, essayComponent, selectedText, currentQuestion])
 
   // Handle text selection
-  // Handle theme selection
-  const handleThemeChange = (value) => {
-    setSelectedTheme(value)
-    setCurrentStep(0)
-    setEssayContent("")
-    setAiTip("")
-    setFeedback(null)
-    setShowFeedback(false)
-    setAllStepsContent({})
-    // Get a random quote when theme is selected
-    setTimeout(() => {
-      if (value) getRandomQuote()
-    }, 100)
-  }
 
   // Handle component selection
   const handleComponentChange = (value) => {
@@ -282,36 +286,41 @@ export default function InteractiveEssayBuilder() {
     setFeedback(null)
     setShowFeedback(false)
     setAllStepsContent({})
+    
+    // Get new quotes for body paragraphs
+    if (value === "body-paragraph") {
+      getRandomQuote()
+    }
   }
 
-  // Get new random quote
+  // Handle refresh quote
   const handleRefreshQuote = () => {
     getRandomQuote()
   }
 
-  // Introduction steps
+  // Introduction steps - focused on answering the question
   const introSteps = [
-    { name: "Thesis Statement", description: "State your main argument about the text and theme" },
+    { name: "Understand the Question", description: "Break down what the question is asking you to do" },
+    { name: "Thesis Statement", description: "State your main argument that directly answers the question" },
     { name: "Context", description: "Provide relevant background about the text and author" },
-    { name: "Points Preview", description: "Outline the key points you will discuss" },
-    { name: "Answer Question", description: "Directly address the essay question" },
+    { name: "Points Preview", description: "Outline the key points you will use to prove your thesis" },
   ]
 
-  // PETAL steps
+  // PETAL steps - using the provided quote
   const petalSteps = [
-    { name: "Point", description: "Make a clear statement that supports your thesis" },
-    { name: "Evidence", description: "Use the provided quote as evidence" },
-    { name: "Technique", description: "Identify the literary technique provided" },
-    { name: "Analysis", description: "Explain how the evidence and technique support your point" },
+    { name: "Point", description: "Make a clear statement that supports your thesis and answers the question" },
+    { name: "Evidence", description: "Use the provided quote as evidence to support your point" },
+    { name: "Technique", description: "Identify and explain the literary technique used in the quote" },
+    { name: "Analysis", description: "Explain how the evidence and technique support your point and answer the question" },
     { name: "Link", description: "Connect back to your thesis and the question" },
   ]
 
   // Conclusion steps
   const conclusionSteps = [
     { name: "Restate Thesis", description: "Reaffirm your main argument in fresh language" },
-    { name: "Synthesize Points", description: "Briefly summarize your key arguments" },
-    { name: "Broader Implications", description: "Connect to wider themes or relevance" },
-    { name: "Final Statement", description: "End with a thoughtful closing statement" },
+    { name: "Synthesize Points", description: "Briefly summarize how your evidence proves your thesis" },
+    { name: "Answer Question", description: "Clearly state how you have answered the original question" },
+    { name: "Final Statement", description: "End with a thoughtful closing statement about the text's significance" },
   ]
 
   // Get current steps based on selected component
@@ -391,11 +400,11 @@ export default function InteractiveEssayBuilder() {
         <div className="container py-4 px-4">
           <div className="flex items-center justify-between">
             <Link
-              href="/knowledge-bank/essay-guide"
+              href="/practice-zone"
               className="flex items-center text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              <span>Back to Essay Guide</span>
+              <span>Back to Practice Zone</span>
             </Link>
             <h1 className="text-xl font-semibold">Interactive Essay Builder</h1>
             <div></div>
@@ -430,7 +439,7 @@ export default function InteractiveEssayBuilder() {
           </Tabs>
         </div>
 
-        {/* Current Book and Theme Selection */}
+        {/* Book and Question Display */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
             <label className="block text-sm font-medium mb-2">Your Selected Book</label>
@@ -441,66 +450,61 @@ export default function InteractiveEssayBuilder() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Select a Theme</label>
-            <Select
-              value={selectedTheme}
-              onValueChange={handleThemeChange}
-              disabled={!selectedText || !THEMES[selectedText]}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a theme..." />
-              </SelectTrigger>
-              <SelectContent>
-                {selectedText &&
-                  THEMES[selectedText]?.map((theme) => (
-                    <SelectItem key={theme.id} value={theme.id}>
-                      {theme.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium">Essay Question</label>
+              <Button variant="ghost" size="sm" onClick={generateRandomQuestion} className="h-8">
+                <Shuffle className="h-4 w-4 mr-1" />
+                New Question
+              </Button>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+              <p className="text-sm font-medium text-blue-900">
+                {currentQuestion || "Generating question..."}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        {selectedText && selectedTheme ? (
+        {selectedText && currentQuestion ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Quote and Instructions */}
+            {/* Left Column - Resources and Instructions */}
             <div className="lg:col-span-1 space-y-4">
-              {/* Quote Card */}
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-sm font-medium">Quote</h3>
-                    <Button variant="ghost" size="sm" onClick={handleRefreshQuote} className="h-8 w-8 p-0">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                    <p className="text-sm italic">{randomQuote || "Select a text and theme to generate a quote."}</p>
-                  </div>
-
-                  {/* Show technique for body paragraphs */}
-                  {essayComponent === "body-paragraph" && randomTechnique && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-medium mb-2">Technique to Analyze</h3>
-                      <Badge variant="outline" className="text-primary">
-                        {randomTechnique}
-                      </Badge>
+              {/* Quote Card - Only show for body paragraphs */}
+              {essayComponent === "body-paragraph" && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-sm font-medium">Quote to Analyze</h3>
+                      <Button variant="ghost" size="sm" onClick={handleRefreshQuote} className="h-8 w-8 p-0">
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                    <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                      <p className="text-sm italic">{randomQuote || "Generate a quote to analyze..."}</p>
+                    </div>
+
+                    {randomTechnique && (
+                      <div className="mt-4">
+                        <h3 className="text-sm font-medium mb-2">Suggested Technique</h3>
+                        <Badge variant="outline" className="text-primary">
+                          {randomTechnique}
+                        </Badge>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Steps Card */}
               <Card>
                 <CardContent className="pt-6">
                   <h3 className="text-sm font-medium mb-3">
                     {essayComponent === "introduction"
-                      ? "Introduction Components"
+                      ? "Introduction Steps"
                       : essayComponent === "body-paragraph"
                         ? "PETAL Structure"
-                        : "Conclusion Components"}
+                        : "Conclusion Steps"}
                   </h3>
                   <ul className="space-y-3">
                     {steps.map((step, index) => {
@@ -733,9 +737,19 @@ export default function InteractiveEssayBuilder() {
                     <h3 className="text-lg font-medium">Your Progress</h3>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-muted-foreground">
-                        {Object.keys(allStepsContent).filter(key => key.startsWith(essayComponent) && allStepsContent[key]?.trim()).length + (essayContent.trim() ? 1 : 0)} / {steps.length} steps
+                        {(() => {
+                          const completedSteps = Object.keys(allStepsContent).filter(key => key.startsWith(essayComponent) && allStepsContent[key]?.trim()).length
+                          const currentStepKey = `${essayComponent}-${currentStep}`
+                          const currentStepHasContent = essayContent.trim() && !allStepsContent[currentStepKey]?.trim()
+                          return completedSteps + (currentStepHasContent ? 1 : 0)
+                        })()} / {steps.length} steps
                       </span>
-                      <Progress value={((Object.keys(allStepsContent).filter(key => key.startsWith(essayComponent) && allStepsContent[key]?.trim()).length + (essayContent.trim() ? 1 : 0)) / steps.length) * 100} className="w-24" />
+                      <Progress value={(() => {
+                        const completedSteps = Object.keys(allStepsContent).filter(key => key.startsWith(essayComponent) && allStepsContent[key]?.trim()).length
+                        const currentStepKey = `${essayComponent}-${currentStep}`
+                        const currentStepHasContent = essayContent.trim() && !allStepsContent[currentStepKey]?.trim()
+                        return ((completedSteps + (currentStepHasContent ? 1 : 0)) / steps.length) * 100
+                      })()} className="w-24" />
                     </div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-md border border-gray-200 min-h-[100px]">
@@ -768,7 +782,7 @@ export default function InteractiveEssayBuilder() {
           <div className="text-center p-12 bg-white rounded-lg border">
             <h3 className="text-lg font-medium mb-2">Get Started</h3>
             <p className="text-muted-foreground mb-6">
-              Select a text and theme to begin building your essay component with AI assistance.
+              A random essay question will be generated for your selected book. Practice writing step-by-step with AI guidance.
             </p>
             <div className="flex justify-center">
               <ChevronDown className="h-6 w-6 text-muted-foreground animate-bounce" />

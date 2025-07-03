@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import { getBookById, type Book } from "@/lib/books"
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
   const supabase = createClient()
 
   const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
@@ -158,6 +160,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null)
       setProfile(null)
       setSelectedBook(null)
+      // Redirect to sign in page after successful sign out
+      router.push('/auth/signin')
     } catch (error) {
       console.error('Error signing out:', error)
     }

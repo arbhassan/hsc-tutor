@@ -4,16 +4,9 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
 import {
-  Bold,
-  Italic,
-  Underline,
-  Clock,
-  Save,
   RefreshCw,
   ChevronLeft,
-  ChevronRight,
   Home,
   CheckCircle,
   AlertCircle,
@@ -417,117 +410,61 @@ const generateImprovedResponse = (originalResponse, feedback, questionId) => {
 
 export default function DailyDrillPage() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [response, setResponse] = useState("")
-  const [wordCount, setWordCount] = useState(0)
+  const [responses, setResponses] = useState({})
   const [submitted, setSubmitted] = useState(false)
-  const [elapsedTime, setElapsedTime] = useState(0)
-  const [timerRunning, setTimerRunning] = useState(false)
   const [practiceStarted, setPracticeStarted] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [feedback, setFeedback] = useState(null)
-  const [improvedResponse, setImprovedResponse] = useState("")
-  const [savedState, setSavedState] = useState(null)
+  const [feedback, setFeedback] = useState({})
+  const [improvedResponses, setImprovedResponses] = useState({})
 
   const currentText = unseenTexts[currentTextIndex]
-  const currentQuestion = currentText.questions[currentQuestionIndex]
 
-  // Load saved state from localStorage on initial render
-  useEffect(() => {
-    const saved = localStorage.getItem("dailyDrillState")
-    if (saved) {
-      const parsedState = JSON.parse(saved)
-      setCurrentTextIndex(parsedState.currentTextIndex || 0)
-      setCurrentQuestionIndex(parsedState.currentQuestionIndex || 0)
-      setResponse(parsedState.response || "")
-      setSubmitted(parsedState.submitted || false)
-      setElapsedTime(parsedState.elapsedTime || 0)
-      setPracticeStarted(parsedState.practiceStarted || false)
-      setProgress(parsedState.progress || 0)
-      if (parsedState.feedback) {
-        setFeedback(parsedState.feedback)
-      }
-      if (parsedState.improvedResponse) {
-        setImprovedResponse(parsedState.improvedResponse)
-      }
-      setSavedState(parsedState)
-    }
-  }, [])
-
-  // Calculate word count when response changes
-  useEffect(() => {
-    const words = response.trim().split(/\s+/)
-    setWordCount(response.trim() === "" ? 0 : words.length)
-  }, [response])
-
-  // Timer effect
-  useEffect(() => {
-    let interval
-    if (timerRunning) {
-      interval = setInterval(() => {
-        setElapsedTime((prev) => prev + 1)
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [timerRunning])
-
-  // Format time as mm:ss
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  const getWordCount = (text) => {
+    const words = text.trim().split(/\s+/)
+    return text.trim() === "" ? 0 : words.length
   }
 
-  const startPractice = () => {
-    setPracticeStarted(true)
-    setTimerRunning(true)
+  const updateResponse = (questionId, response) => {
+    setResponses(prev => ({
+      ...prev,
+      [questionId]: response
+    }))
+  }
+
+  const allQuestionsAnswered = () => {
+    return currentText.questions.every(question => 
+      responses[question.id] && responses[question.id].trim().length > 0
+    )
   }
 
   const handleSubmit = () => {
-    if (response.trim()) {
+    if (allQuestionsAnswered()) {
       setSubmitted(true)
-      setTimerRunning(false)
 
-      // Generate AI feedback
-      const responseFeedback = analyzeResponse(response, currentQuestion.id)
-      setFeedback(responseFeedback)
+      // Generate AI feedback for all questions
+      const newFeedback = {}
+      const newImprovedResponses = {}
+      
+      currentText.questions.forEach(question => {
+        const response = responses[question.id]
+        const responseFeedback = analyzeResponse(response, question.id)
+        newFeedback[question.id] = responseFeedback
+        
+        const improved = generateImprovedResponse(response, responseFeedback, question.id)
+        newImprovedResponses[question.id] = improved
+      })
 
-      // Generate improved response
-      const improved = generateImprovedResponse(response, responseFeedback, currentQuestion.id)
-      setImprovedResponse(improved)
-
-      // Calculate progress
-      const totalQuestions = unseenTexts.reduce((acc, text) => acc + text.questions.length, 0)
-      const completedQuestions = currentTextIndex * unseenTexts[0].questions.length + currentQuestionIndex + 1
-      setProgress((completedQuestions / totalQuestions) * 100)
-
-      // Save state to localStorage
-      saveProgress()
+      setFeedback(newFeedback)
+      setImprovedResponses(newImprovedResponses)
     }
   }
 
-  const saveProgress = () => {
-    const stateToSave = {
-      currentTextIndex,
-      currentQuestionIndex,
-      response,
-      submitted,
-      elapsedTime,
-      practiceStarted,
-      progress,
-      feedback,
-      improvedResponse,
-    }
-    localStorage.setItem("dailyDrillState", JSON.stringify(stateToSave))
-    setSavedState(stateToSave)
-
-    // Show save confirmation
-    const saveConfirm = document.getElementById("saveConfirmation")
-    if (saveConfirm) {
-      saveConfirm.classList.remove("opacity-0")
-      setTimeout(() => {
-        saveConfirm.classList.add("opacity-0")
-      }, 2000)
+  const handleNextText = () => {
+    if (currentTextIndex < unseenTexts.length - 1) {
+      setCurrentTextIndex(currentTextIndex + 1)
+      setResponses({})
+      setSubmitted(false)
+      setFeedback({})
+      setImprovedResponses({})
     }
   }
 
@@ -535,73 +472,14 @@ export default function DailyDrillPage() {
     // Move to next text or wrap around
     const nextTextIndex = (currentTextIndex + 1) % unseenTexts.length
     setCurrentTextIndex(nextTextIndex)
-    setCurrentQuestionIndex(0)
-    setResponse("")
+    setResponses({})
     setSubmitted(false)
-    setElapsedTime(0)
-    setTimerRunning(true)
-    setFeedback(null)
-    setImprovedResponse("")
-
-    // Save new state
-    saveProgress()
+    setFeedback({})
+    setImprovedResponses({})
   }
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < currentText.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-      setResponse("")
-      setSubmitted(false)
-      setFeedback(null)
-      setImprovedResponse("")
-    } else if (currentTextIndex < unseenTexts.length - 1) {
-      setCurrentTextIndex(currentTextIndex + 1)
-      setCurrentQuestionIndex(0)
-      setResponse("")
-      setSubmitted(false)
-      setFeedback(null)
-      setImprovedResponse("")
-    }
-
-    // Save new state
-    saveProgress()
-  }
-
-  const handlePrevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1)
-      setResponse("")
-      setSubmitted(false)
-      setFeedback(null)
-      setImprovedResponse("")
-    } else if (currentTextIndex > 0) {
-      setCurrentTextIndex(currentTextIndex - 1)
-      setCurrentQuestionIndex(unseenTexts[currentTextIndex - 1].questions.length - 1)
-      setResponse("")
-      setSubmitted(false)
-      setFeedback(null)
-      setImprovedResponse("")
-    }
-
-    // Save new state
-    saveProgress()
-  }
-
-  const insertFormatting = (type) => {
-    // Simple text formatting
-    switch (type) {
-      case "bold":
-        setResponse(response + "**bold text**")
-        break
-      case "italic":
-        setResponse(response + "*italic text*")
-        break
-      case "underline":
-        setResponse(response + "_underlined text_")
-        break
-      default:
-        break
-    }
+  const startPractice = () => {
+    setPracticeStarted(true)
   }
 
   // Start screen
@@ -612,7 +490,7 @@ export default function DailyDrillPage() {
           <h1 className="text-3xl font-bold mb-6">Daily Drill Practice</h1>
           <p className="text-lg mb-8">
             Improve your HSC Paper 1 skills with daily practice on unseen texts. You'll be presented with texts from
-            various genres and questions worth 1-7 marks.
+            various genres and need to answer all questions for each text.
           </p>
           <div className="bg-muted p-6 rounded-lg mb-8">
             <h2 className="text-xl font-semibold mb-4">How it works:</h2>
@@ -623,11 +501,11 @@ export default function DailyDrillPage() {
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
-                <span>Answer the question in the response area</span>
+                <span>Answer all questions for the text</span>
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
-                <span>Submit your answer for AI-powered feedback</span>
+                <span>Submit your answers for AI-powered feedback</span>
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
@@ -635,12 +513,12 @@ export default function DailyDrillPage() {
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
-                <span>See an improved version of your response</span>
+                <span>See improved versions of your responses</span>
               </li>
             </ul>
           </div>
           <Button size="lg" onClick={startPractice}>
-            {savedState ? "Continue Practice" : "Start Practice"}
+            Start Practice
           </Button>
         </div>
       </div>
@@ -659,16 +537,9 @@ export default function DailyDrillPage() {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 bg-muted px-3 py-1 rounded-md">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{formatTime(elapsedTime)}</span>
-            </div>
-            <div id="saveConfirmation" className="text-sm text-green-600 transition-opacity duration-300 opacity-0">
-              Progress saved!
-            </div>
-            <Button variant="outline" size="sm" onClick={saveProgress}>
-              <Save className="mr-2 h-4 w-4" /> Save Progress
-            </Button>
+            <span className="text-sm font-medium">
+              Text {currentTextIndex + 1} of {unseenTexts.length}
+            </span>
           </div>
         </div>
       </header>
@@ -706,36 +577,16 @@ export default function DailyDrillPage() {
               Source: {currentText.source} by {currentText.author}
             </div>
 
-            <div className="bg-muted p-4 rounded-lg mb-6">
-              <div className="flex justify-between mb-2">
-                <h3 className="font-medium">Question {currentQuestionIndex + 1}</h3>
-                <span className="text-sm text-muted-foreground">{currentQuestion.marks} marks</span>
-              </div>
-              <p>{currentQuestion.text}</p>
-            </div>
-
-            <div className="flex justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevQuestion}
-                disabled={currentTextIndex === 0 && currentQuestionIndex === 0}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Previous Question
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextQuestion}
-                disabled={
-                  currentTextIndex === unseenTexts.length - 1 &&
-                  currentQuestionIndex === currentText.questions.length - 1
-                }
-              >
-                Next Question
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
+            <div className="space-y-4">
+              {currentText.questions.map((question, index) => (
+                <div key={question.id} className="bg-muted p-4 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <h3 className="font-medium">Question {index + 1}</h3>
+                    <span className="text-sm text-muted-foreground">{question.marks} marks</span>
+                  </div>
+                  <p>{question.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -746,39 +597,46 @@ export default function DailyDrillPage() {
             {!submitted ? (
               <>
                 <div className="mb-4">
-                  <h3 className="text-lg font-medium mb-2">Your Response</h3>
+                  <h3 className="text-lg font-medium mb-2">Your Responses</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Write a well-structured response addressing all aspects of the question. Refer to specific elements
-                    of the text in your answer.
+                    Answer all questions for this text. You must complete all responses before submitting.
                   </p>
 
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Button variant="outline" size="icon" onClick={() => insertFormatting("bold")}>
-                      <Bold className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => insertFormatting("italic")}>
-                      <Italic className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => insertFormatting("underline")}>
-                      <Underline className="h-4 w-4" />
-                    </Button>
-                    <div className="ml-auto text-sm text-muted-foreground">{wordCount} words</div>
+                  <div className="space-y-6">
+                    {currentText.questions.map((question, index) => (
+                      <div key={question.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium">Question {index + 1}</h4>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-muted-foreground">
+                              {getWordCount(responses[question.id] || "")} words
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              ({question.marks} marks)
+                            </span>
+                          </div>
+                        </div>
+                        <textarea
+                          className="w-full h-32 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                          value={responses[question.id] || ""}
+                          onChange={(e) => updateResponse(question.id, e.target.value)}
+                          placeholder="Type your response here..."
+                        />
+                      </div>
+                    ))}
                   </div>
-
-                  <textarea
-                    className="w-full h-64 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    value={response}
-                    onChange={(e) => setResponse(e.target.value)}
-                    placeholder="Type your response here..."
-                  />
                 </div>
 
                 <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setResponse("")}>
-                    Clear
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setResponses({})}
+                    disabled={Object.keys(responses).length === 0}
+                  >
+                    Clear All
                   </Button>
-                  <Button onClick={handleSubmit} disabled={!response.trim()}>
-                    Submit Answer
+                  <Button onClick={handleSubmit} disabled={!allQuestionsAnswered()}>
+                    Submit All Answers
                   </Button>
                 </div>
               </>
@@ -787,213 +645,126 @@ export default function DailyDrillPage() {
                 <Tabs defaultValue="feedback" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="feedback">AI Feedback</TabsTrigger>
-                    <TabsTrigger value="improved">Improved Answer</TabsTrigger>
-                    <TabsTrigger value="your-answer">Your Answer</TabsTrigger>
+                    <TabsTrigger value="improved">Improved Answers</TabsTrigger>
+                    <TabsTrigger value="your-answers">Your Answers</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="feedback" className="mt-4">
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium">AI Analysis</h3>
-                        <div className="flex items-center">
-                          <div className="text-lg font-bold mr-1">{feedback?.overallScore}</div>
-                          <div className="text-muted-foreground">/ {currentQuestion.marks}</div>
-                        </div>
+                    <div className="space-y-4">
+                      {currentText.questions.map((question, index) => (
+                        <Card key={question.id} className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium">Question {index + 1} Analysis</h3>
+                            <div className="flex items-center">
+                              <div className="text-lg font-bold mr-1">{feedback[question.id]?.overallScore}</div>
+                              <div className="text-muted-foreground">/ {question.marks}</div>
+                            </div>
+                          </div>
+
+                          {/* PETAL Analysis */}
+                          <div className="mb-4">
+                            <h4 className="font-medium mb-2">PETAL Structure Analysis:</h4>
+                            <div className="space-y-2">
+                              {Object.entries(feedback[question.id]?.petalAnalysis || {}).map(([key, analysis]) => (
+                                <div key={key} className="flex items-start">
+                                  <div className="w-20 font-medium capitalize">{key}:</div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center">
+                                      {analysis.present ? (
+                                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                                      ) : (
+                                        <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
+                                      )}
+                                      <span className="text-sm">{analysis.feedback}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Specific Feedback */}
+                          {feedback[question.id]?.specificFeedback && (
+                            <Alert className="mb-4">
+                              <AlertTitle>Specific Feedback</AlertTitle>
+                              <AlertDescription>{feedback[question.id].specificFeedback}</AlertDescription>
+                            </Alert>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 flex justify-between items-center">
+                      <div>
+                        <h4 className="font-medium">Total Score</h4>
+                        <p className="text-2xl font-bold">
+                          {Object.values(feedback).reduce((sum, f) => sum + (f?.overallScore || 0), 0)} / {" "}
+                          {currentText.questions.reduce((sum, q) => sum + q.marks, 0)}
+                        </p>
                       </div>
-
-                      {/* PETAL Analysis */}
-                      <div className="mb-6">
-                        <h4 className="font-medium mb-2">PETAL Structure Analysis:</h4>
-                        <div className="space-y-3">
-                          <div className="flex items-start">
-                            <div className="w-24 font-medium">Point:</div>
-                            <div className="flex-1">
-                              <div className="flex items-center">
-                                {feedback?.petalAnalysis.point.present ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                ) : (
-                                  <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-                                )}
-                                <span>{feedback?.petalAnalysis.point.feedback}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-start">
-                            <div className="w-24 font-medium">Evidence:</div>
-                            <div className="flex-1">
-                              <div className="flex items-center">
-                                {feedback?.petalAnalysis.evidence.present ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                ) : (
-                                  <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-                                )}
-                                <span>{feedback?.petalAnalysis.evidence.feedback}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-start">
-                            <div className="w-24 font-medium">Technique:</div>
-                            <div className="flex-1">
-                              <div className="flex items-center">
-                                {feedback?.petalAnalysis.technique.present ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                ) : (
-                                  <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-                                )}
-                                <span>{feedback?.petalAnalysis.technique.feedback}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-start">
-                            <div className="w-24 font-medium">Analysis:</div>
-                            <div className="flex-1">
-                              <div className="flex items-center">
-                                {feedback?.petalAnalysis.analysis.present ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                ) : (
-                                  <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-                                )}
-                                <span>{feedback?.petalAnalysis.analysis.feedback}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-start">
-                            <div className="w-24 font-medium">Link:</div>
-                            <div className="flex-1">
-                              <div className="flex items-center">
-                                {feedback?.petalAnalysis.link.present ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                ) : (
-                                  <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-                                )}
-                                <span>{feedback?.petalAnalysis.link.feedback}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="flex space-x-2">
+                        {currentTextIndex < unseenTexts.length - 1 ? (
+                          <Button onClick={handleNextText}>
+                            Next Text
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button onClick={handleNewDrill}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            New Drill
+                          </Button>
+                        )}
                       </div>
-
-                      {/* Strengths and Weaknesses */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div>
-                          <h4 className="font-medium mb-2 text-green-600">Strengths:</h4>
-                          <ul className="space-y-1">
-                            {feedback?.strengths.map((strength, idx) => (
-                              <li key={idx} className="flex items-start">
-                                <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5" />
-                                <span>{strength}</span>
-                              </li>
-                            ))}
-                            {feedback?.strengths.length === 0 && (
-                              <li className="text-muted-foreground">No specific strengths identified.</li>
-                            )}
-                          </ul>
-                        </div>
-
-                        <div>
-                          <h4 className="font-medium mb-2 text-amber-600">Areas for Improvement:</h4>
-                          <ul className="space-y-1">
-                            {feedback?.weaknesses.map((weakness, idx) => (
-                              <li key={idx} className="flex items-start">
-                                <AlertCircle className="h-4 w-4 text-amber-500 mr-2 mt-0.5" />
-                                <span>{weakness}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-
-                      {/* Specific Feedback */}
-                      {feedback?.specificFeedback && (
-                        <Alert className="mb-6">
-                          <AlertTitle>Specific Feedback</AlertTitle>
-                          <AlertDescription>{feedback.specificFeedback}</AlertDescription>
-                        </Alert>
-                      )}
-
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-medium">See the improved version</h4>
-                          <p className="text-sm text-muted-foreground">Check the "Improved Answer" tab</p>
-                        </div>
-                        <Button onClick={handleNewDrill}>
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Try New Drill
-                        </Button>
-                      </div>
-                    </Card>
+                    </div>
                   </TabsContent>
 
                   <TabsContent value="improved" className="mt-4">
-                    <Card className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-medium">Improved Answer</h3>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(improvedResponse)
-                            // Show copy confirmation
-                            const copyBtn = document.getElementById("copyBtn")
-                            if (copyBtn) {
-                              const originalText = copyBtn.innerText
-                              copyBtn.innerText = "Copied!"
-                              setTimeout(() => {
-                                copyBtn.innerText = originalText
-                              }, 2000)
-                            }
-                          }}
-                          id="copyBtn"
-                        >
-                          Copy to Clipboard
-                        </Button>
-                      </div>
+                    <div className="space-y-4">
+                      {currentText.questions.map((question, index) => (
+                        <Card key={question.id} className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium">Question {index + 1} - Improved Answer</h3>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(improvedResponses[question.id] || "")
+                              }}
+                            >
+                              Copy
+                            </Button>
+                          </div>
 
-                      <div className="prose max-w-none text-sm mb-4 p-4 bg-muted/50 rounded-md">
-                        {improvedResponse.split("\n\n").map((paragraph, idx) => (
-                          <p key={idx}>{paragraph}</p>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                        <ArrowRight className="h-4 w-4" />
-                        <span>This improved version demonstrates effective use of the PETAL structure</span>
-                      </div>
-                    </Card>
+                          <div className="prose max-w-none text-sm mb-4 p-4 bg-muted/50 rounded-md">
+                            {(improvedResponses[question.id] || "").split("\n\n").map((paragraph, idx) => (
+                              <p key={idx}>{paragraph}</p>
+                            ))}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
                   </TabsContent>
 
-                  <TabsContent value="your-answer" className="mt-4">
-                    <Card className="p-4">
-                      <h3 className="text-lg font-medium mb-2">Your Answer</h3>
-                      <div className="prose max-w-none text-sm">
-                        <p>{response}</p>
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-4">Word count: {wordCount} words</div>
-                    </Card>
+                  <TabsContent value="your-answers" className="mt-4">
+                    <div className="space-y-4">
+                      {currentText.questions.map((question, index) => (
+                        <Card key={question.id} className="p-4">
+                          <h3 className="text-lg font-medium mb-2">Question {index + 1} - Your Answer</h3>
+                          <div className="prose max-w-none text-sm">
+                            <p>{responses[question.id] || ""}</p>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-4">
+                            Word count: {getWordCount(responses[question.id] || "")} words
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
                   </TabsContent>
                 </Tabs>
               </>
             )}
 
-            <div className="mt-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-muted-foreground">Progress</span>
-                <span className="text-sm text-muted-foreground">
-                  Question {currentQuestionIndex + 1}/{currentText.questions.length}
-                </span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-
-            <div className="flex justify-between mt-4">
-              <Button variant="outline" size="sm" onClick={saveProgress}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Progress
-              </Button>
+            <div className="flex justify-center mt-6">
               <Button variant="outline" size="sm" asChild>
                 <Link href="/practice-zone">
                   <Home className="mr-2 h-4 w-4" />
