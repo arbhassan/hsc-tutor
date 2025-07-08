@@ -58,6 +58,14 @@ interface ThematicQuote {
   context: string
 }
 
+interface Book {
+  id: string
+  title: string
+  author: string
+  year: string
+  category: string
+}
+
 export default function ExamSimulatorAdminPage() {
   const router = useRouter()
   const { user, loading } = useAuth()
@@ -67,6 +75,7 @@ export default function ExamSimulatorAdminPage() {
   const [unseenTexts, setUnseenTexts] = useState<UnseenText[]>([])
   const [essayQuestions, setEssayQuestions] = useState<EssayQuestion[]>([])
   const [thematicQuotes, setThematicQuotes] = useState<ThematicQuote[]>([])
+  const [books, setBooks] = useState<Book[]>([])
 
   // State for dialogs
   const [showUnseenTextDialog, setShowUnseenTextDialog] = useState(false)
@@ -116,21 +125,24 @@ export default function ExamSimulatorAdminPage() {
     try {
       setIsLoading(true)
       
-      const [unseenTextsRes, essayQuestionsRes, thematicQuotesRes] = await Promise.all([
+      const [unseenTextsRes, essayQuestionsRes, thematicQuotesRes, booksRes] = await Promise.all([
         fetch('/api/admin/exam-simulator/unseen-texts'),
         fetch('/api/admin/exam-simulator/essay-questions'),
-        fetch('/api/admin/exam-simulator/thematic-quotes')
+        fetch('/api/admin/exam-simulator/thematic-quotes'),
+        fetch('/api/books')
       ])
 
-      const [unseenTextsData, essayQuestionsData, thematicQuotesData] = await Promise.all([
+      const [unseenTextsData, essayQuestionsData, thematicQuotesData, booksData] = await Promise.all([
         unseenTextsRes.json(),
         essayQuestionsRes.json(),
-        thematicQuotesRes.json()
+        thematicQuotesRes.json(),
+        booksRes.json()
       ])
 
       if (unseenTextsData.success) setUnseenTexts(unseenTextsData.data)
       if (essayQuestionsData.success) setEssayQuestions(essayQuestionsData.data)
       if (thematicQuotesData.success) setThematicQuotes(thematicQuotesData.data)
+      if (booksData && Array.isArray(booksData)) setBooks(booksData)
     } catch (error) {
       console.error('Error loading data:', error)
       toast({
@@ -935,12 +947,21 @@ export default function ExamSimulatorAdminPage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="textName">Text Name</Label>
-              <Input
-                id="textName"
+              <Select
                 value={thematicQuoteForm.textName}
-                onChange={(e) => setThematicQuoteForm(prev => ({ ...prev, textName: e.target.value }))}
-                placeholder="e.g., Nineteen Eighty-Four"
-              />
+                onValueChange={(value) => setThematicQuoteForm(prev => ({ ...prev, textName: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a text" />
+                </SelectTrigger>
+                <SelectContent>
+                  {books.map((book) => (
+                    <SelectItem key={book.id} value={book.title}>
+                      {book.title} by {book.author}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div>

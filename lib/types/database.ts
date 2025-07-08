@@ -174,7 +174,6 @@ export interface Database {
           total_essays: number
           average_score: number
           average_word_count: number
-          average_quote_usage: number
           created_at: string
           updated_at: string
         }
@@ -184,7 +183,6 @@ export interface Database {
           total_essays?: number
           average_score?: number
           average_word_count?: number
-          average_quote_usage?: number
           created_at?: string
           updated_at?: string
         }
@@ -194,7 +192,70 @@ export interface Database {
           total_essays?: number
           average_score?: number
           average_word_count?: number
-          average_quote_usage?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      short_answer_progress_detailed: {
+        Row: {
+          id: string
+          user_id: string
+          marker_type: number
+          total_questions: number
+          correct_answers: number
+          average_score: number
+          average_completion_time: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          marker_type: number
+          total_questions?: number
+          correct_answers?: number
+          average_score?: number
+          average_completion_time?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          marker_type?: number
+          total_questions?: number
+          correct_answers?: number
+          average_score?: number
+          average_completion_time?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      essay_component_progress: {
+        Row: {
+          id: string
+          user_id: string
+          component_type: string
+          total_assessments: number
+          average_score: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          component_type: string
+          total_assessments?: number
+          average_score?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          component_type?: string
+          total_assessments?: number
+          average_score?: number
           created_at?: string
           updated_at?: string
         }
@@ -292,6 +353,144 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_submissions: {
+        Row: {
+          id: string
+          user_id: string
+          submission_type: 'daily_drill' | 'exam_simulator'
+          content_type: 'questions' | 'essay'
+          submission_date: string
+          title: string
+          total_score: number | null
+          max_score: number | null
+          completion_time_minutes: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          submission_type: 'daily_drill' | 'exam_simulator'
+          content_type: 'questions' | 'essay'
+          submission_date?: string
+          title: string
+          total_score?: number | null
+          max_score?: number | null
+          completion_time_minutes?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          submission_type?: 'daily_drill' | 'exam_simulator'
+          content_type?: 'questions' | 'essay'
+          submission_date?: string
+          title?: string
+          total_score?: number | null
+          max_score?: number | null
+          completion_time_minutes?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      submission_questions: {
+        Row: {
+          id: string
+          submission_id: string
+          question_text: string
+          user_response: string
+          correct_answer: string | null
+          ai_feedback: string | null
+          marks_awarded: number | null
+          max_marks: number | null
+          text_title: string | null
+          text_author: string | null
+          text_type: string | null
+          text_content: string | null
+          question_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          submission_id: string
+          question_text: string
+          user_response: string
+          correct_answer?: string | null
+          ai_feedback?: string | null
+          marks_awarded?: number | null
+          max_marks?: number | null
+          text_title?: string | null
+          text_author?: string | null
+          text_type?: string | null
+          text_content?: string | null
+          question_order: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          submission_id?: string
+          question_text?: string
+          user_response?: string
+          correct_answer?: string | null
+          ai_feedback?: string | null
+          marks_awarded?: number | null
+          max_marks?: number | null
+          text_title?: string | null
+          text_author?: string | null
+          text_type?: string | null
+          text_content?: string | null
+          question_order?: number
+          created_at?: string
+        }
+      }
+      submission_essays: {
+        Row: {
+          id: string
+          submission_id: string
+          essay_question: string
+          essay_response: string
+          word_count: number | null
+          quote_count: number | null
+          ai_feedback: string | null
+          overall_score: number | null
+          max_score: number | null
+          criteria_scores: any | null
+          band_level: number | null
+          module: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          submission_id: string
+          essay_question: string
+          essay_response: string
+          word_count?: number | null
+          quote_count?: number | null
+          ai_feedback?: string | null
+          overall_score?: number | null
+          max_score?: number | null
+          criteria_scores?: any | null
+          band_level?: number | null
+          module?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          submission_id?: string
+          essay_question?: string
+          essay_response?: string
+          word_count?: number | null
+          quote_count?: number | null
+          ai_feedback?: string | null
+          overall_score?: number | null
+          max_score?: number | null
+          criteria_scores?: any | null
+          band_level?: number | null
+          module?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }
@@ -304,4 +503,9 @@ export type ShortAnswerProgress = Database['public']['Tables']['short_answer_pro
 export type EssayProgress = Database['public']['Tables']['essay_progress']['Row']
 export type WeeklyReport = Database['public']['Tables']['weekly_reports']['Row']
 export type FlashcardSet = Database['public']['Tables']['flashcard_sets']['Row']
-export type Passage = Database['public']['Tables']['passages']['Row'] 
+export type Passage = Database['public']['Tables']['passages']['Row']
+export type ShortAnswerProgressDetailed = Database['public']['Tables']['short_answer_progress_detailed']['Row']
+export type EssayComponentProgress = Database['public']['Tables']['essay_component_progress']['Row']
+export type UserSubmission = Database['public']['Tables']['user_submissions']['Row']
+export type SubmissionQuestion = Database['public']['Tables']['submission_questions']['Row']
+export type SubmissionEssay = Database['public']['Tables']['submission_essays']['Row'] 

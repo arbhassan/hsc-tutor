@@ -55,7 +55,7 @@ export default function PracticeZonePage() {
 
           <PracticeCard
             title="Interactive Essay Builder"
-            description="Step-by-step essay writing practice with AI guidance and random questions."
+            description="Step-by-step essay writing practice with guidance and random questions."
             icon={<BookOpen className="h-6 w-6" />}
             href="/practice-zone/interactive-builder"
             features={[

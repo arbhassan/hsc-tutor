@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -36,7 +36,6 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   CheckCircle,
-  Info,
   Settings,
   X,
   RefreshCw,
@@ -44,11 +43,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useProgressTracker } from "@/hooks/use-progress-tracker"
+import { useAuth } from "@/lib/auth-context"
 
 // Sample model answers for feedback
 const modelAnswers = {
@@ -66,20 +66,21 @@ Visual imagery reinforces the danger through concrete details, as the writer des
 // Exam configuration
 const examConfig = {
   totalTime: 120, // 2 hours in minutes
-  readingTime: 5, // 5 minutes reading time
   sectionITime: 60, // 1 hour for Section I
   sectionIITime: 60, // 1 hour for Section II
 }
 
 export default function ExamSimulatorPage() {
+  // Auth context to get user's selected book
+  const { user, selectedBook } = useAuth()
+  
   // State for exam data loaded from database
   const [unseenTexts, setUnseenTexts] = useState([])
   const [essayQuestions, setEssayQuestions] = useState([])
   const [thematicQuotes, setThematicQuotes] = useState({})
   
   const [examStarted, setExamStarted] = useState(false)
-  const [readingTimeActive, setReadingTimeActive] = useState(false)
-  const [currentSection, setCurrentSection] = useState("instructions") // instructions, reading, sectionI, sectionII, results
+  const [currentSection, setCurrentSection] = useState("instructions") // instructions, sectionI, sectionII, results
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState({})
@@ -92,26 +93,147 @@ export default function ExamSimulatorPage() {
   const [wordCount, setWordCount] = useState(0)
   const [showSubmitSectionDialog, setShowSubmitSectionDialog] = useState(false)
   const [showSubmitExamDialog, setShowSubmitExamDialog] = useState(false)
+  const [showQuestionNavigation, setShowQuestionNavigation] = useState(false)
 
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [customExamTime, setCustomExamTime] = useState(examConfig.totalTime)
-  const [showInstructions, setShowInstructions] = useState(false)
+  const [selectedSections, setSelectedSections] = useState("both") // "section1", "section2", or "both"
   const [examSubmitted, setExamSubmitted] = useState(false)
   const [markingResults, setMarkingResults] = useState(null)
   const [isMarking, setIsMarking] = useState(false)
   const [markingError, setMarkingError] = useState(null)
-  const [customMarkingCriteria, setCustomMarkingCriteria] = useState({
-    understanding: 25,
-    analysis: 25,
-    response: 25,
-    expression: 25,
-  })
-  const [showMarkingSettingsDialog, setShowMarkingSettingsDialog] = useState(false)
-  const [customMarkingPrompt, setCustomMarkingPrompt] = useState("")
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [dataLoadError, setDataLoadError] = useState(null)
+  
+  // Autosave states
+  const [savedDraft, setSavedDraft] = useState(false)
+  const [showContinueDialog, setShowContinueDialog] = useState(false)
+  const [autoSaveStatus, setAutoSaveStatus] = useState("") // "saving", "saved", ""
 
   const timerRef = useRef(null)
+
+  const { trackShortAnswerDetailed, trackEssayComponents, trackEssayCompletion, trackStudySession } = useProgressTracker()
+
+  // Load saved draft - always load if available
+  useEffect(() => {
+    const savedExamData = localStorage.getItem("examSimulatorDraft")
+    
+    if (savedExamData) {
+      try {
+        const parsedData = JSON.parse(savedExamData)
+        
+        // Only load if it's relatively recent (within 7 days)
+        const savedDate = new Date(parsedData.timestamp)
+        const now = new Date()
+        const daysDiff = (now - savedDate) / (1000 * 60 * 60 * 24)
+        
+        if (daysDiff <= 7) {
+          setSavedDraft(true)
+          setShowContinueDialog(true)
+        } else {
+          // Remove old saved data
+          localStorage.removeItem("examSimulatorDraft")
+        }
+      } catch (error) {
+        console.error('Error parsing saved exam data:', error)
+        localStorage.removeItem("examSimulatorDraft")
+      }
+    }
+  }, [])
+
+  // Auto-save exam progress
+  const saveExamProgress = useCallback(() => {
+    if (examStarted && !examSubmitted) {
+      setAutoSaveStatus("saving")
+      
+      const examData = {
+        timestamp: new Date().toISOString(),
+        examStarted,
+        currentSection,
+        currentTextIndex,
+        currentQuestionIndex,
+        responses,
+        essayResponse,
+        essayQuestion,
+        elapsedTime,
+        remainingTime,
+        selectedSections,
+        customExamTime,
+        wordCount
+      }
+      
+      console.log('Saving exam progress:', examData) // Debug log
+      localStorage.setItem("examSimulatorDraft", JSON.stringify(examData))
+      
+      // Show saved status
+      setTimeout(() => {
+        setAutoSaveStatus("saved")
+        setTimeout(() => {
+          setAutoSaveStatus("")
+        }, 2000)
+      }, 200)
+    }
+  }, [examStarted, examSubmitted, currentSection, currentTextIndex, currentQuestionIndex, responses, essayResponse, essayQuestion, elapsedTime, remainingTime, selectedSections, customExamTime, wordCount])
+
+  // Load saved exam progress
+  const loadSavedProgress = () => {
+    const savedExamData = localStorage.getItem("examSimulatorDraft")
+    
+    if (savedExamData) {
+      try {
+        const parsedData = JSON.parse(savedExamData)
+        console.log('Loading saved exam progress:', parsedData) // Debug log
+        
+        setExamStarted(parsedData.examStarted)
+        setCurrentSection(parsedData.currentSection)
+        setCurrentTextIndex(parsedData.currentTextIndex || 0)
+        setCurrentQuestionIndex(parsedData.currentQuestionIndex || 0)
+        setResponses(parsedData.responses || {})
+        setEssayResponse(parsedData.essayResponse || "")
+        setEssayQuestion(parsedData.essayQuestion || null)
+        setElapsedTime(parsedData.elapsedTime || 0)
+        setRemainingTime(parsedData.remainingTime || examConfig.totalTime * 60)
+        setSelectedSections(parsedData.selectedSections || "both")
+        setCustomExamTime(parsedData.customExamTime || examConfig.totalTime)
+        setWordCount(parsedData.wordCount || 0)
+        
+        setShowContinueDialog(false)
+        setSavedDraft(false)
+      } catch (error) {
+        console.error('Error loading saved exam data:', error)
+        localStorage.removeItem("examSimulatorDraft")
+      }
+    }
+  }
+
+  // Clear saved draft
+  const clearSavedDraft = () => {
+    localStorage.removeItem("examSimulatorDraft")
+    setSavedDraft(false)
+    setShowContinueDialog(false)
+  }
+
+  // Auto-save when important responses change (excluding elapsedTime to avoid excessive saves)
+  useEffect(() => {
+    if (examStarted && !examSubmitted) {
+      const timeoutId = setTimeout(() => {
+        saveExamProgress()
+      }, 1000) // Save after 1 second of inactivity
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [responses, essayResponse, currentSection, currentTextIndex, currentQuestionIndex, saveExamProgress])
+
+  // Separate effect for periodic saves (every 30 seconds) to capture timer state
+  useEffect(() => {
+    if (examStarted && !examSubmitted) {
+      const intervalId = setInterval(() => {
+        saveExamProgress()
+      }, 30000) // Save every 30 seconds
+
+      return () => clearInterval(intervalId)
+    }
+  }, [examStarted, examSubmitted, saveExamProgress])
 
   // Load exam data on component mount
   useEffect(() => {
@@ -157,7 +279,7 @@ export default function ExamSimulatorPage() {
 
   // Timer effect
   useEffect(() => {
-    if (examStarted && !readingTimeActive && !isPaused && !examSubmitted) {
+    if (examStarted && !isPaused && !examSubmitted) {
       timerRef.current = setInterval(() => {
         setElapsedTime((prev) => prev + 1)
         setRemainingTime((prev) => {
@@ -169,25 +291,10 @@ export default function ExamSimulatorPage() {
           return prev - 1
         })
       }, 1000)
-    } else if (readingTimeActive && !isPaused) {
-      timerRef.current = setInterval(() => {
-        setElapsedTime((prev) => prev + 1)
-        setRemainingTime((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current)
-            setReadingTimeActive(false)
-            setCurrentSection("sectionI")
-            return examConfig.totalTime * 60
-          }
-          return prev - 1
-        })
-      }, 1000)
     }
 
     return () => clearInterval(timerRef.current)
-  }, [examStarted, readingTimeActive, isPaused, examSubmitted])
-
-
+  }, [examStarted, isPaused, examSubmitted])
 
   // Format time as mm:ss
   const formatTime = (seconds) => {
@@ -196,16 +303,29 @@ export default function ExamSimulatorPage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  const startExam = (withReadingTime = true) => {
+  const startExam = () => {
     setExamStarted(true)
-    if (withReadingTime) {
-      setReadingTimeActive(true)
-      setRemainingTime(examConfig.readingTime * 60)
-      setCurrentSection("reading")
+    setRemainingTime(customExamTime * 60)
+    // Start with the appropriate section based on selection
+    if (selectedSections === "section1") {
+      setCurrentSection("sectionI")
+    } else if (selectedSections === "section2") {
+      setCurrentSection("sectionII")
+      // Generate random essay question for section II only
+      if (essayQuestions.length > 0) {
+        setEssayQuestion(essayQuestions[Math.floor(Math.random() * essayQuestions.length)])
+      }
     } else {
-      setRemainingTime(customExamTime * 60)
       setCurrentSection("sectionI")
     }
+    
+    // Clear any existing draft when starting a new exam
+    if (!savedDraft) {
+      localStorage.removeItem("examSimulatorDraft")
+    }
+    
+    // Save initial state
+    saveExamProgress()
   }
 
   const pauseExam = () => {
@@ -227,6 +347,20 @@ export default function ExamSimulatorPage() {
       ...prev,
       [`${textId}-${questionId}`]: value,
     }))
+    
+    // Immediate save when response changes
+    if (examStarted && !examSubmitted) {
+      setTimeout(() => saveExamProgress(), 500)
+    }
+  }
+
+  const handleEssayResponseChange = (value) => {
+    setEssayResponse(value)
+    
+    // Immediate save when essay response changes
+    if (examStarted && !examSubmitted) {
+      setTimeout(() => saveExamProgress(), 500)
+    }
   }
 
   const handleNextQuestion = () => {
@@ -248,12 +382,24 @@ export default function ExamSimulatorPage() {
     }
   }
 
+  const navigateToQuestion = (textIndex, questionIndex) => {
+    setCurrentTextIndex(textIndex)
+    setCurrentQuestionIndex(questionIndex)
+    setShowQuestionNavigation(false)
+  }
+
   const handleSectionSubmit = () => {
     if (currentSection === "sectionI") {
-      setCurrentSection("sectionII")
-      // Generate random essay question
-      if (essayQuestions.length > 0) {
-        setEssayQuestion(essayQuestions[Math.floor(Math.random() * essayQuestions.length)])
+      // If both sections are selected, move to section II
+      if (selectedSections === "both") {
+        setCurrentSection("sectionII")
+        // Generate random essay question
+        if (essayQuestions.length > 0) {
+          setEssayQuestion(essayQuestions[Math.floor(Math.random() * essayQuestions.length)])
+        }
+      } else {
+        // If only section I is selected, submit the exam
+        handleExamSubmit()
       }
     } else if (currentSection === "sectionII") {
       handleExamSubmit()
@@ -267,6 +413,10 @@ export default function ExamSimulatorPage() {
     setIsMarking(true)
     setMarkingError(null)
     setShowSubmitExamDialog(false)
+    
+    // Clear saved draft after submission
+    localStorage.removeItem("examSimulatorDraft")
+    setSavedDraft(false)
 
     try {
       // Mark Section I responses
@@ -291,27 +441,41 @@ export default function ExamSimulatorPage() {
         })
       })
 
-      // Call AI marking APIs
-      const [sectionOneResult, essayResult] = await Promise.all([
-        fetch("/api/mark-section-one", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ responses: sectionOneResponses }),
-        }).then((res) => res.json()),
-        
-        essayResponse.trim() ? fetch("/api/mark-essay", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: essayQuestion.question,
-            module: essayQuestion.module,
-            response: essayResponse,
-            wordCount: wordCount,
-            markingCriteria: customMarkingCriteria,
-            customPrompt: customMarkingPrompt || undefined,
-          }),
-        }).then((res) => res.json()) : { success: true, result: null }
-      ])
+      // Call AI marking APIs based on selected sections
+      const markingPromises = []
+      
+      // Only mark Section I if it was selected
+      if (selectedSections === "section1" || selectedSections === "both") {
+        markingPromises.push(
+          fetch("/api/mark-section-one", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ responses: sectionOneResponses }),
+          }).then((res) => res.json())
+        )
+      } else {
+        markingPromises.push(Promise.resolve({ success: true, results: [], summary: { totalMarks: 0, percentage: 0 } }))
+      }
+      
+      // Only mark Section II if it was selected and has content
+      if ((selectedSections === "section2" || selectedSections === "both") && essayResponse.trim()) {
+        markingPromises.push(
+          fetch("/api/mark-essay", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              question: essayQuestion.question,
+              module: essayQuestion.module,
+              response: essayResponse,
+              wordCount: wordCount,
+            }),
+          }).then((res) => res.json())
+        )
+      } else {
+        markingPromises.push(Promise.resolve({ success: true, result: null }))
+      }
+      
+      const [sectionOneResult, essayResult] = await Promise.all(markingPromises)
 
       if (sectionOneResult.success && essayResult.success) {
         setMarkingResults({
@@ -320,6 +484,162 @@ export default function ExamSimulatorPage() {
           totalElapsedTime: elapsedTime,
         })
         setCurrentSection("results")
+
+        // Track progress and save submissions after successful marking
+        try {
+          // Track Section I short answer questions
+          if (sectionOneResult.results) {
+            for (const result of sectionOneResult.results) {
+              // Find the corresponding question to get marks
+              const text = unseenTexts.find(t => t.id === result.textId)
+              const question = text?.questions.find(q => q.id === result.questionId)
+              if (question && result.mark !== undefined) {
+                await trackShortAnswerDetailed(
+                  question.marks, // marker type
+                  result.mark, // actual score
+                  question.marks, // max score
+                  3.0 // estimated completion time per question
+                )
+              }
+            }
+          }
+
+          // Track essay component scores and overall essay score if available
+          if (essayResult.result && essayResult.result.criteriaBreakdown) {
+            const criteria = essayResult.result.criteriaBreakdown
+            const componentScores = {}
+            
+            // Map essay criteria to component types
+            if (criteria.understanding) {
+              componentScores.question_analysis = Math.round((criteria.understanding.mark / 5) * 100)
+            }
+            if (criteria.analysis) {
+              componentScores.body_paragraphs = Math.round((criteria.analysis.mark / 5) * 100)
+            }
+            if (criteria.response) {
+              componentScores.introduction = Math.round((criteria.response.mark / 5) * 100)
+            }
+            if (criteria.expression) {
+              componentScores.conclusion = Math.round((criteria.expression.mark / 5) * 100)
+            }
+
+            await trackEssayComponents(componentScores)
+            
+            // Also track overall essay progress
+            console.log('Essay tracking debug:', {
+              totalMark: essayResult.result.totalMark,
+              wordCount: wordCount,
+              condition: !!(essayResult.result.totalMark && wordCount > 0)
+            })
+            
+            if (essayResult.result.totalMark !== undefined && essayResult.result.totalMark !== null && wordCount > 0) {
+              const essayPercentage = Math.round((essayResult.result.totalMark / 20) * 100)
+              const quoteCount = (essayResponse.match(/"/g) || []).length / 2
+              
+              console.log('Tracking essay completion:', {
+                score: essayPercentage,
+                wordCount,
+                quoteCount: Math.floor(quoteCount)
+              })
+              
+              await trackEssayCompletion(
+                essayPercentage,
+                wordCount,
+                Math.floor(quoteCount)
+              )
+                
+              console.log('Essay completion tracked successfully')
+            } else {
+              console.log('Essay tracking skipped - condition not met:', {
+                totalMark: essayResult.result.totalMark,
+                wordCount
+              })
+            }
+          }
+
+          // Track study session (exam time)
+          const sessionTimeMinutes = Math.round(elapsedTime / 60)
+          if (sessionTimeMinutes > 0) {
+            await trackStudySession(sessionTimeMinutes)
+          }
+
+          // Save submissions to database
+          // Save Section I questions submission
+          if (sectionOneResult.success && sectionOneResult.results && sectionOneResult.results.length > 0) {
+            const questionsSubmissionData = {
+              submissionType: 'exam_simulator',
+              contentType: 'questions',
+              title: `Exam Simulator - Section I`,
+              totalScore: sectionOneResult.summary.totalMarks,
+              maxScore: 20, // Section I total marks
+              completionTimeMinutes: sessionTimeMinutes,
+              questions: sectionOneResult.results.map((result, index) => {
+                const text = unseenTexts.find(t => t.id === result.textId)
+                const question = text?.questions.find(q => q.id === result.questionId)
+                const responseKey = `${result.textId}-${result.questionId}`
+                const userResponse = responses[responseKey] || ''
+                
+                return {
+                  questionText: question?.text || '',
+                  userResponse: userResponse,
+                  aiFeedback: result.comment || '',
+                  marksAwarded: result.mark,
+                  maxMarks: result.totalMarks || question?.marks || 0,
+                  textTitle: text?.title,
+                  textAuthor: text?.author,
+                  textType: text?.type,
+                  textContent: text?.content
+                }
+              })
+            }
+
+            const questionsResponse = await fetch('/api/submissions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(questionsSubmissionData)
+            })
+
+            if (!questionsResponse.ok) {
+              console.error('Failed to save questions submission:', await questionsResponse.text())
+            }
+          }
+
+          // Save Section II essay submission
+          if (essayResult.success && essayResult.result && essayResponse.trim()) {
+            const essaySubmissionData = {
+              submissionType: 'exam_simulator',
+              contentType: 'essay',
+              title: `Exam Simulator - Essay`,
+              totalScore: essayResult.result.totalMark,
+              maxScore: 20, // Essay total marks
+              completionTimeMinutes: sessionTimeMinutes,
+              essay: {
+                question: essayQuestion.question,
+                response: essayResponse,
+                wordCount: wordCount,
+                quoteCount: Math.floor((essayResponse.match(/"/g) || []).length / 2),
+                aiFeedback: essayResult.result.overallComment,
+                overallScore: essayResult.result.totalMark,
+                maxScore: 20,
+                criteriaScores: essayResult.result.criteriaBreakdown,
+                bandLevel: essayResult.result.band,
+                module: essayQuestion.module
+              }
+            }
+
+            const essaySubmissionResponse = await fetch('/api/submissions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(essaySubmissionData)
+            })
+
+            if (!essaySubmissionResponse.ok) {
+              console.error('Failed to save essay submission:', await essaySubmissionResponse.text())
+            }
+          }
+        } catch (trackingError) {
+          console.error('Failed to track exam progress or save submissions:', trackingError)
+        }
       } else {
         throw new Error("Marking failed")
       }
@@ -332,24 +652,67 @@ export default function ExamSimulatorPage() {
     }
   }
 
-  const calculateProgress = () => {
-    let totalQuestions = 0
-    let answeredQuestions = 0
-
-    unseenTexts.forEach((text) => {
-      totalQuestions += text.questions.length
-      text.questions.forEach((question) => {
-        if (responses[`${text.id}-${question.id}`]) {
-          answeredQuestions++
-        }
-      })
-    })
-
-    return (answeredQuestions / totalQuestions) * 100
+  const insertQuote = (quote) => {
+    const newEssayResponse = essayResponse + `\n> "${quote.quote}"\n`
+    handleEssayResponseChange(newEssayResponse)
   }
 
-  const insertQuote = (quote) => {
-    setEssayResponse(essayResponse + `\n> "${quote.quote}"\n`)
+  // Filter thematic quotes to only show relevant HSC texts
+  const getFilteredThematicQuotes = () => {
+    // Filter quotes to show only those from the user's selected book
+    if (!selectedBook) {
+      return []
+    }
+    
+    return Object.entries(thematicQuotes).filter(([textName, quotes]) => {
+      // Match by book title or author
+      const bookTitle = selectedBook.title.toLowerCase()
+      const bookAuthor = selectedBook.author.toLowerCase()
+      const quoteTextName = textName.toLowerCase()
+      
+      return (
+        quoteTextName.includes(bookTitle) ||
+        bookTitle.includes(quoteTextName) ||
+        quoteTextName.includes(bookAuthor) ||
+        bookAuthor.includes(quoteTextName)
+      )
+    })
+  }
+
+  // Show continue dialog if there's saved progress
+  if (showContinueDialog) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Continue Exam?</CardTitle>
+              <CardDescription>
+                You have a saved exam in progress. Would you like to continue where you left off?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <p>Your saved progress will be restored, including:</p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>Current section and question</li>
+                  <li>All responses entered so far</li>
+                  <li>Remaining time</li>
+                </ul>
+              </div>
+            </CardContent>
+            <CardFooter className="flex gap-2">
+              <Button onClick={loadSavedProgress} className="flex-1">
+                Continue Exam
+              </Button>
+              <Button variant="outline" onClick={clearSavedDraft} className="flex-1">
+                Start Fresh
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   // Start screen
@@ -423,13 +786,6 @@ export default function ExamSimulatorPage() {
             <CardContent>
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-medium mb-2">Reading Time: 5 minutes</h3>
-                  <p className="text-sm text-muted-foreground">
-                    During reading time, you can read the questions but cannot write or type any responses.
-                  </p>
-                </div>
-
-                <div>
                   <h3 className="font-medium mb-2">Section I: Unseen Texts (1 hour)</h3>
                   <p className="text-sm text-muted-foreground">
                     This section contains multiple unseen texts from different genres with short-answer questions worth
@@ -449,7 +805,7 @@ export default function ExamSimulatorPage() {
                   <div>
                     <h3 className="font-medium">Total Exam Time: 2 hours</h3>
                     <p className="text-sm text-muted-foreground">
-                      Plus 5 minutes reading time at the beginning of the exam.
+                      Practice with individual sections or the complete exam.
                     </p>
                   </div>
                   <div className="space-x-2">
@@ -457,30 +813,27 @@ export default function ExamSimulatorPage() {
                       <Settings className="mr-2 h-4 w-4" />
                       Exam Settings
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setShowMarkingSettingsDialog(true)}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Marking Settings
-                    </Button>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-between">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button variant="outline" asChild>
               <Link href="/practice-zone">
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Back to Practice Zone
               </Link>
             </Button>
-            <div className="space-x-4">
-              <Button variant="outline" onClick={() => setShowInstructions(true)}>
-                <Info className="mr-2 h-4 w-4" />
-                View Instructions
-              </Button>
-              <Button onClick={() => startExam(true)}>Start Exam Simulation</Button>
-            </div>
+            <Button variant="outline" asChild>
+              <Link href="/practice-zone/past-submissions">
+                Past Submissions
+              </Link>
+            </Button>
+            <Button onClick={startExam} className="bg-primary hover:bg-primary/90">
+              Start Exam Simulation
+            </Button>
           </div>
         </div>
 
@@ -492,6 +845,23 @@ export default function ExamSimulatorPage() {
               <DialogDescription>Adjust the exam parameters for your practice session.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="exam-sections">Exam Sections</Label>
+                <Select
+                  value={selectedSections}
+                  onValueChange={(value) => setSelectedSections(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sections to include" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="section1">Section I Only (Unseen Texts)</SelectItem>
+                    <SelectItem value="section2">Section II Only (Essay)</SelectItem>
+                    <SelectItem value="both">Both Sections (Full Exam)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="exam-time">Total Exam Time (minutes)</Label>
                 <Select
@@ -511,10 +881,7 @@ export default function ExamSimulatorPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch id="reading-time" defaultChecked />
-                <Label htmlFor="reading-time">Include 5 minutes reading time</Label>
-              </div>
+
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowSettingsDialog(false)}>
@@ -525,299 +892,14 @@ export default function ExamSimulatorPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Instructions Dialog */}
-        <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>HSC Paper 1 Examination Instructions</DialogTitle>
-              <DialogDescription>Official instructions for the English Standard and Advanced Paper 1</DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-medium mb-2">General Instructions</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-sm">
-                    <li>Reading time – 5 minutes</li>
-                    <li>Working time – 2 hours</li>
-                    <li>Write using black pen</li>
-                    <li>A dictionary is not permitted</li>
-                    <li>Write your Centre Number and Student Number at the top of your response sheets</li>
-                  </ul>
-                </div>
 
-                <div>
-                  <h3 className="font-medium mb-2">Section I – 20 marks (suggested time: 1 hour)</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-sm">
-                    <li>Attempt Questions 1–7</li>
-                    <li>Allow about 1 hour for this section</li>
-                    <li>
-                      Answer the questions in the spaces provided. These spaces provide guidance for the expected length
-                      of response.
-                    </li>
-                  </ul>
-                </div>
 
-                <div>
-                  <h3 className="font-medium mb-2">Section II – 20 marks (suggested time: 1 hour)</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-sm">
-                    <li>Attempt ONE question from Questions 8–10</li>
-                    <li>Allow about 1 hour for this section</li>
-                    <li>Answer the question in a SEPARATE writing booklet. Extra writing booklets are available.</li>
-                    <li>
-                      In your answer you will be assessed on how well you:
-                      <ul className="list-disc pl-5 mt-1">
-                        <li>demonstrate understanding of human experiences in texts</li>
-                        <li>analyze, explain and assess the ways human experiences are represented in texts</li>
-                        <li>
-                          organize, develop and express ideas using language appropriate to audience, purpose and form
-                        </li>
-                      </ul>
-                    </li>
-                  </ul>
-                </div>
 
-                <div>
-                  <h3 className="font-medium mb-2">Important Notes</h3>
-                  <ul className="list-disc pl-5 space-y-1 text-sm">
-                    <li>
-                      This simulator is designed to replicate the HSC examination experience as closely as possible in a
-                      digital format. The timing, structure, and question types match the official HSC Paper 1
-                      examination.
-                    </li>
-                    <li>
-                      In the real HSC exam, you would write with pen on paper. In this simulator, you will type your
-                      responses.
-                    </li>
-                    <li>
-                      Your responses will be saved automatically, but you should submit each section when you are
-                      finished.
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </ScrollArea>
-            <DialogFooter>
-              <Button onClick={() => setShowInstructions(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Marking Settings Dialog */}
-        <Dialog open={showMarkingSettingsDialog} onOpenChange={setShowMarkingSettingsDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>AI Marking Settings</DialogTitle>
-              <DialogDescription>
-                Customize how the AI marks your essay responses. These settings will affect the detailed feedback you receive.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <div>
-                <h3 className="text-sm font-medium mb-4">Marking Criteria Weighting (%)</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="understanding">Understanding of text and concepts</Label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="understanding"
-                        type="range"
-                        min="10"
-                        max="40"
-                        value={customMarkingCriteria.understanding}
-                        onChange={(e) =>
-                          setCustomMarkingCriteria((prev) => ({
-                            ...prev,
-                            understanding: Number.parseInt(e.target.value),
-                          }))
-                        }
-                        className="flex-1"
-                      />
-                      <span className="w-12 text-sm font-medium">{customMarkingCriteria.understanding}%</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="analysis">Analysis of literary techniques</Label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="analysis"
-                        type="range"
-                        min="10"
-                        max="40"
-                        value={customMarkingCriteria.analysis}
-                        onChange={(e) =>
-                          setCustomMarkingCriteria((prev) => ({
-                            ...prev,
-                            analysis: Number.parseInt(e.target.value),
-                          }))
-                        }
-                        className="flex-1"
-                      />
-                      <span className="w-12 text-sm font-medium">{customMarkingCriteria.analysis}%</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="response">Quality of response to question</Label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="response"
-                        type="range"
-                        min="10"
-                        max="40"
-                        value={customMarkingCriteria.response}
-                        onChange={(e) =>
-                          setCustomMarkingCriteria((prev) => ({
-                            ...prev,
-                            response: Number.parseInt(e.target.value),
-                          }))
-                        }
-                        className="flex-1"
-                      />
-                      <span className="w-12 text-sm font-medium">{customMarkingCriteria.response}%</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="expression">Structure and expression</Label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        id="expression"
-                        type="range"
-                        min="10"
-                        max="40"
-                        value={customMarkingCriteria.expression}
-                        onChange={(e) =>
-                          setCustomMarkingCriteria((prev) => ({
-                            ...prev,
-                            expression: Number.parseInt(e.target.value),
-                          }))
-                        }
-                        className="flex-1"
-                      />
-                      <span className="w-12 text-sm font-medium">{customMarkingCriteria.expression}%</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Total: {Object.values(customMarkingCriteria).reduce((sum, val) => sum + val, 0)}%
-                  {Object.values(customMarkingCriteria).reduce((sum, val) => sum + val, 0) !== 100 && 
-                    " (Should equal 100%)"}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="custom-prompt">Custom Marking Instructions (Optional)</Label>
-                <textarea
-                  id="custom-prompt"
-                  placeholder="Add any specific instructions for the AI marker, such as particular focus areas or text-specific considerations..."
-                  value={customMarkingPrompt}
-                  onChange={(e) => setCustomMarkingPrompt(e.target.value)}
-                  className="w-full h-24 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Example: "Focus particularly on analysis of symbolism and imagery" or "Consider this is a student's first attempt at this text type"
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2 p-3 bg-muted rounded-md">
-                <Info className="h-4 w-4 text-blue-500" />
-                <p className="text-sm">
-                  These settings will be applied when the AI marks your essay. The default weightings follow standard HSC marking guidelines.
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setCustomMarkingCriteria({ understanding: 25, analysis: 25, response: 25, expression: 25 })
-                  setCustomMarkingPrompt("")
-                }}
-              >
-                Reset to Default
-              </Button>
-              <Button onClick={() => setShowMarkingSettingsDialog(false)}>
-                Apply Settings
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     )
   }
 
-  // Reading time screen
-  if (readingTimeActive) {
-    return (
-      <div className="flex flex-col h-screen">
-        {/* Fixed header */}
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
-          <div className="container flex h-14 items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <span className="font-medium">HSC Paper 1 Examination</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 bg-muted px-3 py-1 rounded-md">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Reading Time: {formatTime(remainingTime)}</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={pauseExam}>
-                {isPaused ? (
-                  <>
-                    <Play className="mr-2 h-4 w-4" /> Resume
-                  </>
-                ) : (
-                  <>
-                    <Pause className="mr-2 h-4 w-4" /> Pause
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </header>
 
-        <div className="container mx-auto px-4 py-12 flex-1">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl font-bold mb-6">Reading Time</h1>
-            <div className="bg-muted p-6 rounded-lg mb-8">
-              <h2 className="text-xl font-semibold mb-4">Instructions:</h2>
-              <ul className="text-left space-y-2">
-                <li className="flex items-start">
-                  <span className="text-primary mr-2">•</span>
-                  <span>You have 5 minutes of reading time</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary mr-2">•</span>
-                  <span>During this time, you may read the questions but cannot write or type any responses</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary mr-2">•</span>
-                  <span>Use this time to familiarize yourself with the exam structure and questions</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary mr-2">•</span>
-                  <span>Writing time will begin automatically when reading time expires</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex justify-center">
-              <Button
-                onClick={() => {
-                  setReadingTimeActive(false)
-                  setCurrentSection("sectionI")
-                  setRemainingTime(customExamTime * 60)
-                }}
-              >
-                Skip Reading Time
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   // Section I: Unseen Texts
   if (currentSection === "sectionI" && !examSubmitted) {
@@ -860,9 +942,25 @@ export default function ExamSimulatorPage() {
           <div className="container flex h-14 items-center justify-between">
             <div className="flex items-center space-x-4">
               <span className="font-medium">Section I: Unseen Texts</span>
-              <Badge>
-                Text {currentTextIndex + 1} of {unseenTexts.length}
-              </Badge>
+              <span className="text-sm text-muted-foreground">
+                Question {currentQuestionIndex + 1} of {currentText.questions.length}
+              </span>
+              {/* Autosave indicator */}
+              {autoSaveStatus && (
+                <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                  {autoSaveStatus === "saving" ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                      <span className="text-green-600">Saved</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <div
@@ -873,22 +971,35 @@ export default function ExamSimulatorPage() {
                 <Clock className="h-4 w-4" />
                 <span className="text-sm font-medium">Time Remaining: {formatTime(remainingTime)}</span>
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={pauseExam}>
-                      {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{isPaused ? "Resume Exam" : "Pause Exam"}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <div className="flex items-center space-x-4">
+                <Button variant="outline" size="sm" onClick={() => setShowQuestionNavigation(!showQuestionNavigation)}>
+                  {showQuestionNavigation ? (
+                    <>
+                      <X className="mr-2 h-4 w-4" /> Hide Navigation
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="mr-2 h-4 w-4" /> Show All Questions
+                    </>
+                  )}
+                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="sm" onClick={pauseExam}>
+                        {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isPaused ? "Resume Exam" : "Pause Exam"}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </div>
         </header>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left panel - Unseen text (50%) */}
+          {/* Left panel - Unseen text */}
           <div className="w-1/2 overflow-y-auto p-6 border-r">
             <div className="max-w-2xl mx-auto">
               <div className="mb-4">
@@ -922,7 +1033,7 @@ export default function ExamSimulatorPage() {
             </div>
           </div>
 
-          {/* Right panel - Question and response area (50%) */}
+          {/* Right panel - Question and response area */}
           <div className="w-1/2 overflow-y-auto p-6">
             <div className="max-w-2xl mx-auto">
               <div className="bg-muted p-4 rounded-lg mb-6">
@@ -965,16 +1076,48 @@ export default function ExamSimulatorPage() {
                 )}
               </div>
 
-              <div className="mt-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">Section I Progress</span>
-                  <span className="text-sm text-muted-foreground">
-                    Question {currentQuestionIndex + 1}/{currentText.questions.length} | Text {currentTextIndex + 1}/
-                    {unseenTexts.length}
-                  </span>
+              {/* Question Navigation */}
+              {showQuestionNavigation && (
+                <div className="mt-6 border-t pt-6">
+                  <h3 className="font-medium mb-4">Question Navigation</h3>
+                  <div className="space-y-4">
+                    {unseenTexts.map((text, textIndex) => (
+                      <div key={text.id} className="space-y-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">
+                          Text {textIndex + 1}: {text.title}
+                        </h4>
+                        <div className="grid grid-cols-6 gap-2">
+                          {text.questions.map((question, questionIndex) => {
+                            const responseKey = `${text.id}-${question.id}`
+                            const isAnswered = responses[responseKey] && responses[responseKey].trim() !== ''
+                            const isCurrent = textIndex === currentTextIndex && questionIndex === currentQuestionIndex
+                            
+                            return (
+                              <button
+                                key={question.id}
+                                onClick={() => navigateToQuestion(textIndex, questionIndex)}
+                                className={`
+                                  h-10 w-10 rounded-md text-sm font-medium border transition-colors
+                                  ${isCurrent 
+                                    ? 'bg-primary text-primary-foreground border-primary' 
+                                    : isAnswered 
+                                    ? 'bg-green-500 text-white border-green-500 hover:bg-green-600' 
+                                    : 'bg-background border-border hover:bg-muted'
+                                  }
+                                `}
+                              >
+                                {questionIndex + 1}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <Progress value={calculateProgress()} className="h-2" />
-              </div>
+              )}
+
+
             </div>
           </div>
         </div>
@@ -985,8 +1128,10 @@ export default function ExamSimulatorPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Submit Section I?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to submit Section I and move to Section II? You will not be able to return to
-                Section I once submitted.
+                {selectedSections === "both" 
+                  ? "Are you sure you want to submit Section I and move to Section II? You will not be able to return to Section I once submitted."
+                  : "Are you sure you want to submit Section I? This will complete your exam."
+                }
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1010,7 +1155,7 @@ export default function ExamSimulatorPage() {
           <p className="text-muted-foreground mb-4">
             There are no essay questions available for Section II of the exam.
           </p>
-          <Button onClick={() => setCurrentSection("sectionI")}>Back to Section I</Button>
+          <Button onClick={() => setExamStarted(false)}>Back to Start</Button>
         </div>
       )
     }
@@ -1022,6 +1167,22 @@ export default function ExamSimulatorPage() {
           <div className="container flex h-14 items-center justify-between">
             <div className="flex items-center space-x-4">
               <span className="font-medium">Section II: Essay</span>
+              {/* Autosave indicator */}
+              {autoSaveStatus && (
+                <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                  {autoSaveStatus === "saving" ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                      <span className="text-green-600">Saved</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <div
@@ -1070,7 +1231,7 @@ export default function ExamSimulatorPage() {
 
                 <ScrollArea className="h-[calc(100vh-180px)]">
                   <Accordion type="multiple" className="w-full">
-                    {Object.entries(thematicQuotes).map(([text, quotes]) => (
+                    {getFilteredThematicQuotes().map(([text, quotes]) => (
                       <AccordionItem key={text} value={text}>
                         <AccordionTrigger className="text-sm font-medium">{text}</AccordionTrigger>
                         <AccordionContent>
@@ -1096,6 +1257,22 @@ export default function ExamSimulatorPage() {
                       </AccordionItem>
                     ))}
                   </Accordion>
+                  {getFilteredThematicQuotes().length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="text-sm">
+                        {selectedBook 
+                          ? `No quotes available for ${selectedBook.title}.`
+                          : "No quotes available."
+                        }
+                      </p>
+                      <p className="text-xs mt-1">
+                        {selectedBook 
+                          ? `Add quotes for ${selectedBook.title} in the admin panel to see them here.`
+                          : "Please select a book in your profile to see relevant quotes."
+                        }
+                      </p>
+                    </div>
+                  )}
                 </ScrollArea>
               </div>
             </div>
@@ -1141,57 +1318,70 @@ export default function ExamSimulatorPage() {
                 <textarea
                   className="w-full h-[calc(100vh-240px)] p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-serif"
                   value={essayResponse}
-                  onChange={(e) => setEssayResponse(e.target.value)}
+                  onChange={(e) => handleEssayResponseChange(e.target.value)}
                   placeholder="Begin your essay here..."
                   disabled={isPaused}
                 />
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setShowSubmitSectionDialog(true)}>
-                  Return to Section I
+                {selectedSections === "both" && (
+                  <Button variant="outline" onClick={() => setShowSubmitSectionDialog(true)}>
+                    Return to Section I
+                  </Button>
+                )}
+                <Button onClick={() => setShowSubmitExamDialog(true)}>
+                  {selectedSections === "section2" ? "Submit Essay" : "Submit Entire Exam"}
                 </Button>
-                <Button onClick={() => setShowSubmitExamDialog(true)}>Submit Entire Exam</Button>
               </div>
             </div>
           </div>
         </div>
 
         {/* Submit Section Dialog */}
-        <AlertDialog open={showSubmitSectionDialog} onOpenChange={setShowSubmitSectionDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Return to Section I?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to return to Section I? Your essay progress will be saved.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  setCurrentSection("sectionI")
-                  setShowSubmitSectionDialog(false)
-                }}
-              >
-                Return to Section I
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {selectedSections === "both" && (
+          <AlertDialog open={showSubmitSectionDialog} onOpenChange={setShowSubmitSectionDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Return to Section I?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to return to Section I? Your essay progress will be saved.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setCurrentSection("sectionI")
+                    setShowSubmitSectionDialog(false)
+                  }}
+                >
+                  Return to Section I
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
 
         {/* Submit Exam Dialog */}
         <AlertDialog open={showSubmitExamDialog} onOpenChange={setShowSubmitExamDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Submit Entire Exam?</AlertDialogTitle>
+              <AlertDialogTitle>
+                {selectedSections === "section2" ? "Submit Essay?" : "Submit Entire Exam?"}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to submit your entire exam? This action cannot be undone.
+                {selectedSections === "section2" 
+                  ? "Are you sure you want to submit your essay? This action cannot be undone."
+                  : "Are you sure you want to submit your entire exam? This action cannot be undone."
+                }
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleExamSubmit}>Submit Exam</AlertDialogAction>
+              <AlertDialogAction onClick={handleExamSubmit}>
+                {selectedSections === "section2" ? "Submit Essay" : "Submit Exam"}
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -1358,30 +1548,7 @@ export default function ExamSimulatorPage() {
                         </div>
                       </div>
 
-                      <Separator />
 
-                      <div>
-                        <h3 className="font-medium mb-2">Time Management</h3>
-                        <div className="flex items-center space-x-4">
-                          <div className="w-1/2">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-sm">Section I</span>
-                              <span className="text-sm font-medium">58 minutes</span>
-                            </div>
-                            <Progress value={(58 / 60) * 100} className="h-2 mb-1" />
-                          </div>
-                          <div className="w-1/2">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-sm">Section II</span>
-                              <span className="text-sm font-medium">62 minutes</span>
-                            </div>
-                            <Progress value={(62 / 60) * 100} className="h-2 mb-1" />
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Good time allocation between sections, with slightly more time spent on the essay.
-                        </p>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

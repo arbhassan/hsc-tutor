@@ -9,6 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle, XCircle, AlertCircle, Star, RefreshCw, X } from "lucide-react"
+import { useProgressTracker } from "@/hooks/use-progress-tracker"
+import { useAuth } from "@/lib/auth-context"
 
 interface GradingCriteria {
   section: string
@@ -29,7 +31,7 @@ interface EssayGrade {
 
 interface EssayGradingModalProps {
   isOpen: boolean
-  onClose: () => void
+  onClose: (finalScore?: number) => void
   essayContent: string
   question: string
   selectedText: string
@@ -47,6 +49,9 @@ export default function EssayGradingModal({
   const [isGrading, setIsGrading] = useState(false)
   const [grade, setGrade] = useState<EssayGrade | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const { user } = useAuth()
+  const { trackEssayComponents } = useProgressTracker()
 
   const gradeEssay = async () => {
     setIsGrading(true)
@@ -110,6 +115,35 @@ export default function EssayGradingModal({
 
       const gradeData = await response.json()
       setGrade(gradeData)
+
+      // Track essay component progress if user is authenticated
+      if (user?.id && gradeData.criteria) {
+        try {
+          const componentScores = {}
+          
+          // Map the grading criteria to component types
+          gradeData.criteria.forEach((criterion: any) => {
+            const sectionName = criterion.section?.toLowerCase()
+            const percentage = Math.round((criterion.score / criterion.maxScore) * 100)
+            
+            if (sectionName?.includes('introduction')) {
+              componentScores.introduction = percentage
+            } else if (sectionName?.includes('body')) {
+              componentScores.body_paragraphs = percentage
+            } else if (sectionName?.includes('conclusion')) {
+              componentScores.conclusion = percentage
+            } else if (sectionName?.includes('question')) {
+              componentScores.question_analysis = percentage
+            }
+          })
+          
+          if (Object.keys(componentScores).length > 0) {
+            await trackEssayComponents(componentScores)
+          }
+        } catch (trackingError) {
+          console.error('Failed to track essay component progress:', trackingError)
+        }
+      }
     } catch (err) {
       setError('Failed to grade essay. Please try again.')
       console.error('Grading error:', err)
@@ -118,10 +152,10 @@ export default function EssayGradingModal({
     }
   }
 
-  const handleClose = () => {
+  const handleClose = (finalScore?: number) => {
     setGrade(null)
     setError(null)
-    onClose()
+    onClose(finalScore)
   }
 
   const getScoreColor = (score: number, maxScore: number) => {
@@ -147,7 +181,7 @@ export default function EssayGradingModal({
             Essay Grading Results
           </DialogTitle>
           <DialogDescription>
-            AI-powered essay assessment based on HSC marking criteria
+            Essay assessment based on HSC marking criteria
           </DialogDescription>
         </DialogHeader>
 
@@ -319,12 +353,9 @@ export default function EssayGradingModal({
 
         <div className="flex justify-end items-center pt-4 border-t">
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={handleClose}>
-              Close
-            </Button>
             {grade && (
-              <Button onClick={handleClose}>
-                Start New Essay
+              <Button onClick={() => handleClose(Math.round((grade.totalScore / grade.maxScore) * 100))}>
+                Save Score & Close
               </Button>
             )}
           </div>

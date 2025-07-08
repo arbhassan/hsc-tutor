@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +13,9 @@ import { Loader2, BookOpen, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { getBooks, type BookInterface } from "@/lib/books"
 
-export default function SignUpPage() {
-  const [step, setStep] = useState(1) // 1: Details, 2: Book Selection
+function SignUpForm() {
+  const searchParams = useSearchParams()
+  const step = parseInt(searchParams.get('step') || '1')
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -28,6 +29,13 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  // Ensure proper URL structure
+  useEffect(() => {
+    if (!searchParams.get('step')) {
+      router.replace('/auth/signup?step=1')
+    }
+  }, [router, searchParams])
 
   // Load books when component mounts
   useEffect(() => {
@@ -68,7 +76,7 @@ export default function SignUpPage() {
       return
     }
     setError("")
-    setStep(2)
+    router.push('/auth/signup?step=2')
   }
 
   const handleBookSelect = (book: BookInterface) => {
@@ -313,7 +321,7 @@ export default function SignUpPage() {
               )}
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button type="button" variant="outline" onClick={() => setStep(1)}>
+              <Button type="button" variant="outline" onClick={() => router.push('/auth/signup?step=1')}>
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
@@ -332,5 +340,22 @@ export default function SignUpPage() {
         )}
       </Card>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
   )
 } 

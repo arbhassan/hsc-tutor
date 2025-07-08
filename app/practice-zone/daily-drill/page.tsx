@@ -14,6 +14,9 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Separator } from "@/components/ui/separator"
+import { useProgressTracker } from "@/hooks/use-progress-tracker"
+import { useAuth } from "@/lib/auth-context"
 
 // Sample unseen texts for demonstration
 const unseenTexts = [
@@ -416,6 +419,9 @@ export default function DailyDrillPage() {
   const [feedback, setFeedback] = useState({})
   const [improvedResponses, setImprovedResponses] = useState({})
 
+  const { user } = useAuth()
+  const { trackShortAnswerDetailed, trackStudySession } = useProgressTracker()
+
   const currentText = unseenTexts[currentTextIndex]
 
   const getWordCount = (text) => {
@@ -436,7 +442,7 @@ export default function DailyDrillPage() {
     )
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (allQuestionsAnswered()) {
       setSubmitted(true)
 
@@ -455,6 +461,64 @@ export default function DailyDrillPage() {
 
       setFeedback(newFeedback)
       setImprovedResponses(newImprovedResponses)
+
+      // Calculate total score
+      const totalScore = Object.values(newFeedback).reduce((sum: number, f: any) => sum + (f?.overallScore || 0), 0)
+      const maxScore = currentText.questions.reduce((sum, q) => sum + q.marks, 0)
+
+      // Track progress and save submission if user is authenticated
+      if (user?.id) {
+        try {
+          // Track progress for each question
+          for (const question of currentText.questions) {
+            const responseFeedback = newFeedback[question.id]
+            if (responseFeedback) {
+              await trackShortAnswerDetailed(
+                question.marks, // marker type (2, 3, 4, or 5 marks)
+                responseFeedback.overallScore, // actual score achieved
+                question.marks, // max possible score
+                2.0 // estimated completion time in minutes
+              )
+            }
+          }
+
+          // Track study session time (estimated 10 minutes for the drill)
+          await trackStudySession(10)
+
+          // Save submission to database
+          const submissionData = {
+            submissionType: 'daily_drill',
+            contentType: 'questions',
+            title: `Daily Drill - ${currentText.title}`,
+            totalScore,
+            maxScore,
+            completionTimeMinutes: 10, // estimated time
+            questions: currentText.questions.map((question, index) => ({
+              questionText: question.text,
+              userResponse: responses[question.id] || '',
+              aiFeedback: newFeedback[question.id]?.specificFeedback || '',
+              marksAwarded: newFeedback[question.id]?.overallScore || 0,
+              maxMarks: question.marks,
+              textTitle: currentText.title,
+              textAuthor: currentText.author,
+              textType: currentText.type,
+              textContent: currentText.content
+            }))
+          }
+
+          const submissionResponse = await fetch('/api/submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submissionData)
+          })
+
+          if (!submissionResponse.ok) {
+            console.error('Failed to save submission:', await submissionResponse.text())
+          }
+        } catch (error) {
+          console.error('Failed to track Daily Drill progress or save submission:', error)
+        }
+      }
     }
   }
 
@@ -505,7 +569,7 @@ export default function DailyDrillPage() {
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
-                <span>Submit your answers for AI-powered feedback</span>
+                <span>Submit your answers for feedback</span>
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
@@ -537,6 +601,11 @@ export default function DailyDrillPage() {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/practice-zone/past-submissions">
+                Past Submissions
+              </Link>
+            </Button>
             <span className="text-sm font-medium">
               Text {currentTextIndex + 1} of {unseenTexts.length}
             </span>
@@ -644,7 +713,7 @@ export default function DailyDrillPage() {
               <>
                 <Tabs defaultValue="feedback" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="feedback">AI Feedback</TabsTrigger>
+                    <TabsTrigger value="feedback">Feedback</TabsTrigger>
                     <TabsTrigger value="improved">Improved Answers</TabsTrigger>
                     <TabsTrigger value="your-answers">Your Answers</TabsTrigger>
                   </TabsList>
@@ -666,17 +735,15 @@ export default function DailyDrillPage() {
                             <h4 className="font-medium mb-2">PETAL Structure Analysis:</h4>
                             <div className="space-y-2">
                               {Object.entries(feedback[question.id]?.petalAnalysis || {}).map(([key, analysis]) => (
-                                <div key={key} className="flex items-start">
+                                <div key={key} className="flex items-center">
                                   <div className="w-20 font-medium capitalize">{key}:</div>
-                                  <div className="flex-1">
-                                    <div className="flex items-center">
-                                      {analysis.present ? (
-                                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                      ) : (
-                                        <AlertCircle className="h-4 w-4 text-amber-500 mr-2" />
-                                      )}
-                                      <span className="text-sm">{analysis.feedback}</span>
-                                    </div>
+                                  <div className="flex items-center flex-1">
+                                    {analysis.present ? (
+                                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                                    ) : (
+                                      <AlertCircle className="h-4 w-4 text-amber-500 mr-2 flex-shrink-0" />
+                                    )}
+                                    <span className="text-sm">{analysis.feedback}</span>
                                   </div>
                                 </div>
                               ))}

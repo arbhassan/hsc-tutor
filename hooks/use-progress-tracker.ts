@@ -4,7 +4,9 @@ import {
   updateShortAnswerProgress, 
   updateEssayProgress, 
   updateStudyStreak, 
-  addStudyTime 
+  addStudyTime,
+  updateShortAnswerProgressDetailed,
+  updateEssayComponentProgress
 } from '@/lib/services/progress-service'
 
 export function useProgressTracker() {
@@ -43,6 +45,21 @@ export function useProgressTracker() {
     await updateStudyStreak(user.id)
   }
 
+  const trackShortAnswerDetailed = async (markerType: number, score: number, maxScore: number, completionTime: number) => {
+    if (!user?.id) return
+    await updateShortAnswerProgressDetailed(user.id, markerType, score, maxScore, completionTime)
+  }
+
+  const trackEssayComponents = async (componentScores: {
+    introduction?: number,
+    body_paragraphs?: number,
+    conclusion?: number,
+    question_analysis?: number
+  }) => {
+    if (!user?.id) return
+    await updateEssayComponentProgress(user.id, componentScores)
+  }
+
   return {
     trackFlashcard,
     trackFlashcardAttempt,
@@ -50,5 +67,7 @@ export function useProgressTracker() {
     trackEssay,
     trackEssayCompletion,
     trackStudySession,
+    trackShortAnswerDetailed,
+    trackEssayComponents,
   }
 } 

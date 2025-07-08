@@ -4,7 +4,9 @@ import type {
   FlashcardProgress, 
   ShortAnswerProgress, 
   EssayProgress, 
-  WeeklyReport 
+  WeeklyReport,
+  ShortAnswerProgressDetailed,
+  EssayComponentProgress
 } from "@/lib/types/database"
 
 export async function getUserProgress(userId: string): Promise<UserProgress | null> {
@@ -14,14 +16,15 @@ export async function getUserProgress(userId: string): Promise<UserProgress | nu
     .from('user_progress')
     .select('*')
     .eq('user_id', userId)
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+    .limit(1)
 
   if (error) {
     console.error('Error fetching user progress:', error)
     return null
   }
 
-  return data
+  return data && data.length > 0 ? data[0] : null
 }
 
 export async function getFlashcardProgress(userId: string): Promise<FlashcardProgress[]> {
@@ -47,14 +50,15 @@ export async function getShortAnswerProgress(userId: string): Promise<ShortAnswe
     .from('short_answer_progress')
     .select('*')
     .eq('user_id', userId)
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+    .limit(1)
 
   if (error) {
     console.error('Error fetching short answer progress:', error)
     return null
   }
 
-  return data
+  return data && data.length > 0 ? data[0] : null
 }
 
 export async function getEssayProgress(userId: string): Promise<EssayProgress | null> {
@@ -64,14 +68,15 @@ export async function getEssayProgress(userId: string): Promise<EssayProgress | 
     .from('essay_progress')
     .select('*')
     .eq('user_id', userId)
-    .maybeSingle()
+    .order('updated_at', { ascending: false })
+    .limit(1)
 
   if (error) {
     console.error('Error fetching essay progress:', error)
     return null
   }
 
-  return data
+  return data && data.length > 0 ? data[0] : null
 }
 
 export async function getWeeklyReport(userId: string): Promise<WeeklyReport | null> {
@@ -94,80 +99,89 @@ export async function getWeeklyReport(userId: string): Promise<WeeklyReport | nu
   return data
 }
 
+export async function getShortAnswerProgressDetailed(userId: string): Promise<ShortAnswerProgressDetailed[]> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('short_answer_progress_detailed')
+    .select('*')
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('Error fetching detailed short answer progress:', error)
+    return []
+  }
+
+  return data || []
+}
+
+export async function getEssayComponentProgress(userId: string): Promise<EssayComponentProgress[]> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('essay_component_progress')
+    .select('*')
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('Error fetching essay component progress:', error)
+    return []
+  }
+
+  return data || []
+}
+
 // Initialize user progress data when a new user signs up
 export async function initializeUserProgress(userId: string): Promise<void> {
   const supabase = createClient()
 
   try {
-    // Create initial user progress record with sample data
+    // Create initial user progress record with real starting values
     const { error: progressError } = await supabase
       .from('user_progress')
       .insert({
         user_id: userId,
-        study_streak: Math.floor(Math.random() * 5) + 1, // 1-6 days
-        total_study_time: Math.floor(Math.random() * 15) + 5, // 5-20 hours
-        completion_rate: Math.floor(Math.random() * 30) + 60, // 60-90%
-        overall_mastery: Math.floor(Math.random() * 25) + 50 // 50-75%
+        study_streak: 0, // Start with 0 days
+        total_study_time: 0.0, // Start with 0 hours
+        completion_rate: 0, // Start with 0%
+        overall_mastery: 0 // Start with 0%
       })
 
     if (progressError) {
       console.error('Error initializing user progress:', progressError)
     }
 
-    // Create initial short answer progress record with sample data
+    // Create initial short answer progress record starting with real values
     const { error: shortAnswerError } = await supabase
       .from('short_answer_progress')
       .insert({
         user_id: userId,
-        total_questions: Math.floor(Math.random() * 15) + 5, // 5-20 questions
-        average_score: Math.floor(Math.random() * 30) + 50, // 50-80%
-        average_completion_time: 3 + Math.random() * 3, // 3-6 minutes
-        multiple_attempts_rate: Math.floor(Math.random() * 30) + 10 // 10-40%
+        total_questions: 0, // Start with 0 questions
+        average_score: 0, // Start with 0%
+        average_completion_time: 0.0, // Start with 0 minutes
+        multiple_attempts_rate: 0 // Start with 0%
       })
 
     if (shortAnswerError) {
       console.error('Error initializing short answer progress:', shortAnswerError)
     }
 
-    // Create initial essay progress record with sample data
+    // Create initial essay progress record starting with real values
     const { error: essayError } = await supabase
       .from('essay_progress')
       .insert({
         user_id: userId,
-        total_essays: Math.floor(Math.random() * 5) + 2, // 2-7 essays
-        average_score: Math.floor(Math.random() * 25) + 55, // 55-80%
-        average_word_count: Math.floor(Math.random() * 400) + 800, // 800-1200 words
-        average_quote_usage: 2 + Math.random() * 3 // 2-5 quotes per essay
+        total_essays: 0, // Start with 0 essays
+        average_score: 0, // Start with 0%
+        average_word_count: 0 // Start with 0 words
       })
 
     if (essayError) {
       console.error('Error initializing essay progress:', essayError)
     }
 
-    // Create initial flashcard progress records for different texts with sample data
-    const texts = ['Hamlet', '1984', 'The Great Gatsby', 'Frankenstein', 'Pride & Prejudice', 'Macbeth']
-    const flashcardInserts = texts.map((text, index) => {
-      const totalCards = Math.floor(Math.random() * 30) + 25
-      const masteredCards = Math.floor(totalCards * (0.3 + Math.random() * 0.4)) // 30-70% mastered
-      const accuracy = Math.floor((masteredCards / totalCards) * 100)
-      
-      return {
-        user_id: userId,
-        text_name: text,
-        total_flashcards: totalCards,
-        mastered_flashcards: masteredCards,
-        average_accuracy: accuracy,
-        completion_time: 1.5 + Math.random() * 2 // 1.5-3.5 seconds
-      }
-    })
-
-    const { error: flashcardError } = await supabase
-      .from('flashcard_progress')
-      .insert(flashcardInserts)
-
-    if (flashcardError) {
-      console.error('Error initializing flashcard progress:', flashcardError)
-    }
+    // Don't create initial flashcard progress records - they will be created when user first uses flashcards
+    // This prevents cluttering progress with books the user hasn't selected
 
   } catch (error) {
     console.error('Error in initializeUserProgress:', error)
@@ -232,12 +246,8 @@ export async function updateShortAnswerProgress(
   const supabase = createClient()
 
   try {
-    // Get current progress
-    const { data: currentProgress } = await supabase
-      .from('short_answer_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle()
+    // Get current progress (using the same method as getShortAnswerProgress)
+    const currentProgress = await getShortAnswerProgress(userId)
 
     if (currentProgress) {
       const totalQuestions = (currentProgress.total_questions || 0) + 1
@@ -256,7 +266,7 @@ export async function updateShortAnswerProgress(
           multiple_attempts_rate: newMultipleAttemptsRate,
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', userId)
+        .eq('id', currentProgress.id) // Update by ID instead of user_id to target specific record
 
       if (error) {
         console.error('Error updating short answer progress:', error)
@@ -279,12 +289,17 @@ export async function updateEssayProgress(
   const supabase = createClient()
 
   try {
-    // Get current progress
-    const { data: currentProgress } = await supabase
-      .from('essay_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle()
+    console.log('updateEssayProgress called with:', {
+      userId,
+      score,
+      wordCount,
+      quoteCount
+    })
+
+    // Get current progress (using the same method as getEssayProgress)
+    const currentProgress = await getEssayProgress(userId)
+    
+    console.log('Current essay progress:', currentProgress)
 
     if (currentProgress) {
       const totalEssays = (currentProgress.total_essays || 0) + 1
@@ -292,8 +307,13 @@ export async function updateEssayProgress(
       const newAverageScore = Math.round((currentTotalScore + score) / totalEssays)
       const currentTotalWords = (currentProgress.average_word_count || 0) * (currentProgress.total_essays || 0)
       const newAverageWordCount = Math.round((currentTotalWords + wordCount) / totalEssays)
-      const currentTotalQuotes = (currentProgress.average_quote_usage || 0) * (currentProgress.total_essays || 0)
-      const newAverageQuoteUsage = (currentTotalQuotes + quoteCount) / totalEssays
+
+      console.log('Calculated update values:', {
+        totalEssays,
+        newAverageScore,
+        newAverageWordCount,
+        currentProgressId: currentProgress.id
+      })
 
       const { error } = await supabase
         .from('essay_progress')
@@ -301,14 +321,17 @@ export async function updateEssayProgress(
           total_essays: totalEssays,
           average_score: newAverageScore,
           average_word_count: newAverageWordCount,
-          average_quote_usage: newAverageQuoteUsage,
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', userId)
+        .eq('id', currentProgress.id) // Update by ID instead of user_id to target specific record
 
       if (error) {
         console.error('Error updating essay progress:', error)
+      } else {
+        console.log('Essay progress updated successfully')
       }
+    } else {
+      console.log('No current essay progress found - this might be the issue!')
     }
 
     // Update overall user progress
@@ -322,20 +345,39 @@ export async function updateStudyStreak(userId: string): Promise<void> {
   const supabase = createClient()
 
   try {
-    const { data: currentProgress } = await supabase
-      .from('user_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle()
+    const currentProgress = await getUserProgress(userId)
 
     if (currentProgress) {
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      
+      // Get the last study date from updated_at
+      const lastStudyDate = new Date(currentProgress.updated_at)
+      const lastStudyDay = new Date(lastStudyDate.getFullYear(), lastStudyDate.getMonth(), lastStudyDate.getDate())
+      
+      // Calculate the difference in days
+      const daysDifference = Math.floor((today.getTime() - lastStudyDay.getTime()) / (1000 * 60 * 60 * 24))
+      
+      let newStreak = currentProgress.study_streak || 0
+      
+      if (daysDifference === 0) {
+        // Same day - don't change streak, just update the timestamp
+        newStreak = currentProgress.study_streak || 1
+      } else if (daysDifference === 1) {
+        // Yesterday - increment streak
+        newStreak = (currentProgress.study_streak || 0) + 1
+      } else if (daysDifference > 1 || currentProgress.study_streak === 0) {
+        // More than 1 day gap or first time - reset to 1
+        newStreak = 1
+      }
+
       const { error } = await supabase
         .from('user_progress')
         .update({
-          study_streak: (currentProgress.study_streak || 0) + 1,
+          study_streak: newStreak,
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', userId)
+        .eq('id', currentProgress.id)
 
       if (error) {
         console.error('Error updating study streak:', error)
@@ -350,11 +392,7 @@ export async function addStudyTime(userId: string, timeMinutes: number): Promise
   const supabase = createClient()
 
   try {
-    const { data: currentProgress } = await supabase
-      .from('user_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle()
+    const currentProgress = await getUserProgress(userId)
 
     if (currentProgress) {
       const { error } = await supabase
@@ -363,7 +401,7 @@ export async function addStudyTime(userId: string, timeMinutes: number): Promise
           total_study_time: (currentProgress.total_study_time || 0) + (timeMinutes / 60), // Convert to hours
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', userId)
+        .eq('id', currentProgress.id)
 
       if (error) {
         console.error('Error adding study time:', error)
@@ -371,6 +409,139 @@ export async function addStudyTime(userId: string, timeMinutes: number): Promise
     }
   } catch (error) {
     console.error('Error in addStudyTime:', error)
+  }
+}
+
+export async function updateShortAnswerProgressDetailed(
+  userId: string,
+  markerType: number,
+  score: number,
+  maxScore: number,
+  completionTime: number
+): Promise<void> {
+  const supabase = createClient()
+
+  try {
+    // Get or create detailed progress for this marker type
+    const { data: currentProgress } = await supabase
+      .from('short_answer_progress_detailed')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('marker_type', markerType)
+      .maybeSingle()
+
+    const isCorrect = score >= (maxScore * 0.7) // Consider 70%+ as correct
+    const percentage = Math.round((score / maxScore) * 100)
+
+    if (currentProgress) {
+      // Update existing record
+      const newTotalQuestions = currentProgress.total_questions + 1
+      const newCorrectAnswers = currentProgress.correct_answers + (isCorrect ? 1 : 0)
+      const newAverageScore = Math.round(
+        ((currentProgress.average_score * currentProgress.total_questions) + percentage) / newTotalQuestions
+      )
+
+      const { error } = await supabase
+        .from('short_answer_progress_detailed')
+        .update({
+          total_questions: newTotalQuestions,
+          correct_answers: newCorrectAnswers,
+          average_score: newAverageScore,
+          average_completion_time: completionTime,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('marker_type', markerType)
+
+      if (error) {
+        console.error('Error updating detailed short answer progress:', error)
+      }
+    } else {
+      // Create new record
+      const { error } = await supabase
+        .from('short_answer_progress_detailed')
+        .insert({
+          user_id: userId,
+          marker_type: markerType,
+          total_questions: 1,
+          correct_answers: isCorrect ? 1 : 0,
+          average_score: percentage,
+          average_completion_time: completionTime
+        })
+
+      if (error) {
+        console.error('Error creating detailed short answer progress:', error)
+      }
+    }
+
+    // Also update overall short answer progress
+    await updateShortAnswerProgress(userId, score, completionTime, 1)
+  } catch (error) {
+    console.error('Error in updateShortAnswerProgressDetailed:', error)
+  }
+}
+
+export async function updateEssayComponentProgress(
+  userId: string,
+  componentScores: {
+    introduction?: number,
+    body_paragraphs?: number,
+    conclusion?: number,
+    question_analysis?: number
+  }
+): Promise<void> {
+  const supabase = createClient()
+
+  try {
+    for (const [componentType, score] of Object.entries(componentScores)) {
+      if (score === undefined) continue
+
+      // Get or create component progress
+      const { data: currentProgress } = await supabase
+        .from('essay_component_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('component_type', componentType)
+        .maybeSingle()
+
+      if (currentProgress) {
+        // Update existing record
+        const newTotalAssessments = currentProgress.total_assessments + 1
+        const newAverageScore = Math.round(
+          ((currentProgress.average_score * currentProgress.total_assessments) + score) / newTotalAssessments
+        )
+
+        const { error } = await supabase
+          .from('essay_component_progress')
+          .update({
+            total_assessments: newTotalAssessments,
+            average_score: newAverageScore,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId)
+          .eq('component_type', componentType)
+
+        if (error) {
+          console.error(`Error updating essay component progress for ${componentType}:`, error)
+        }
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('essay_component_progress')
+          .insert({
+            user_id: userId,
+            component_type: componentType,
+            total_assessments: 1,
+            average_score: score
+          })
+
+        if (error) {
+          console.error(`Error creating essay component progress for ${componentType}:`, error)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in updateEssayComponentProgress:', error)
   }
 }
 
@@ -411,17 +582,20 @@ async function updateOverallProgress(userId: string): Promise<void> {
     const completionRate = Math.min(100, overallMastery) // Simplified for now
 
     // Update overall progress
-    const { error } = await supabase
-      .from('user_progress')
-      .update({
-        overall_mastery: overallMastery,
-        completion_rate: completionRate,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId)
+    const currentProgress = await getUserProgress(userId)
+    if (currentProgress) {
+      const { error } = await supabase
+        .from('user_progress')
+        .update({
+          overall_mastery: overallMastery,
+          completion_rate: completionRate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentProgress.id)
 
-    if (error) {
-      console.error('Error updating overall progress:', error)
+      if (error) {
+        console.error('Error updating overall progress:', error)
+      }
     }
   } catch (error) {
     console.error('Error in updateOverallProgress:', error)

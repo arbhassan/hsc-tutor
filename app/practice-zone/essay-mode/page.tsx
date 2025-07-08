@@ -29,20 +29,6 @@ import EssayGradingModal from "@/components/ui/essay-grading-modal"
 // Import books from database
 import { getBooks, type BookInterface } from "@/lib/books"
 
-// Mapping essay themes to quote categories
-const themeToQuoteMapping = {
-  love: ["Individual vs. Society", "Isolation and Alienation", "Wealth and Class"],
-  freedom: ["Individual vs. Society", "Totalitarianism", "Language and Truth"],
-  power: ["Totalitarianism", "Creation and Responsibility", "Wealth and Class", "Revenge"],
-  identity: ["Individual vs. Society", "Isolation and Alienation", "Appearance vs. Reality"],
-  justice: ["Individual vs. Society", "Totalitarianism", "Revenge"],
-  conflict: ["Individual vs. Society", "Totalitarianism", "Revenge", "Creation and Responsibility"],
-  redemption: ["Creation and Responsibility", "Individual vs. Society", "Isolation and Alienation"],
-  nature: ["Nature vs. Science", "Isolation and Alienation", "Creation and Responsibility"],
-  time: ["Language and Truth", "The American Dream"],
-  death: ["Creation and Responsibility", "Revenge", "Isolation and Alienation"]
-}
-
 // Quote interface for database quotes
 interface DatabaseQuote {
   id: number;
@@ -54,93 +40,6 @@ interface DatabaseQuote {
   chapter_reference?: string;
   literary_techniques?: string[];
   importance_level: number;
-}
-
-// Past exam questions organized by theme and text
-const pastExamQuestions = {
-  frankenstein: {
-    power: [
-      "How does Shelley explore the corrupting influence of unchecked power in Frankenstein?",
-      "To what extent does Victor's pursuit of scientific power lead to his downfall?",
-      "Analyze how the creature's powerlessness drives the central conflict in Frankenstein."
-    ],
-    nature: [
-      "Explore the role of nature as both sanctuary and mirror in Frankenstein.",
-      "How does Shelley use natural imagery to reflect the characters' emotional states?",
-      "To what extent does the sublime power of nature contrast with human ambition in Frankenstein?"
-    ],
-    identity: [
-      "How does the creature's search for identity drive the narrative of Frankenstein?",
-      "Analyze the ways in which both Victor and his creature struggle with questions of identity.",
-      "To what extent is Frankenstein a novel about the construction of identity through society?"
-    ],
-    conflict: [
-      "How does Shelley present the conflict between scientific progress and moral responsibility?",
-      "Analyze the internal conflicts that drive Victor's character development.",
-      "To what extent is the conflict between creator and creature inevitable in Frankenstein?"
-    ],
-    justice: [
-      "How does Shelley explore concepts of justice and revenge in Frankenstein?",
-      "To what extent does the creature's quest for justice justify his actions?",
-      "Analyze how the absence of legal justice shapes the events of Frankenstein."
-    ]
-  },
-  "1984": {
-    power: [
-      "How does Orwell present the nature of totalitarian power in 1984?",
-      "Analyze the ways in which the Party maintains its power over individuals.",
-      "To what extent is power the central theme of 1984?"
-    ],
-    freedom: [
-      "How does Orwell explore the concept of individual freedom in 1984?",
-      "To what extent is true freedom possible in the world of 1984?",
-      "Analyze Winston's journey from rebellion to submission in terms of freedom."
-    ],
-    identity: [
-      "How does the Party seek to destroy individual identity in 1984?",
-      "Analyze the ways in which Winston struggles to maintain his sense of self.",
-      "To what extent does love provide a means of preserving identity in 1984?"
-    ],
-    conflict: [
-      "How does Orwell present the conflict between individual desire and state control?",
-      "Analyze the internal conflicts that Winston experiences throughout 1984.",
-      "To what extent is the conflict between Winston and the Party representative of larger themes?"
-    ]
-  },
-  "great-gatsby": {
-    love: [
-      "How does Fitzgerald explore the nature of love and obsession in The Great Gatsby?",
-      "To what extent is Gatsby's love for Daisy genuine or illusory?",
-      "Analyze the various forms of love presented in The Great Gatsby."
-    ],
-    power: [
-      "How does Fitzgerald present the relationship between wealth and power in The Great Gatsby?",
-      "To what extent does social power determine the characters' fates?",
-      "Analyze how different characters use power to achieve their goals."
-    ],
-    time: [
-      "How does Fitzgerald explore the theme of time and the past in The Great Gatsby?",
-      "To what extent is The Great Gatsby about the impossibility of recapturing the past?",
-      "Analyze the significance of Gatsby's belief that you can 'repeat the past.'"
-    ]
-  },
-  hamlet: {
-    revenge: [
-      "How does Shakespeare explore the theme of revenge in Hamlet?",
-      "To what extent is Hamlet's delay in seeking revenge justified?",
-      "Analyze the different approaches to revenge taken by Hamlet, Laertes, and Fortinbras."
-    ],
-    conflict: [
-      "How does Shakespeare present Hamlet's internal conflicts?",
-      "To what extent do external conflicts reflect internal struggles in Hamlet?",
-      "Analyze the ways in which conflict drives the action of Hamlet."
-    ],
-    identity: [
-      "How does Hamlet struggle with questions of identity throughout the play?",
-      "To what extent is Hamlet's assumed madness a crisis of identity?",
-      "Analyze how performance and role-playing relate to identity in Hamlet."
-    ]
-  }
 }
 
 // Essay questions by text
@@ -189,26 +88,11 @@ const questionsByText = {
   ],
 }
 
-// Theme options for essay writing
-const essayThemes = [
-  { id: "love", title: "Love", description: "Romantic love, familial bonds, unrequited love" },
-  { id: "freedom", title: "Freedom", description: "Personal liberty, political freedom, liberation" },
-  { id: "power", title: "Power", description: "Political power, corruption, abuse of authority" },
-  { id: "identity", title: "Identity", description: "Self-discovery, belonging, cultural identity" },
-  { id: "justice", title: "Justice", description: "Social justice, moral righteousness, legal systems" },
-  { id: "conflict", title: "Conflict", description: "Internal struggle, war, social tensions" },
-  { id: "redemption", title: "Redemption", description: "Forgiveness, second chances, moral transformation" },
-  { id: "nature", title: "Nature", description: "Environment, human vs nature, natural beauty" },
-  { id: "time", title: "Time", description: "Memory, nostalgia, the passage of time" },
-  { id: "death", title: "Death", description: "Mortality, grief, the meaning of life" },
-]
-
 export default function EssayMode() {
   const { user, selectedBook } = useAuth()
   const { trackEssayCompletion, trackStudySession } = useProgressTracker()
   const { toast } = useToast()
   const [stage, setStage] = useState("start")
-  const [selectedTheme, setSelectedTheme] = useState(null)
   const [selectedQuestion, setSelectedQuestion] = useState("")
   const [generatedQuestions, setGeneratedQuestions] = useState([])
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
@@ -244,6 +128,26 @@ export default function EssayMode() {
     }
   }, [selectedBook])
 
+  // Load saved draft - always load if available
+  useEffect(() => {
+    const savedEssay = localStorage.getItem("essayDraft")
+    const savedQuestion = localStorage.getItem("selectedQuestion")
+
+    if (savedEssay) {
+      setEssayContent(savedEssay)
+      setWordCount(savedEssay.trim().split(/\s+/).length)
+    }
+
+    if (savedQuestion) {
+      setSelectedQuestion(savedQuestion)
+    }
+
+    // Set savedDraft to true if there's any saved content
+    if (savedEssay || savedQuestion) {
+      setSavedDraft(true)
+    }
+  }, [selectedBook])
+
   // Function to load quotes from database
   const loadQuotes = async () => {
     if (!selectedBook) return
@@ -266,19 +170,6 @@ export default function EssayMode() {
       setQuotesLoading(false)
     }
   }
-
-  // Load saved draft if available
-  useEffect(() => {
-    const savedEssay = localStorage.getItem("essayDraft")
-    const savedQuestion = localStorage.getItem("selectedQuestion")
-
-    if (savedEssay && selectedBook && savedQuestion) {
-      setEssayContent(savedEssay)
-      setSelectedQuestion(savedQuestion)
-      setWordCount(savedEssay.trim().split(/\s+/).length)
-      setSavedDraft(true)
-    }
-  }, [selectedBook])
 
   // Timer functionality
   useEffect(() => {
@@ -313,7 +204,6 @@ export default function EssayMode() {
         },
         body: JSON.stringify({
           content,
-          theme: selectedTheme?.title,
           question: selectedQuestion,
           text: selectedBook?.title
         }),
@@ -356,9 +246,9 @@ export default function EssayMode() {
     }
   }, [essayContent])
 
-  // Generate questions based on theme and book
+  // Generate questions based on book
   const generateQuestions = async (method) => {
-    if (!selectedTheme || !selectedBook) return
+    if (!selectedBook) return
 
     setIsGeneratingQuestions(true)
     setQuestionMethod(method)
@@ -366,7 +256,7 @@ export default function EssayMode() {
     try {
       if (method === "past-exam") {
         // Fetch past exam questions from database
-        const response = await fetch(`/api/past-exam-questions?bookId=${selectedBook.id}&theme=${selectedTheme.title}`)
+        const response = await fetch(`/api/past-exam-questions?bookId=${selectedBook.id}`)
         
         if (response.ok) {
           const dbQuestions = await response.json()
@@ -374,24 +264,13 @@ export default function EssayMode() {
             setGeneratedQuestions(dbQuestions)
           } else {
             // Fallback to hardcoded questions if no database questions exist
-            const pastQuestions = pastExamQuestions[selectedBook.id]?.[selectedTheme.id] || []
-            if (pastQuestions.length > 0) {
-              setGeneratedQuestions(pastQuestions)
-            } else {
-              // Final fallback to general questions for this book
-              const fallbackQuestions = questionsByText[selectedBook.id] || []
-              setGeneratedQuestions(fallbackQuestions.slice(0, 3))
-            }
+            const fallbackQuestions = questionsByText[selectedBook.id] || []
+            setGeneratedQuestions(fallbackQuestions)
           }
         } else {
           // Fallback to hardcoded questions on API error
-          const pastQuestions = pastExamQuestions[selectedBook.id]?.[selectedTheme.id] || []
-          if (pastQuestions.length > 0) {
-            setGeneratedQuestions(pastQuestions)
-          } else {
-            const fallbackQuestions = questionsByText[selectedBook.id] || []
-            setGeneratedQuestions(fallbackQuestions.slice(0, 3))
-          }
+          const fallbackQuestions = questionsByText[selectedBook.id] || []
+          setGeneratedQuestions(fallbackQuestions)
         }
       } else if (method === "ai") {
         // Use custom generation
@@ -401,7 +280,6 @@ export default function EssayMode() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            theme: selectedTheme.title,
             text: selectedBook.title,
             textDescription: selectedBook.description,
           }),
@@ -418,21 +296,10 @@ export default function EssayMode() {
       console.error('Error generating questions:', error)
       // Fallback to existing questions
       if (questionsByText[selectedBook.id]) {
-        const themeRelatedQuestions = questionsByText[selectedBook.id].filter(q => 
-          q.toLowerCase().includes(selectedTheme.title.toLowerCase())
-        )
-        setGeneratedQuestions(themeRelatedQuestions.length > 0 ? themeRelatedQuestions : questionsByText[selectedBook.id].slice(0, 3))
+        setGeneratedQuestions(questionsByText[selectedBook.id])
       }
     } finally {
       setIsGeneratingQuestions(false)
-    }
-  }
-
-  // Handle theme selection
-  const handleSelectTheme = (theme) => {
-    setSelectedTheme(theme)
-    if (theme && selectedBook) {
-      generateQuestions()
     }
   }
 
@@ -520,13 +387,12 @@ export default function EssayMode() {
 
     setShowGradingModal(false)
     
-    // Clear saved draft
+    // Clear saved draft after submission
     localStorage.removeItem("essayDraft")
     localStorage.removeItem("selectedQuestion")
 
     // Reset state
     setStage("start")
-    setSelectedTheme(null)
     setSelectedQuestion("")
     setEssayContent("")
     setWordCount(0)
@@ -535,11 +401,16 @@ export default function EssayMode() {
     setGeneratedQuestions([])
     setQuestionMethod("")
     setAiFeedback([])
+    setSavedDraft(false)
   }
 
   // Handle continue from saved draft
   const handleContinueDraft = () => {
-    setStage("practice")
+    if (selectedQuestion) {
+      setStage("practice")
+    } else {
+      setStage("question-generation")
+    }
     
     // Track session start time for study time calculation
     if (user?.id) {
@@ -550,12 +421,18 @@ export default function EssayMode() {
 
   // Handle start new essay
   const handleStartNew = () => {
+    setStage("question-generation")
+  }
+
+  // Handle clear draft manually
+  const handleClearDraft = () => {
     localStorage.removeItem("essayDraft")
     localStorage.removeItem("selectedQuestion")
     setEssayContent("")
     setSelectedQuestion("")
     setWordCount(0)
-    setStage("theme-selection")
+    setSavedDraft(false)
+    setStage("start")
   }
 
   // Clear feedback
@@ -584,101 +461,66 @@ export default function EssayMode() {
     )
   }
 
-  // Start screen (modified)
+  // Start screen
   if (stage === "start") {
     return (
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-6">Essay Mode</h1>
-        <p className="text-lg mb-8">Practice writing essays with intelligent feedback and theme-based question generation.</p>
+        <p className="text-lg mb-8">Practice writing essays with intelligent feedback and question generation.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {savedDraft && (
             <Card>
               <CardHeader>
-                <CardTitle>Continue Saved Draft</CardTitle>
+                <CardTitle>Continue Working</CardTitle>
                 <CardDescription>
-                  You have a saved essay draft. Would you like to continue working on it?
+                  You have saved progress. Continue where you left off or start fresh.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="font-medium">Text: {selectedBook?.title}</p>
-                <p className="mt-2 text-sm text-gray-600">Theme: {selectedTheme?.title}</p>
-                <p className="mt-2 text-sm text-gray-600">Question: {selectedQuestion}</p>
-                <p className="mt-2 text-sm">Word Count: {wordCount} words</p>
+                {selectedQuestion && <p className="mt-2 text-sm text-gray-600">Question: {selectedQuestion}</p>}
+                {essayContent && <p className="mt-2 text-sm">Word Count: {wordCount} words</p>}
               </CardContent>
-              <CardFooter>
-                <Button onClick={handleContinueDraft} className="w-full">
-                  Continue Draft
+              <CardFooter className="flex gap-2">
+                <Button onClick={handleContinueDraft} className="flex-1">
+                  Continue
+                </Button>
+                <Button variant="outline" onClick={handleClearDraft} className="flex-1">
+                  Clear & Start New
                 </Button>
               </CardFooter>
             </Card>
           )}
 
-                      <Card>
-              <CardHeader>
-                <CardTitle>Start New Essay</CardTitle>
-                <CardDescription>Begin a new guided essay practice session.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Select a theme and text, then get custom questions and real-time feedback.</p>
-                <ul className="mt-4 space-y-2">
-                  <li className="flex items-center">
-                    <Check size={16} className="mr-2 text-green-500" /> Theme-based question generation
-                  </li>
-                  <li className="flex items-center">
-                    <Check size={16} className="mr-2 text-green-500" /> Live feedback and suggestions
-                  </li>
-                  <li className="flex items-center">
-                    <Check size={16} className="mr-2 text-green-500" /> Essay structure analysis
-                  </li>
-                  <li className="flex items-center">
-                    <Check size={16} className="mr-2 text-green-500" /> 40-minute timer with auto-save
-                  </li>
-                </ul>
-              </CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Start New Essay</CardTitle>
+              <CardDescription>Begin a new guided essay practice session.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>Get custom questions and real-time feedback.</p>
+              <ul className="mt-4 space-y-2">
+                <li className="flex items-center">
+                  <Check size={16} className="mr-2 text-green-500" /> AI-powered question generation
+                </li>
+                <li className="flex items-center">
+                  <Check size={16} className="mr-2 text-green-500" /> Live feedback and suggestions
+                </li>
+                <li className="flex items-center">
+                  <Check size={16} className="mr-2 text-green-500" /> Essay structure analysis
+                </li>
+                <li className="flex items-center">
+                  <Check size={16} className="mr-2 text-green-500" /> 40-minute timer with auto-save
+                </li>
+              </ul>
+            </CardContent>
             <CardFooter>
-              <Button onClick={() => setStage("theme-selection")} className="w-full">
+              <Button onClick={handleStartNew} className="w-full">
                 Start New Essay
               </Button>
             </CardFooter>
           </Card>
-        </div>
-      </div>
-    )
-  }
-
-  // Theme selection screen
-  if (stage === "theme-selection") {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-6">Select a Theme</h1>
-        <p className="text-lg mb-8">Choose a theme that will guide your essay question generation:</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {essayThemes.map((theme) => (
-            <Card
-              key={theme.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => {
-                handleSelectTheme(theme)
-                setStage("question-generation")
-              }}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  {theme.title}
-                  <ChevronRight size={16} className="ml-auto" />
-                </CardTitle>
-                <CardDescription>{theme.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-8 text-center">
-          <Button variant="outline" onClick={() => setStage("start")}>
-            Back to Start
-          </Button>
         </div>
       </div>
     )
@@ -693,7 +535,6 @@ export default function EssayMode() {
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
             <Badge variant="secondary">Text: {selectedBook?.title}</Badge>
-            <Badge variant="secondary">Theme: {selectedTheme?.title}</Badge>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -704,7 +545,7 @@ export default function EssayMode() {
                   Custom Generated Questions
                 </CardTitle>
                 <CardDescription>
-                  Get custom essay questions based on your theme and text
+                  Get custom essay questions based on your selected text
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -736,7 +577,7 @@ export default function EssayMode() {
                   Past Exam Questions
                 </CardTitle>
                 <CardDescription>
-                  Choose from real HSC past paper questions for your theme and text
+                  Choose from real HSC past paper questions for your text
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -777,7 +618,7 @@ export default function EssayMode() {
                 className={`cursor-pointer transition-all ${
                   selectedQuestion === question ? 'ring-2 ring-primary' : 'hover:shadow-md'
                 }`}
-                onClick={() => setSelectedQuestion(question)}
+                onClick={() => handleSelectQuestion(question)}
               >
                 <CardContent className="p-4">
                   <p className="font-medium">{question}</p>
@@ -795,9 +636,15 @@ export default function EssayMode() {
             )}
           </div>
         )}
+
+        <div className="mt-8 text-center">
+          <Button variant="outline" onClick={() => setStage("start")}>
+            Back to Start
+          </Button>
+        </div>
       </div>
-         )
-   }
+    )
+  }
 
 
 
@@ -826,33 +673,22 @@ export default function EssayMode() {
                   return acc
                 }, {} as Record<string, DatabaseQuote[]>)
 
-                // Filter themes based on selected theme
-                const filteredThemes = Object.entries(quotesByTheme).filter(([theme, quotes]) => {
-                  if (selectedTheme && themeToQuoteMapping[selectedTheme.id]) {
-                    return themeToQuoteMapping[selectedTheme.id].includes(theme) || 
-                           theme === selectedTheme.title
-                  }
-                  return true
-                })
+                // Show all themes for the selected book
+                const allThemes = Object.entries(quotesByTheme)
 
-                if (filteredThemes.length === 0) {
+                if (allThemes.length === 0) {
                   return (
                     <div className="p-4 text-center text-muted-foreground">
-                      <p className="text-sm">No quotes found for the selected filters.</p>
-                      {selectedTheme && (
-                        <p className="text-xs mt-2">Try selecting a different theme or contact admin to add quotes for "{selectedTheme.title}".</p>
-                      )}
+                      <p className="text-sm">No quotes found for this book.</p>
+                      <p className="text-xs mt-2">Contact admin to add quotes for better essay support.</p>
                     </div>
                   )
                 }
 
-                return filteredThemes.map(([theme, themeQuotes]) => (
+                return allThemes.map(([theme, themeQuotes]) => (
                   <AccordionItem key={theme} value={theme}>
                     <AccordionTrigger className="text-sm font-medium py-3">
                       {theme} ({themeQuotes.length})
-                      {selectedTheme && (themeToQuoteMapping[selectedTheme.id]?.includes(theme) || theme === selectedTheme.title) && (
-                        <Badge variant="secondary" className="ml-2 text-xs">Relevant</Badge>
-                      )}
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-4">
@@ -906,7 +742,7 @@ export default function EssayMode() {
         {/* Theme and question display */}
         <div className="p-4 border-t bg-background">
           <div className="space-y-2 mb-3">
-            <Badge variant="outline">Theme: {selectedTheme?.title}</Badge>
+            <Badge variant="outline">Book: {selectedBook?.title}</Badge>
           </div>
           <h3 className="font-medium mb-2">Essay Question</h3>
           <p className="text-sm text-muted-foreground">{selectedQuestion}</p>
@@ -1141,7 +977,6 @@ export default function EssayMode() {
         essayContent={essayContent}
         question={selectedQuestion}
         selectedText={selectedBook?.title || ""}
-        selectedTheme={selectedTheme?.title || ""}
       />
     </div>
   )
