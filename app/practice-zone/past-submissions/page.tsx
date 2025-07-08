@@ -71,6 +71,8 @@ export default function PastSubmissionsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [dateViewDialogOpen, setDateViewDialogOpen] = useState(false)
 
   const { user } = useAuth()
 
@@ -161,23 +163,54 @@ export default function PastSubmissionsPage() {
     setViewDialogOpen(true)
   }
 
-  const groupSubmissionsByType = (submissions: Submission[]) => {
-    const groups = {
-      questions: {
-        daily_drill: [] as Submission[],
-        exam_simulator: [] as Submission[]
-      },
-      essay: {
-        daily_drill: [] as Submission[],
-        exam_simulator: [] as Submission[]
-      }
-    }
+  const groupSubmissionsByDate = (submissions: Submission[]) => {
+    const groups: { [date: string]: Submission[] } = {}
 
     submissions.forEach(submission => {
-      groups[submission.content_type][submission.submission_type].push(submission)
+      const date = new Date(submission.submission_date).toDateString()
+      if (!groups[date]) {
+        groups[date] = []
+      }
+      groups[date].push(submission)
     })
 
-    return groups
+    // Sort dates in descending order (newest first)
+    const sortedDates = Object.keys(groups).sort((a, b) => {
+      return new Date(b).getTime() - new Date(a).getTime()
+    })
+
+    const sortedGroups: { [date: string]: Submission[] } = {}
+    sortedDates.forEach(date => {
+      sortedGroups[date] = groups[date]
+    })
+
+    return sortedGroups
+  }
+
+  const formatDateForTile = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-AU', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const getSubmissionStats = (submissions: Submission[]) => {
+    const stats = {
+      total: submissions.length,
+      questions: submissions.filter(s => s.content_type === 'questions').length,
+      essays: submissions.filter(s => s.content_type === 'essay').length,
+      dailyDrill: submissions.filter(s => s.submission_type === 'daily_drill').length,
+      examSimulator: submissions.filter(s => s.submission_type === 'exam_simulator').length
+    }
+    return stats
+  }
+
+  const handleViewDate = (date: string, submissions: Submission[]) => {
+    setSelectedDate(date)
+    setDateViewDialogOpen(true)
   }
 
   if (loading) {
@@ -213,7 +246,7 @@ export default function PastSubmissionsPage() {
     )
   }
 
-  const groupedSubmissions = groupSubmissionsByType(filteredSubmissions)
+  const groupedSubmissions = groupSubmissionsByDate(filteredSubmissions)
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -277,273 +310,348 @@ export default function PastSubmissionsPage() {
           </div>
         </div>
       ) : (
-        <Tabs defaultValue="questions" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="questions">Questions</TabsTrigger>
-            <TabsTrigger value="essay">Essays</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="questions" className="mt-6">
-            <div className="space-y-8">
-              {/* Daily Drill Questions */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4 flex items-center">
-                  <MessageSquare className="mr-2 h-5 w-5" />
-                  Daily Drill Questions
-                </h3>
-                {groupedSubmissions.questions.daily_drill.length === 0 ? (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-center text-muted-foreground">No Daily Drill question submissions yet.</p>
+        <div className="space-y-6">
+          <h2 className="text-2xl font-semibold">Submissions by Date</h2>
+          
+          {Object.keys(groupedSubmissions).length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-center text-muted-foreground">No submissions found matching your filters.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Object.entries(groupedSubmissions).map(([date, submissions]) => {
+                const stats = getSubmissionStats(submissions)
+                return (
+                  <Card 
+                    key={date} 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleViewDate(date, submissions)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg font-semibold">
+                          {formatDateForTile(date)}
+                        </CardTitle>
+                        <Badge variant="outline" className="text-sm">
+                          {stats.total} task{stats.total !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Questions:</span>
+                            <span className="font-medium">{stats.questions}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Essays:</span>
+                            <span className="font-medium">{stats.essays}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Daily Drill:</span>
+                            <span className="font-medium">{stats.dailyDrill}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Exam Sim:</span>
+                            <span className="font-medium">{stats.examSimulator}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-center pt-2">
+                          <Button variant="ghost" size="sm" className="h-8 text-xs">
+                            <Eye className="mr-1 h-3 w-3" />
+                            View All Tasks
+                          </Button>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {groupedSubmissions.questions.daily_drill.map((submission) => (
-                      <Card key={submission.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => handleViewSubmission(submission)}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium truncate">{submission.title}</CardTitle>
-                            <Badge variant="secondary" className="text-xs">Daily Drill</Badge>
-                          </div>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            {formatDate(submission.submission_date)}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            {submission.total_score !== null && submission.max_score !== null && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Score:</span>
-                                <Badge className={getScoreColor(submission.total_score, submission.max_score)}>
-                                  {submission.total_score}/{submission.max_score}
-                                </Badge>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm">Questions:</span>
-                              <span className="text-sm font-medium">{submission.submission_questions?.length || 0}</span>
-                            </div>
-                            {submission.completion_time_minutes && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Time:</span>
-                                <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Exam Simulator Questions */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4 flex items-center">
-                  <Trophy className="mr-2 h-5 w-5" />
-                  Exam Simulator Questions
-                </h3>
-                {groupedSubmissions.questions.exam_simulator.length === 0 ? (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-center text-muted-foreground">No Exam Simulator question submissions yet.</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {groupedSubmissions.questions.exam_simulator.map((submission) => (
-                      <Card key={submission.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => handleViewSubmission(submission)}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium truncate">{submission.title}</CardTitle>
-                            <Badge variant="secondary" className="text-xs">Exam Simulator</Badge>
-                          </div>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            {formatDate(submission.submission_date)}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            {submission.total_score !== null && submission.max_score !== null && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Score:</span>
-                                <Badge className={getScoreColor(submission.total_score, submission.max_score)}>
-                                  {submission.total_score}/{submission.max_score}
-                                </Badge>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm">Questions:</span>
-                              <span className="text-sm font-medium">{submission.submission_questions?.length || 0}</span>
-                            </div>
-                            {submission.completion_time_minutes && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Time:</span>
-                                <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
+                )
+              })}
             </div>
-          </TabsContent>
-
-          <TabsContent value="essay" className="mt-6">
-            <div className="space-y-8">
-              {/* Daily Drill Essays */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4 flex items-center">
-                  <MessageSquare className="mr-2 h-5 w-5" />
-                  Daily Drill Essays
-                </h3>
-                {groupedSubmissions.essay.daily_drill.length === 0 ? (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-center text-muted-foreground">No Daily Drill essay submissions yet.</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {groupedSubmissions.essay.daily_drill.map((submission) => (
-                      <Card key={submission.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => handleViewSubmission(submission)}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium truncate">{submission.title}</CardTitle>
-                            <Badge variant="secondary" className="text-xs">Daily Drill</Badge>
-                          </div>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            {formatDate(submission.submission_date)}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            {(() => {
-                              const essay = submission.submission_essays?.[0];
-                              const displayScore = submission.total_score ?? essay?.overall_score;
-                              const maxScore = submission.max_score;
-                              
-                              // Calculate score from criteria if overall_score is null
-                              let calculatedScore = displayScore;
-                              if (displayScore === null && essay?.criteria_scores) {
-                                calculatedScore = Object.values(essay.criteria_scores).reduce((sum: number, criteria: any) => {
-                                  return sum + (typeof criteria === 'object' ? criteria.mark : criteria);
-                                }, 0);
-                              }
-                              
-                              return calculatedScore !== null && maxScore !== null ? (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Score:</span>
-                                  <Badge className={getScoreColor(calculatedScore, maxScore)}>
-                                    {calculatedScore}/{maxScore}
-                                  </Badge>
-                                </div>
-                              ) : null;
-                            })()}
-                            {submission.submission_essays?.[0]?.word_count && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Words:</span>
-                                <span className="text-sm font-medium">{submission.submission_essays[0].word_count}</span>
-                              </div>
-                            )}
-                            {submission.completion_time_minutes && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Time:</span>
-                                <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Exam Simulator Essays */}
-              <div>
-                <h3 className="text-xl font-semibold mb-4 flex items-center">
-                  <Trophy className="mr-2 h-5 w-5" />
-                  Exam Simulator Essays
-                </h3>
-                {groupedSubmissions.essay.exam_simulator.length === 0 ? (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-center text-muted-foreground">No Exam Simulator essay submissions yet.</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {groupedSubmissions.essay.exam_simulator.map((submission) => (
-                      <Card key={submission.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => handleViewSubmission(submission)}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-medium truncate">{submission.title}</CardTitle>
-                            <Badge variant="secondary" className="text-xs">Exam Simulator</Badge>
-                          </div>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            {formatDate(submission.submission_date)}
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            {(() => {
-                              const essay = submission.submission_essays?.[0];
-                              const displayScore = submission.total_score ?? essay?.overall_score;
-                              const maxScore = submission.max_score;
-                              
-                              // Calculate score from criteria if overall_score is null
-                              let calculatedScore = displayScore;
-                              if (displayScore === null && essay?.criteria_scores) {
-                                calculatedScore = Object.values(essay.criteria_scores).reduce((sum: number, criteria: any) => {
-                                  return sum + (typeof criteria === 'object' ? criteria.mark : criteria);
-                                }, 0);
-                              }
-                              
-                              return calculatedScore !== null && maxScore !== null ? (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm">Score:</span>
-                                  <Badge className={getScoreColor(calculatedScore, maxScore)}>
-                                    {calculatedScore}/{maxScore}
-                                  </Badge>
-                                </div>
-                              ) : null;
-                            })()}
-                            {submission.submission_essays?.[0]?.word_count && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Words:</span>
-                                <span className="text-sm font-medium">{submission.submission_essays[0].word_count}</span>
-                              </div>
-                            )}
-                            {submission.completion_time_minutes && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Time:</span>
-                                <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       )}
+
+      {/* View Date Submissions Dialog */}
+      <Dialog open={dateViewDialogOpen} onOpenChange={setDateViewDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>
+              Submissions for {selectedDate && formatDateForTile(selectedDate)}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedDate && groupedSubmissions[selectedDate] && (
+                <span className="text-sm">
+                  {groupedSubmissions[selectedDate].length} submission{groupedSubmissions[selectedDate].length !== 1 ? 's' : ''} completed on this date
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[70vh]">
+            {selectedDate && groupedSubmissions[selectedDate] && (
+              <Tabs defaultValue="all" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="all">All ({groupedSubmissions[selectedDate].length})</TabsTrigger>
+                  <TabsTrigger value="questions">
+                    Questions ({groupedSubmissions[selectedDate].filter(s => s.content_type === 'questions').length})
+                  </TabsTrigger>
+                  <TabsTrigger value="essays">
+                    Essays ({groupedSubmissions[selectedDate].filter(s => s.content_type === 'essay').length})
+                  </TabsTrigger>
+                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="all" className="mt-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {groupedSubmissions[selectedDate]
+                      .sort((a, b) => new Date(a.submission_date).getTime() - new Date(b.submission_date).getTime())
+                      .map((submission) => (
+                      <Card key={submission.id} className="cursor-pointer hover:shadow-sm transition-shadow"
+                            onClick={() => handleViewSubmission(submission)}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm font-medium truncate">{submission.title}</CardTitle>
+                            <div className="flex items-center space-x-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {getSubmissionTypeLabel(submission.submission_type)}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {getContentTypeLabel(submission.content_type)}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Clock className="mr-1 h-3 w-3" />
+                            {formatDate(submission.submission_date)}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {submission.content_type === 'essay' ? (
+                              (() => {
+                                const essay = submission.submission_essays?.[0];
+                                const displayScore = submission.total_score ?? essay?.overall_score;
+                                const maxScore = submission.max_score;
+                                
+                                let calculatedScore = displayScore;
+                                if (displayScore === null && essay?.criteria_scores) {
+                                  calculatedScore = Object.values(essay.criteria_scores).reduce((sum: number, criteria: any) => {
+                                    return sum + (typeof criteria === 'object' ? criteria.mark : criteria);
+                                  }, 0);
+                                }
+                                
+                                return (
+                                  <>
+                                    {calculatedScore !== null && maxScore !== null && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm">Score:</span>
+                                        <Badge className={getScoreColor(calculatedScore, maxScore)}>
+                                          {calculatedScore}/{maxScore}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    {essay?.word_count && (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm">Words:</span>
+                                        <span className="text-sm font-medium">{essay.word_count}</span>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()
+                            ) : (
+                              <>
+                                {submission.total_score !== null && submission.max_score !== null && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">Score:</span>
+                                    <Badge className={getScoreColor(submission.total_score, submission.max_score)}>
+                                      {submission.total_score}/{submission.max_score}
+                                    </Badge>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Questions:</span>
+                                  <span className="text-sm font-medium">{submission.submission_questions?.length || 0}</span>
+                                </div>
+                              </>
+                            )}
+                            {submission.completion_time_minutes && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">Time:</span>
+                                <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="questions" className="mt-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {groupedSubmissions[selectedDate]
+                      .filter(s => s.content_type === 'questions')
+                      .sort((a, b) => new Date(a.submission_date).getTime() - new Date(b.submission_date).getTime())
+                      .map((submission) => (
+                      <Card key={submission.id} className="cursor-pointer hover:shadow-sm transition-shadow"
+                            onClick={() => handleViewSubmission(submission)}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm font-medium truncate">{submission.title}</CardTitle>
+                            <Badge variant="secondary" className="text-xs">
+                              {getSubmissionTypeLabel(submission.submission_type)}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Clock className="mr-1 h-3 w-3" />
+                            {formatDate(submission.submission_date)}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {submission.total_score !== null && submission.max_score !== null && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">Score:</span>
+                                <Badge className={getScoreColor(submission.total_score, submission.max_score)}>
+                                  {submission.total_score}/{submission.max_score}
+                                </Badge>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Questions:</span>
+                              <span className="text-sm font-medium">{submission.submission_questions?.length || 0}</span>
+                            </div>
+                            {submission.completion_time_minutes && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">Time:</span>
+                                <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="essays" className="mt-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {groupedSubmissions[selectedDate]
+                      .filter(s => s.content_type === 'essay')
+                      .sort((a, b) => new Date(a.submission_date).getTime() - new Date(b.submission_date).getTime())
+                      .map((submission) => (
+                      <Card key={submission.id} className="cursor-pointer hover:shadow-sm transition-shadow"
+                            onClick={() => handleViewSubmission(submission)}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm font-medium truncate">{submission.title}</CardTitle>
+                            <Badge variant="secondary" className="text-xs">
+                              {getSubmissionTypeLabel(submission.submission_type)}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Clock className="mr-1 h-3 w-3" />
+                            {formatDate(submission.submission_date)}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {(() => {
+                              const essay = submission.submission_essays?.[0];
+                              const displayScore = submission.total_score ?? essay?.overall_score;
+                              const maxScore = submission.max_score;
+                              
+                              let calculatedScore = displayScore;
+                              if (displayScore === null && essay?.criteria_scores) {
+                                calculatedScore = Object.values(essay.criteria_scores).reduce((sum: number, criteria: any) => {
+                                  return sum + (typeof criteria === 'object' ? criteria.mark : criteria);
+                                }, 0);
+                              }
+                              
+                              return calculatedScore !== null && maxScore !== null ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Score:</span>
+                                  <Badge className={getScoreColor(calculatedScore, maxScore)}>
+                                    {calculatedScore}/{maxScore}
+                                  </Badge>
+                                </div>
+                              ) : null;
+                            })()}
+                            {submission.submission_essays?.[0]?.word_count && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">Words:</span>
+                                <span className="text-sm font-medium">{submission.submission_essays[0].word_count}</span>
+                              </div>
+                            )}
+                            {submission.completion_time_minutes && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">Time:</span>
+                                <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="timeline" className="mt-6">
+                  <div className="space-y-4">
+                    {groupedSubmissions[selectedDate]
+                      .sort((a, b) => new Date(a.submission_date).getTime() - new Date(b.submission_date).getTime())
+                      .map((submission, index) => (
+                      <div key={submission.id} className="flex items-start space-x-4">
+                        <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                        <Card className="flex-1 cursor-pointer hover:shadow-sm transition-shadow"
+                              onClick={() => handleViewSubmission(submission)}>
+                          <CardContent className="pt-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium">{submission.title}</h4>
+                              <div className="flex items-center space-x-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {getSubmissionTypeLabel(submission.submission_type)}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {getContentTypeLabel(submission.content_type)}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground mb-2">
+                              {formatDate(submission.submission_date)}
+                            </div>
+                            <div className="flex items-center space-x-4 text-sm">
+                              {submission.content_type === 'essay' ? (
+                                (() => {
+                                  const essay = submission.submission_essays?.[0];
+                                  return essay?.word_count ? (
+                                    <span>{essay.word_count} words</span>
+                                  ) : null;
+                                })()
+                              ) : (
+                                <span>{submission.submission_questions?.length || 0} questions</span>
+                              )}
+                              {submission.completion_time_minutes && (
+                                <span>{submission.completion_time_minutes}m</span>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* View Submission Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>

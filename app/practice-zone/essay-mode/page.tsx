@@ -22,7 +22,8 @@ import {
   X,
   Sparkles,
   Check,
-  Send
+  Send,
+  AlertCircle
 } from "lucide-react"
 import EssayGradingModal from "@/components/ui/essay-grading-modal"
 
@@ -97,6 +98,7 @@ export default function EssayMode() {
   const [generatedQuestions, setGeneratedQuestions] = useState([])
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false)
   const [questionMethod, setQuestionMethod] = useState("") // "ai" or "past-exam"
+  const [noPastQuestions, setNoPastQuestions] = useState(false) // Track when no past questions found
   const [essayContent, setEssayContent] = useState("")
   const [wordCount, setWordCount] = useState(0)
   const [timer, setTimer] = useState(40 * 60) // 40 minutes in seconds
@@ -252,6 +254,7 @@ export default function EssayMode() {
 
     setIsGeneratingQuestions(true)
     setQuestionMethod(method)
+    setNoPastQuestions(false) // Reset the no past questions state
     
     try {
       if (method === "past-exam") {
@@ -263,11 +266,13 @@ export default function EssayMode() {
           if (dbQuestions.length > 0) {
             setGeneratedQuestions(dbQuestions)
           } else {
+            setNoPastQuestions(true)
             // Fallback to hardcoded questions if no database questions exist
             const fallbackQuestions = questionsByText[selectedBook.id] || []
             setGeneratedQuestions(fallbackQuestions)
           }
         } else {
+          setNoPastQuestions(true)
           // Fallback to hardcoded questions on API error
           const fallbackQuestions = questionsByText[selectedBook.id] || []
           setGeneratedQuestions(fallbackQuestions)
@@ -350,7 +355,17 @@ export default function EssayMode() {
 
   // Handle closing grading modal and resetting
   const handleGradingModalClose = async (finalScore?: number) => {
-    console.log('🔍 handleGradingModalClose called with finalScore:', finalScore)
+    console.log('🔍 handleGradingModalClose called with finalScore:', finalScore, 'type:', typeof finalScore)
+    
+    // If no finalScore provided or not a valid number, user just closed the modal - don't do any reset
+    if (typeof finalScore !== 'number') {
+      console.log('🔍 Modal closed without saving score - just closing modal')
+      setShowGradingModal(false)
+      return
+    }
+    
+    // User clicked "Save Score & Close" with a valid score - proceed with tracking and reset
+    console.log('🔍 User saved score - proceeding with tracking and reset')
     
     // Track essay completion if user is authenticated
     if (user?.id && wordCount > 0) {
@@ -358,12 +373,8 @@ export default function EssayMode() {
         // Count quotes used in essay (simple heuristic - look for quotation marks)
         const quoteCount = (essayContent.match(/"/g) || []).length / 2
         
-        // Use provided score or estimate based on word count and content quality
-        const score = finalScore !== undefined && finalScore !== null 
-          ? finalScore 
-          : Math.min(100, Math.max(50, 
-              (wordCount >= 800 ? 80 : 60) + (quoteCount >= 2 ? 10 : 0)
-            ))
+        // Use the provided final score
+        const score = finalScore
         
         console.log('🔍 Tracking essay with:', {
           userId: user.id,
@@ -418,6 +429,7 @@ export default function EssayMode() {
     setTimerRunning(false)
     setGeneratedQuestions([])
     setQuestionMethod("")
+    setNoPastQuestions(false)
     setAiFeedback([])
     setSavedDraft(false)
   }
@@ -450,6 +462,7 @@ export default function EssayMode() {
     setSelectedQuestion("")
     setWordCount(0)
     setSavedDraft(false)
+    setNoPastQuestions(false)
     setStage("start")
   }
 
@@ -621,6 +634,21 @@ export default function EssayMode() {
             </Card>
           </div>
         </div>
+
+        {/* Show message when no past questions found */}
+        {noPastQuestions && questionMethod === "past-exam" && (
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600" />
+              <div>
+                <h3 className="font-medium text-yellow-800">No Past Exam Questions Available</h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  There are no past HSC exam questions in our database for "{selectedBook?.title}".
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {generatedQuestions.length > 0 && (
           <div className="space-y-4">
