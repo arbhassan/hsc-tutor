@@ -731,19 +731,19 @@ export default function DailyDrillPage() {
                           </div>
 
                           {/* PETAL Analysis */}
-                          <div className="mb-4">
-                            <h4 className="font-medium mb-2">PETAL Structure Analysis:</h4>
-                            <div className="space-y-2">
+                          <div className="mb-6">
+                            <h4 className="font-medium mb-3">PETAL Structure Analysis:</h4>
+                            <div className="space-y-3 pl-2">
                               {Object.entries(feedback[question.id]?.petalAnalysis || {}).map(([key, analysis]) => (
-                                <div key={key} className="flex items-center">
-                                  <div className="w-20 font-medium capitalize">{key}:</div>
-                                  <div className="flex items-center flex-1">
+                                <div key={key} className="flex items-start gap-3">
+                                  <div className="w-16 font-medium capitalize text-sm pt-0.5 flex-shrink-0">{key}:</div>
+                                  <div className="flex items-start gap-3 flex-1 min-w-0">
                                     {analysis.present ? (
-                                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                                     ) : (
-                                      <AlertCircle className="h-4 w-4 text-amber-500 mr-2 flex-shrink-0" />
+                                      <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                                     )}
-                                    <span className="text-sm">{analysis.feedback}</span>
+                                    <span className="text-sm leading-relaxed break-words">{analysis.feedback}</span>
                                   </div>
                                 </div>
                               ))}

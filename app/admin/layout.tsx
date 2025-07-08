@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
-import { Lock } from "lucide-react"
+import { Lock, AlertCircle } from "lucide-react"
 
 const ADMIN_PASSWORD = "admin123"
 
@@ -20,6 +21,7 @@ export default function AdminLayout({
   const [passwordInput, setPasswordInput] = useState("")
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [passwordError, setPasswordError] = useState("")
 
   // Check if password is already verified in session storage
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function AdminLayout({
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordLoading(true)
+    setPasswordError("") // Clear any previous errors
     
     // Simulate a small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500))
@@ -41,19 +44,30 @@ export default function AdminLayout({
       setIsPasswordVerified(true)
       sessionStorage.setItem('adminPasswordVerified', 'true')
       setPasswordInput("")
+      setPasswordError("")
       toast({
         title: "Access Granted",
         description: "Welcome to the admin dashboard",
       })
     } else {
+      const errorMessage = "Incorrect password. Please try again."
+      setPasswordError(errorMessage)
       toast({
         title: "Access Denied",
-        description: "Incorrect password. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
       setPasswordInput("")
     }
     setPasswordLoading(false)
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordInput(e.target.value)
+    // Clear error when user starts typing again
+    if (passwordError) {
+      setPasswordError("")
+    }
   }
 
   // Show loading spinner while checking session storage
@@ -89,12 +103,23 @@ export default function AdminLayout({
                     id="password"
                     type="password"
                     value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
+                    onChange={handlePasswordChange}
                     placeholder="Enter admin password"
                     disabled={passwordLoading}
                     autoFocus
+                    className={passwordError ? "border-red-500 focus:border-red-500" : ""}
                   />
                 </div>
+                
+                {passwordError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {passwordError}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 <Button 
                   type="submit" 
                   className="w-full"

@@ -37,6 +37,13 @@ const ESSAY_QUESTIONS = {
     "How does Orwell present the relationship between truth and power?",
     "Examine the significance of the past in shaping the present in 1984."
   ],
+  "nineteen-eighty-four": [
+    "How does Orwell explore the theme of surveillance and its impact on individual freedom?",
+    "Analyze the role of language as a tool of oppression in 1984.",
+    "To what extent does Winston's rebellion represent hope for humanity?",
+    "How does Orwell present the relationship between truth and power?",
+    "Examine the significance of the past in shaping the present in 1984."
+  ],
   hamlet: [
     "How does Shakespeare explore the theme of revenge through Hamlet's character?",
     "Analyze the role of madness in Hamlet - both real and performed.",
@@ -45,6 +52,13 @@ const ESSAY_QUESTIONS = {
     "Examine the significance of appearance versus reality in Hamlet."
   ],
   gatsby: [
+    "How does Fitzgerald critique the American Dream through Jay Gatsby's story?",
+    "Analyze the role of social class and wealth in The Great Gatsby.",
+    "To what extent is Gatsby a tragic hero?",
+    "How does Fitzgerald present the moral decay of 1920s America?",
+    "Examine the significance of the past in shaping the characters' present."
+  ],
+  "great-gatsby": [
     "How does Fitzgerald critique the American Dream through Jay Gatsby's story?",
     "Analyze the role of social class and wealth in The Great Gatsby.",
     "To what extent is Gatsby a tragic hero?",
@@ -65,11 +79,90 @@ const ESSAY_QUESTIONS = {
     "How does Miller present the abuse of power in Salem?",
     "Examine the significance of guilt and redemption in the play."
   ],
+  "all-the-light": [
+    "How does Doerr explore the theme of war and its impact on individuals?",
+    "Analyze the role of destiny and chance in the characters' lives.",
+    "To what extent do Marie-Laure and Werner represent hope amidst darkness?",
+    "How does Doerr present the power of human connection in wartime?",
+    "Examine the significance of light and darkness as symbols in the novel."
+  ],
+  "slessor-poems": [
+    "How does Slessor explore the theme of time and memory in his poetry?",
+    "Analyze Slessor's presentation of the Australian urban landscape.",
+    "To what extent do Slessor's poems reflect modernist techniques?",
+    "How does Slessor present the relationship between past and present?",
+    "Examine the significance of place and identity in Slessor's work."
+  ],
+  "boy-behind-curtain": [
+    "How does Winton explore the relationship between place and identity?",
+    "Analyze the role of family in shaping Winton's development as a writer.",
+    "To what extent does Winton present writing as a form of self-discovery?",
+    "How does Winton explore the connection between memory and storytelling?",
+    "Examine the significance of the Australian landscape in Winton's memoir."
+  ],
+  "billy-elliot": [
+    "How does Daldry explore the theme of individual identity versus social expectations?",
+    "Analyze the role of class and economic circumstances in shaping the characters' choices.",
+    "To what extent does Billy's journey represent a challenge to traditional gender roles?",
+    "How does the film present the relationship between art and social change?",
+    "Examine the significance of family dynamics in Billy's pursuit of his dreams."
+  ],
+  "dobson-poems": [
+    "How does Dobson explore the relationship between art and life in her poetry?",
+    "Analyze Dobson's treatment of time and mortality in her work.",
+    "To what extent do Dobson's poems reflect on the nature of creativity?",
+    "How does Dobson present the connection between past and present?",
+    "Examine the significance of visual art in Dobson's poetic vision."
+  ],
+  "i-am-malala": [
+    "How does Yousafzai present the power of education as a force for change?",
+    "Analyze the role of courage in Malala's activism and survival.",
+    "To what extent does the memoir explore the tension between tradition and progress?",
+    "How does Yousafzai present the impact of extremism on ordinary lives?",
+    "Examine the significance of voice and storytelling in advocating for human rights."
+  ],
+  "past-the-shallows": [
+    "How does Parrett explore the theme of family bonds and dysfunction?",
+    "Analyze the role of the Tasmanian landscape in shaping the characters' experiences.",
+    "To what extent do the brothers represent different responses to trauma?",
+    "How does Parrett present the relationship between humans and nature?",
+    "Examine the significance of silence and communication in the novel."
+  ],
+  "rainbows-end": [
+    "How does Harrison explore the impact of prejudice on Aboriginal families?",
+    "Analyze the role of different generations in preserving and adapting cultural identity.",
+    "To what extent does the play present hope for reconciliation and understanding?",
+    "How does Harrison use the concept of 'home' to explore belonging and displacement?",
+    "Examine the significance of education and assimilation policies in the play."
+  ],
+  "merchant-of-venice": [
+    "How does Shakespeare explore the tension between justice and mercy?",
+    "Analyze the role of prejudice and stereotyping in the play.",
+    "To what extent is Shylock a victim or villain?",
+    "How does Shakespeare present the relationship between appearance and reality?",
+    "Examine the significance of the bond and contract in exploring human relationships."
+  ],
+  "waste-land": [
+    "How does Walker explore the transformative power of art in the documentary?",
+    "Analyze the role of dignity and self-worth in the participants' journeys.",
+    "To what extent does the film challenge stereotypes about poverty and waste?",
+    "How does Walker present the relationship between art and social consciousness?",
+    "Examine the significance of collaboration and community in creating change."
+  ]
 }
 
-// Sample quotes organized by text
+// Sample quotes organized by text - expanded to match more books
 const QUOTES = {
   "1984": [
+    "Big Brother is watching you.",
+    "War is peace. Freedom is slavery. Ignorance is strength.",
+    "Don't you see that the whole aim of Newspeak is to narrow the range of thought?",
+    "The Party told you to reject the evidence of your eyes and ears.",
+    "If you want to keep a secret, you must also hide it from yourself.",
+    "Always the eyes watching you and the voice enveloping you.",
+    "Who controls the past controls the future. Who controls the present controls the past."
+  ],
+  "nineteen-eighty-four": [
     "Big Brother is watching you.",
     "War is peace. Freedom is slavery. Ignorance is strength.",
     "Don't you see that the whole aim of Newspeak is to narrow the range of thought?",
@@ -94,6 +187,13 @@ const QUOTES = {
     "His dream must have seemed so close that he could hardly fail to grasp it.",
     "And so with the sunshine and the great bursts of leaves growing on the trees, just as things grow in fast movies, I had that familiar conviction that life was beginning over again with the summer."
   ],
+  "great-gatsby": [
+    "So we beat on, boats against the current, borne back ceaselessly into the past.",
+    "Gatsby believed in the green light, the orgastic future that year by year recedes before us.",
+    "I was within and without, simultaneously enchanted and repelled by the inexhaustible variety of life.",
+    "His dream must have seemed so close that he could hardly fail to grasp it.",
+    "And so with the sunshine and the great bursts of leaves growing on the trees, just as things grow in fast movies, I had that familiar conviction that life was beginning over again with the summer."
+  ],
   frankenstein: [
     "I beheld the wretch—the miserable monster whom I had created.",
     "Nothing is so painful to the human mind as a great and sudden change.",
@@ -107,7 +207,129 @@ const QUOTES = {
     "We are what we always were in Salem, but now the little crazy children are jangling the keys of the kingdom.",
     "I speak my own sins; I cannot judge another.",
     "A fire, a fire is burning! I hear the boot of Lucifer, I see his filthy face!"
+  ],
+  "all-the-light": [
+    "Open your eyes and see what you can with them before they close forever.",
+    "The brain is an amazing thing. It invents stories, revises them, adorns them with tiny details that may or may not be true.",
+    "We all come into existence as a single cell, smaller than a speck of dust.",
+    "Time is a machine: it will convert your pain into experience.",
+    "What do we call visible light? We call it color. But the electromagnetic spectrum runs to zero in one direction and infinity in the other."
+  ],
+  "slessor-poems": [
+    "Time that is moved by little fidget wheels / Is not my time",
+    "And I who am here dissected coldly, perceive / Life leaking darkly away",
+    "Then I would ride the wind / Forever, and fall away",
+    "Here time flows past with a clock-like beat",
+    "Memory, you rust of stars, you orange peel of moonlight"
+  ],
+  "boy-behind-curtain": [
+    "The place you belong is the place you live.",
+    "Writing is a leap into the dark.",
+    "Home is the place where, when you have to go there, they have to take you in.",
+    "The landscape was everything to me then.",
+    "Language is the vehicle of our dreams."
+  ],
+  "billy-elliot": [
+    "Just because I like ballet doesn't mean I'm a poof, you know.",
+    "It's about being yourself, and not being ashamed of who you are.",
+    "I don't want a childhood, I want to be a ballet dancer.",
+    "Sometimes you've got to be practical about these things.",
+    "Find a place on that stage and bloody well hold on to it."
+  ],
+  "dobson-poems": [
+    "Time is the substance of all poetry.",
+    "In the country of the past, nothing changes.",
+    "The artist must go on creating, creating worlds.",
+    "Memory is the mother of the muses.",
+    "What we see depends on what we are looking for."
+  ],
+  "i-am-malala": [
+    "One child, one teacher, one book, one pen can change the world.",
+    "We realize the importance of our voices only when we are silenced.",
+    "Education is education. We should learn everything and then choose which path to follow.",
+    "I raise up my voice—not so I can shout, but so that those without a voice can be heard.",
+    "Let us remember: One book, one pen, one child, and one teacher can change the world."
+  ],
+  "past-the-shallows": [
+    "Some people are born broken, and some people break.",
+    "The sea is everything to us here.",
+    "Sometimes you just have to hold on and hope for the best.",
+    "There are places that hold you, and places that let you go.",
+    "The ocean doesn't forgive, but it doesn't judge either."
+  ],
+  "rainbows-end": [
+    "We mob been here long time before whitefellas come.",
+    "You can take the girl out of the mission, but you can't take the mission out of the girl.",
+    "Education is power, but it can also be a weapon.",
+    "Home is where your people are, not where the government says you belong.",
+    "Sometimes the old ways and the new ways got to find a way to dance together."
+  ],
+  "merchant-of-venice": [
+    "The quality of mercy is not strained.",
+    "If you prick us, do we not bleed? If you tickle us, do we not laugh?",
+    "All that glisters is not gold.",
+    "In time we hate that which we often fear.",
+    "The devil can cite Scripture for his purpose."
+  ],
+  "waste-land": [
+    "Art can transform the most discarded materials into something beautiful.",
+    "We are more than what society throws away.",
+    "Everyone has a story worth telling.",
+    "Beauty can be found in the most unexpected places.",
+    "When people see themselves differently, everything changes."
   ]
+}
+
+// Mapping function to handle book ID variations
+const getTextKey = (bookId: string | undefined): string => {
+  if (!bookId) return ""
+  
+  // Add debugging
+  console.log("Book ID received:", bookId)
+  
+  // Direct mapping for books that match exactly
+  if (ESSAY_QUESTIONS[bookId]) {
+    console.log("Direct match found for:", bookId)
+    return bookId
+  }
+  
+  // Handle common variations or alternative names
+  const mappings: Record<string, string> = {
+    "nineteen-eighty-four": "nineteen-eighty-four",
+    "1984": "1984",
+    "great-gatsby": "great-gatsby",
+    "the-great-gatsby": "great-gatsby",
+    "gatsby": "gatsby",
+    "hamlet": "hamlet",
+    "frankenstein": "frankenstein",
+    "the-crucible": "crucible",
+    "crucible": "crucible",
+    "all-the-light": "all-the-light",
+    "all-the-light-we-cannot-see": "all-the-light",
+    "slessor-poems": "slessor-poems",
+    "kenneth-slessor": "slessor-poems",
+    "selected-poems": "slessor-poems",
+    "boy-behind-curtain": "boy-behind-curtain",
+    "the-boy-behind-curtain": "boy-behind-curtain",
+    "billy-elliot": "billy-elliot",
+    "dobson-poems": "dobson-poems",
+    "collected-poems": "dobson-poems",
+    "rosemary-dobson": "dobson-poems",
+    "i-am-malala": "i-am-malala",
+    "malala": "i-am-malala",
+    "past-the-shallows": "past-the-shallows",
+    "rainbows-end": "rainbows-end",
+    "rainbow's-end": "rainbows-end",
+    "merchant-of-venice": "merchant-of-venice",
+    "the-merchant-of-venice": "merchant-of-venice",
+    "waste-land": "waste-land",
+    "wasteland": "waste-land"
+  }
+  
+  const mappedKey = mappings[bookId.toLowerCase()]
+  console.log("Mapped key:", mappedKey)
+  
+  return mappedKey || bookId
 }
 
 // Literary techniques for analysis
@@ -134,31 +356,21 @@ export default function InteractiveEssayBuilder() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [allStepsContent, setAllStepsContent] = useState({})
 
-  // Show message if no book is selected
-  if (!selectedBook && user) {
-    return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <h1 className="text-xl font-semibold mb-6">Interactive Essay Builder</h1>
-        <div className="max-w-md mx-auto">
-          <Alert>
-            <AlertDescription>
-              You need to select a book to access the Essay Builder. Please complete your profile setup first.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    )
-  }
-
   // Map selectedBook to the expected format
-  const selectedText = selectedBook?.id || ""
+  const selectedText = getTextKey(selectedBook?.id)
 
   // Generate a random question
   const generateRandomQuestion = () => {
+    console.log("generateRandomQuestion called with selectedText:", selectedText)
+    console.log("Available question keys:", Object.keys(ESSAY_QUESTIONS))
+    console.log("ESSAY_QUESTIONS[selectedText]:", ESSAY_QUESTIONS[selectedText])
+    
     if (selectedText && ESSAY_QUESTIONS[selectedText]) {
       const questions = ESSAY_QUESTIONS[selectedText]
       const randomIndex = Math.floor(Math.random() * questions.length)
-      setCurrentQuestion(questions[randomIndex])
+      const selectedQuestion = questions[randomIndex]
+      console.log("Generated question:", selectedQuestion)
+      setCurrentQuestion(selectedQuestion)
       // Reset everything when new question is generated
       setCurrentStep(0)
       setEssayContent("")
@@ -166,19 +378,29 @@ export default function InteractiveEssayBuilder() {
       setFeedback(null)
       setShowFeedback(false)
       setAllStepsContent({})
+    } else {
+      console.log("No questions available for selectedText:", selectedText)
     }
   }
 
   // Get a random quote
   const getRandomQuote = () => {
+    console.log("getRandomQuote called with selectedText:", selectedText)
+    console.log("Available quote keys:", Object.keys(QUOTES))
+    console.log("QUOTES[selectedText]:", QUOTES[selectedText])
+    
     if (selectedText && QUOTES[selectedText]) {
       const quotes = QUOTES[selectedText]
       const randomIndex = Math.floor(Math.random() * quotes.length)
-      setRandomQuote(quotes[randomIndex])
+      const selectedQuote = quotes[randomIndex]
+      console.log("Generated quote:", selectedQuote)
+      setRandomQuote(selectedQuote)
 
       // Also set a random technique for body paragraphs
       const randomTechIndex = Math.floor(Math.random() * TECHNIQUES.length)
       setRandomTechnique(TECHNIQUES[randomTechIndex])
+    } else {
+      console.log("No quotes available for selectedText:", selectedText)
     }
   }
 
@@ -262,9 +484,21 @@ export default function InteractiveEssayBuilder() {
 
   // Initialize with random question and quote
   useEffect(() => {
+    console.log("useEffect triggered - selectedBook:", selectedBook)
+    console.log("useEffect triggered - selectedText:", selectedText)
+    console.log("useEffect triggered - currentQuestion:", currentQuestion)
+    
     if (selectedText && !currentQuestion) {
+      console.log("Calling generateRandomQuestion and getRandomQuote")
       generateRandomQuestion()
       getRandomQuote()
+    } else if (selectedText && !ESSAY_QUESTIONS[selectedText]) {
+      console.log("No essay questions available for this book yet")
+      setCurrentQuestion("Essay questions for this book are being prepared. Please try another book or check back later.")
+    } else if (!selectedText) {
+      console.log("No selectedText available")
+    } else {
+      console.log("Current question already exists:", currentQuestion)
     }
   }, [selectedText])
 
@@ -274,8 +508,6 @@ export default function InteractiveEssayBuilder() {
       getAiTip()
     }
   }, [currentStep, essayComponent, selectedText, currentQuestion])
-
-  // Handle text selection
 
   // Handle component selection
   const handleComponentChange = (value) => {
@@ -393,6 +625,22 @@ export default function InteractiveEssayBuilder() {
     getAiFeedback(completeContent)
   }
 
+  // Show message if no book is selected
+  if (!selectedBook && user) {
+    return (
+      <div className="container mx-auto py-8 px-4 text-center">
+        <h1 className="text-xl font-semibold mb-6">Interactive Essay Builder</h1>
+        <div className="max-w-md mx-auto">
+          <Alert>
+            <AlertDescription>
+              You need to select a book to access the Essay Builder. Please complete your profile setup first.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
@@ -457,16 +705,24 @@ export default function InteractiveEssayBuilder() {
                 New Question
               </Button>
             </div>
-            <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
-              <p className="text-sm font-medium text-blue-900">
-                {currentQuestion || "Generating question..."}
+            <div className={`p-3 rounded-md border ${
+              currentQuestion && !currentQuestion.includes("being prepared") 
+                ? "bg-blue-50 border-blue-200" 
+                : "bg-orange-50 border-orange-200"
+            }`}>
+              <p className={`text-sm font-medium ${
+                currentQuestion && !currentQuestion.includes("being prepared")
+                  ? "text-blue-900"
+                  : "text-orange-900"
+              }`}>
+                {currentQuestion || "Loading..."}
               </p>
             </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        {selectedText && currentQuestion ? (
+        {selectedText && currentQuestion && !currentQuestion.includes("being prepared") ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Resources and Instructions */}
             <div className="lg:col-span-1 space-y-4">
@@ -558,7 +814,7 @@ export default function InteractiveEssayBuilder() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Sparkles className="h-4 w-4 text-primary mr-2" />
-                      <CardTitle className="text-sm">AI Writing Tips</CardTitle>
+                      <CardTitle className="text-sm">Writing Tips</CardTitle>
                     </div>
                     <Button 
                       variant="ghost" 
@@ -580,10 +836,10 @@ export default function InteractiveEssayBuilder() {
                     {isLoadingTip ? (
                       <div className="flex items-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                        <p className="text-sm text-blue-700">Getting AI tips...</p>
+                        <p className="text-sm text-blue-700">Getting tips...</p>
                       </div>
                     ) : (
-                      <p className="text-sm text-blue-700">{aiTip || "AI tips will appear here to help you with the current step."}</p>
+                      <p className="text-sm text-blue-700">{aiTip || "Tips will appear here to help you with the current step."}</p>
                     )}
                   </div>
                 </CardContent>
@@ -629,7 +885,7 @@ export default function InteractiveEssayBuilder() {
                       ) : currentStep < steps.length - 1 ? (
                         <>Next: {steps[currentStep + 1]?.name}</>
                       ) : (
-                        <>Complete & Get AI Feedback</>
+                        <>Complete & Get Feedback</>
                       )}
                     </Button>
                   </div>
@@ -643,7 +899,7 @@ export default function InteractiveEssayBuilder() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <MessageSquare className="h-5 w-5 text-primary mr-2" />
-                        <CardTitle>AI Feedback</CardTitle>
+                        <CardTitle>Feedback</CardTitle>
                       </div>
                       <div className="flex items-center space-x-2">
                         <TrendingUp className="h-4 w-4 text-green-600" />
@@ -778,11 +1034,29 @@ export default function InteractiveEssayBuilder() {
               </Card>
             </div>
           </div>
+        ) : selectedText && currentQuestion && currentQuestion.includes("being prepared") ? (
+          <div className="text-center p-12 bg-white rounded-lg border">
+            <HelpCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">Essay Questions Coming Soon</h3>
+            <p className="text-muted-foreground mb-6">
+              We're working on adding essay questions for <strong>{selectedBook?.title}</strong>. 
+              <br />
+              In the meantime, try selecting a different book that has questions available.
+            </p>
+                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
+               <p className="text-sm text-muted-foreground">
+                 Books with questions available: Nineteen Eighty-Four, Hamlet, The Great Gatsby, Frankenstein, The Crucible, All the Light We Cannot See, Selected Poems (Slessor), The Boy Behind the Curtain, Billy Elliot, Collected Poems (Dobson), I Am Malala, Past the Shallows, Rainbow's End, The Merchant of Venice, Waste Land
+               </p>
+             </div>
+          </div>
         ) : (
           <div className="text-center p-12 bg-white rounded-lg border">
             <h3 className="text-lg font-medium mb-2">Get Started</h3>
             <p className="text-muted-foreground mb-6">
-              A random essay question will be generated for your selected book. Practice writing step-by-step with AI guidance.
+              {selectedBook 
+                ? "Loading essay questions for your selected book..." 
+                : "Select a book to start practicing essay writing with step-by-step guidance."
+              }
             </p>
             <div className="flex justify-center">
               <ChevronDown className="h-6 w-6 text-muted-foreground animate-bounce" />

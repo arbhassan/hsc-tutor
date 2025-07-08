@@ -1396,7 +1396,7 @@ export default function ExamSimulatorPage() {
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
           <div className="container flex h-14 items-center justify-between">
             <div className="flex items-center space-x-4">
-              <span className="font-medium">AI Marking in Progress</span>
+              <span className="font-medium">Marking in Progress</span>
             </div>
           </div>
         </header>
@@ -1406,7 +1406,7 @@ export default function ExamSimulatorPage() {
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-6"></div>
             <h1 className="text-2xl font-bold mb-4">Marking Your Exam</h1>
             <p className="text-lg text-muted-foreground mb-8">
-              Our AI teacher is carefully reviewing your responses and providing detailed feedback. This may take a few moments...
+              Our teacher is carefully reviewing your responses and providing detailed feedback. This may take a few moments...
             </p>
             
             <div className="space-y-4">
@@ -1475,8 +1475,12 @@ export default function ExamSimulatorPage() {
             <Tabs defaultValue="overview" className="mb-12">
               <TabsList className="mb-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="section1">Section I: Unseen Texts</TabsTrigger>
-                <TabsTrigger value="section2">Section II: Essay</TabsTrigger>
+                {(selectedSections === "section1" || selectedSections === "both") && (
+                  <TabsTrigger value="section1">Section I: Unseen Texts</TabsTrigger>
+                )}
+                {(selectedSections === "section2" || selectedSections === "both") && (
+                  <TabsTrigger value="section2">Section II: Essay</TabsTrigger>
+                )}
                 <TabsTrigger value="improvement">Areas for Improvement</TabsTrigger>
               </TabsList>
 
@@ -1491,61 +1495,77 @@ export default function ExamSimulatorPage() {
                                           <div className="flex justify-between items-center">
                       <div>
                         <h3 className="font-medium">Overall Score</h3>
-                        <p className="text-sm text-muted-foreground">Based on AI assessment of your responses</p>
+                        <p className="text-sm text-muted-foreground">Based on assessment of your responses</p>
                       </div>
                       <div className="text-right">
                         <div className="text-3xl font-bold">
-                          {(markingResults.sectionOne.summary.totalMarks + (markingResults.essay?.totalMark || 0))}/40
+                          {(() => {
+                            const section1Score = (selectedSections === "section1" || selectedSections === "both") ? markingResults.sectionOne.summary.totalMarks : 0
+                            const section2Score = (selectedSections === "section2" || selectedSections === "both") ? (markingResults.essay?.totalMark || 0) : 0
+                            const maxScore = (selectedSections === "both") ? 40 : 20
+                            return `${section1Score + section2Score}/${maxScore}`
+                          })()}
                         </div>
                         <Badge className={`${
-                          markingResults.sectionOne.summary.band >= 5 || (markingResults.essay?.band || 0) >= 5 
-                            ? "bg-green-600" 
-                            : markingResults.sectionOne.summary.band >= 4 || (markingResults.essay?.band || 0) >= 4
-                            ? "bg-blue-600"
-                            : "bg-amber-600"
+                          (() => {
+                            const section1Band = (selectedSections === "section1" || selectedSections === "both") ? markingResults.sectionOne.summary.band : 0
+                            const section2Band = (selectedSections === "section2" || selectedSections === "both") ? (markingResults.essay?.band || 0) : 0
+                            const maxBand = Math.max(section1Band, section2Band)
+                            return maxBand >= 5 ? "bg-green-600" : maxBand >= 4 ? "bg-blue-600" : "bg-amber-600"
+                          })()
                         }`}>
-                          Band {Math.max(markingResults.sectionOne.summary.band, markingResults.essay?.band || 0)}
+                          Band {(() => {
+                            const section1Band = (selectedSections === "section1" || selectedSections === "both") ? markingResults.sectionOne.summary.band : 0
+                            const section2Band = (selectedSections === "section2" || selectedSections === "both") ? (markingResults.essay?.band || 0) : 0
+                            return Math.max(section1Band, section2Band)
+                          })()}
                         </Badge>
                       </div>
                     </div>
 
                       <Separator />
 
-                      <div className="grid grid-cols-2 gap-6">
-                        <div>
-                          <h3 className="font-medium mb-2">Section I: Unseen Texts</h3>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Score:</span>
-                            <span className="text-sm font-medium">
-                              {markingResults.sectionOne.summary.totalMarks}/{markingResults.sectionOne.summary.totalPossible}
-                            </span>
+                      <div className={`grid gap-6 ${
+                        selectedSections === "both" ? "grid-cols-2" : "grid-cols-1"
+                      }`}>
+                        {(selectedSections === "section1" || selectedSections === "both") && (
+                          <div>
+                            <h3 className="font-medium mb-2">Section I: Unseen Texts</h3>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">Score:</span>
+                              <span className="text-sm font-medium">
+                                {markingResults.sectionOne.summary.totalMarks}/{markingResults.sectionOne.summary.totalPossible}
+                              </span>
+                            </div>
+                            <Progress value={markingResults.sectionOne.summary.percentage} className="h-2 mb-3" />
+                            <p className="text-sm text-muted-foreground">
+                              {markingResults.sectionOne.summary.percentage >= 80 
+                                ? "Excellent analysis with sophisticated understanding of textual features."
+                                : markingResults.sectionOne.summary.percentage >= 70
+                                ? "Good analysis of textual features with some areas for deeper exploration."
+                                : markingResults.sectionOne.summary.percentage >= 60
+                                ? "Satisfactory analysis with room for improvement in technique identification."
+                                : "Basic analysis - focus on identifying more literary techniques and their effects."
+                              }
+                            </p>
                           </div>
-                          <Progress value={markingResults.sectionOne.summary.percentage} className="h-2 mb-3" />
-                          <p className="text-sm text-muted-foreground">
-                            {markingResults.sectionOne.summary.percentage >= 80 
-                              ? "Excellent analysis with sophisticated understanding of textual features."
-                              : markingResults.sectionOne.summary.percentage >= 70
-                              ? "Good analysis of textual features with some areas for deeper exploration."
-                              : markingResults.sectionOne.summary.percentage >= 60
-                              ? "Satisfactory analysis with room for improvement in technique identification."
-                              : "Basic analysis - focus on identifying more literary techniques and their effects."
-                            }
-                          </p>
-                        </div>
+                        )}
 
-                        <div>
-                          <h3 className="font-medium mb-2">Section II: Essay</h3>
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm">Score:</span>
-                            <span className="text-sm font-medium">
-                              {markingResults.essay?.totalMark || 0}/20
-                            </span>
+                        {(selectedSections === "section2" || selectedSections === "both") && (
+                          <div>
+                            <h3 className="font-medium mb-2">Section II: Essay</h3>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">Score:</span>
+                              <span className="text-sm font-medium">
+                                {markingResults.essay?.totalMark || 0}/20
+                              </span>
+                            </div>
+                            <Progress value={(markingResults.essay?.totalMark || 0) * 5} className="h-2 mb-3" />
+                            <p className="text-sm text-muted-foreground">
+                              {markingResults.essay?.overallComment || "No essay response provided."}
+                            </p>
                           </div>
-                          <Progress value={(markingResults.essay?.totalMark || 0) * 5} className="h-2 mb-3" />
-                          <p className="text-sm text-muted-foreground">
-                            {markingResults.essay?.overallComment || "No essay response provided."}
-                          </p>
-                        </div>
+                        )}
                       </div>
 
 
@@ -1554,9 +1574,10 @@ export default function ExamSimulatorPage() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="section1">
-                <div className="space-y-8">
-                  {unseenTexts.map((text) => (
+              {(selectedSections === "section1" || selectedSections === "both") && (
+                <TabsContent value="section1">
+                  <div className="space-y-8">
+                    {unseenTexts.map((text) => (
                     <Card key={text.id}>
                       <CardHeader>
                         <CardTitle>{text.title}</CardTitle>
@@ -1651,11 +1672,13 @@ export default function ExamSimulatorPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              </TabsContent>
+                    ))}
+                  </div>
+                </TabsContent>
+              )}
 
-              <TabsContent value="section2">
+              {(selectedSections === "section2" || selectedSections === "both") && (
+                <TabsContent value="section2">
                 <Card>
                   <CardHeader>
                     <CardTitle>Essay Response</CardTitle>
@@ -1844,117 +1867,130 @@ export default function ExamSimulatorPage() {
                     </Tabs>
                   </CardContent>
                 </Card>
-              </TabsContent>
+                </TabsContent>
+              )}
 
               <TabsContent value="improvement">
                 <Card>
                   <CardHeader>
                     <CardTitle>Areas for Improvement</CardTitle>
-                    <CardDescription>AI-generated targeted suggestions to enhance your HSC Paper 1 performance</CardDescription>
+                    <CardDescription>Targeted suggestions to enhance your HSC Paper 1 performance</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      <div>
-                        <h3 className="font-medium mb-4">Section I: Unseen Texts</h3>
-                        {markingResults.sectionOne.results.length > 0 ? (
-                          <div className="space-y-4">
-                            {/* Get unique improvement suggestions from all Section I responses */}
-                            {(() => {
-                              const allImprovements = markingResults.sectionOne.results.flatMap(result => result.improvements || [])
-                              const uniqueImprovements = [...new Set(allImprovements)]
-                              return uniqueImprovements.slice(0, 5).map((improvement, idx) => (
+                      {(selectedSections === "section1" || selectedSections === "both") && (
+                        <div>
+                          <h3 className="font-medium mb-4">Section I: Unseen Texts</h3>
+                          {markingResults.sectionOne.results.length > 0 ? (
+                            <div className="space-y-4">
+                              {/* Get unique improvement suggestions from all Section I responses */}
+                              {(() => {
+                                const allImprovements = markingResults.sectionOne.results.flatMap(result => result.improvements || [])
+                                const uniqueImprovements = [...new Set(allImprovements)]
+                                return uniqueImprovements.slice(0, 5).map((improvement, idx) => (
+                                  <div key={idx} className="flex items-start">
+                                    <span className="text-amber-600 mr-2 mt-1">•</span>
+                                    <p className="text-sm">{improvement}</p>
+                                  </div>
+                                ))
+                              })()}
+                              
+                              {markingResults.sectionOne.summary.percentage < 60 && (
+                                <div className="bg-amber-50 p-4 rounded-md mt-4">
+                                  <h4 className="font-medium text-amber-800 mb-2">Critical Areas Needing Attention:</h4>
+                                  <p className="text-sm text-amber-700">
+                                    Your Section I performance indicates fundamental gaps in textual analysis. Focus on reading comprehension 
+                                    and identifying specific literary techniques that actually exist in the passages provided.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No Section I responses provided for analysis.</p>
+                          )}
+                        </div>
+                      )}
+
+                      {(selectedSections === "section1" || selectedSections === "both") && (selectedSections === "section2" || selectedSections === "both") && (
+                        <Separator />
+                      )}
+
+                      {(selectedSections === "section2" || selectedSections === "both") && (
+                        <div>
+                          <h3 className="font-medium mb-4">Section II: Essay</h3>
+                          {markingResults.essay ? (
+                            <div className="space-y-4">
+                              {(markingResults.essay.improvements || []).map((improvement, idx) => (
                                 <div key={idx} className="flex items-start">
                                   <span className="text-amber-600 mr-2 mt-1">•</span>
                                   <p className="text-sm">{improvement}</p>
                                 </div>
-                              ))
-                            })()}
-                            
-                            {markingResults.sectionOne.summary.percentage < 60 && (
-                              <div className="bg-amber-50 p-4 rounded-md mt-4">
-                                <h4 className="font-medium text-amber-800 mb-2">Critical Areas Needing Attention:</h4>
-                                <p className="text-sm text-amber-700">
-                                  Your Section I performance indicates fundamental gaps in textual analysis. Focus on reading comprehension 
-                                  and identifying specific literary techniques that actually exist in the passages provided.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No Section I responses provided for analysis.</p>
-                        )}
-                      </div>
+                              ))}
+                              
+                              {markingResults.essay.band <= 3 && (
+                                <div className="bg-red-50 p-4 rounded-md mt-4">
+                                  <h4 className="font-medium text-red-800 mb-2">Essay Performance Alert:</h4>
+                                  <p className="text-sm text-red-700">
+                                    Your essay response falls below expected HSC standards. Focus on demonstrating genuine understanding 
+                                    of your prescribed text with specific examples and sophisticated analysis of literary techniques.
+                                  </p>
+                                </div>
+                              )}
 
-                      <Separator />
-
-                      <div>
-                        <h3 className="font-medium mb-4">Section II: Essay</h3>
-                        {markingResults.essay ? (
-                          <div className="space-y-4">
-                            {(markingResults.essay.improvements || []).map((improvement, idx) => (
-                              <div key={idx} className="flex items-start">
-                                <span className="text-amber-600 mr-2 mt-1">•</span>
-                                <p className="text-sm">{improvement}</p>
-                              </div>
-                            ))}
-                            
-                            {markingResults.essay.band <= 3 && (
-                              <div className="bg-red-50 p-4 rounded-md mt-4">
-                                <h4 className="font-medium text-red-800 mb-2">Essay Performance Alert:</h4>
-                                <p className="text-sm text-red-700">
-                                  Your essay response falls below expected HSC standards. Focus on demonstrating genuine understanding 
-                                  of your prescribed text with specific examples and sophisticated analysis of literary techniques.
-                                </p>
-                              </div>
-                            )}
-
-                            {markingResults.essay.nextSteps && markingResults.essay.nextSteps.length > 0 && (
-                              <div className="mt-4">
-                                <h4 className="font-medium mb-2">Recommended Next Steps:</h4>
-                                <ul className="space-y-2">
-                                  {markingResults.essay.nextSteps.map((step, idx) => (
-                                    <li key={idx} className="flex items-start">
-                                      <span className="text-primary mr-2 mt-1">→</span>
-                                      <p className="text-sm">{step}</p>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No essay response provided for analysis.</p>
-                        )}
-                      </div>
+                              {markingResults.essay.nextSteps && markingResults.essay.nextSteps.length > 0 && (
+                                <div className="mt-4">
+                                  <h4 className="font-medium mb-2">Recommended Next Steps:</h4>
+                                  <ul className="space-y-2">
+                                    {markingResults.essay.nextSteps.map((step, idx) => (
+                                      <li key={idx} className="flex items-start">
+                                        <span className="text-primary mr-2 mt-1">→</span>
+                                        <p className="text-sm">{step}</p>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No essay response provided for analysis.</p>
+                          )}
+                        </div>
+                      )}
 
                       <Separator />
 
                       <div>
                         <h3 className="font-medium mb-4">Overall Performance Summary</h3>
                         <div className="bg-blue-50 p-4 rounded-md">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <h4 className="font-medium text-blue-800 mb-2">Section I Analysis</h4>
-                              <p className="text-sm text-blue-700">
-                                {markingResults.sectionOne.summary.percentage >= 80 
-                                  ? "Excellent comprehension and analysis of unseen texts. Continue practicing sophisticated technique identification."
-                                  : markingResults.sectionOne.summary.percentage >= 60
-                                  ? "Good foundation in textual analysis. Focus on deeper exploration of how techniques create meaning."
-                                  : "Significant improvement needed in reading comprehension and technique analysis. Practice with more unseen texts daily."
-                                }
-                              </p>
-                            </div>
-                            <div>
-                              <h4 className="font-medium text-blue-800 mb-2">Essay Analysis</h4>
-                              <p className="text-sm text-blue-700">
-                                {(markingResults.essay?.totalMark || 0) >= 16 
-                                  ? "Strong essay writing skills demonstrated. Focus on adding more sophisticated vocabulary and nuanced arguments."
-                                  : (markingResults.essay?.totalMark || 0) >= 12
-                                  ? "Solid essay foundation. Work on deeper analysis and stronger textual integration."
-                                  : "Essay writing needs significant development. Focus on understanding your prescribed text thoroughly and practicing basic essay structure."
-                                }
-                              </p>
-                            </div>
+                          <div className={`grid gap-4 ${
+                            selectedSections === "both" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+                          }`}>
+                            {(selectedSections === "section1" || selectedSections === "both") && (
+                              <div>
+                                <h4 className="font-medium text-blue-800 mb-2">Section I Analysis</h4>
+                                <p className="text-sm text-blue-700">
+                                  {markingResults.sectionOne.summary.percentage >= 80 
+                                    ? "Excellent comprehension and analysis of unseen texts. Continue practicing sophisticated technique identification."
+                                    : markingResults.sectionOne.summary.percentage >= 60
+                                    ? "Good foundation in textual analysis. Focus on deeper exploration of how techniques create meaning."
+                                    : "Significant improvement needed in reading comprehension and technique analysis. Practice with more unseen texts daily."
+                                  }
+                                </p>
+                              </div>
+                            )}
+                            {(selectedSections === "section2" || selectedSections === "both") && (
+                              <div>
+                                <h4 className="font-medium text-blue-800 mb-2">Essay Analysis</h4>
+                                <p className="text-sm text-blue-700">
+                                  {(markingResults.essay?.totalMark || 0) >= 16 
+                                    ? "Strong essay writing skills demonstrated. Focus on adding more sophisticated vocabulary and nuanced arguments."
+                                    : (markingResults.essay?.totalMark || 0) >= 12
+                                    ? "Solid essay foundation. Work on deeper analysis and stronger textual integration."
+                                    : "Essay writing needs significant development. Focus on understanding your prescribed text thoroughly and practicing basic essay structure."
+                                  }
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1963,46 +1999,52 @@ export default function ExamSimulatorPage() {
 
                       <div>
                         <h3 className="font-medium mb-2">Recommended Practice Activities</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Card>
-                            <CardHeader className="pb-2">
-                              <CardTitle className="text-base flex items-center">
-                                <BookOpen className="h-4 w-4 mr-2" />
-                                Daily Drills
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <p className="text-sm">
-                                {markingResults.sectionOne.summary.percentage < 60 
-                                  ? "Critical: Focus on basic reading comprehension and technique identification with unseen texts."
-                                  : "Continue practicing poetry and drama extracts to improve your analysis of these text types."
-                                }
-                              </p>
-                              <Button variant="outline" size="sm" className="mt-2" asChild>
-                                <Link href="/practice-zone/daily-drill">Practice Now</Link>
-                              </Button>
-                            </CardContent>
-                          </Card>
+                        <div className={`grid gap-4 ${
+                          selectedSections === "both" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"
+                        }`}>
+                          {(selectedSections === "section1" || selectedSections === "both") && (
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-base flex items-center">
+                                  <BookOpen className="h-4 w-4 mr-2" />
+                                  Daily Drills
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <p className="text-sm">
+                                  {markingResults.sectionOne.summary.percentage < 60 
+                                    ? "Critical: Focus on basic reading comprehension and technique identification with unseen texts."
+                                    : "Continue practicing poetry and drama extracts to improve your analysis of these text types."
+                                  }
+                                </p>
+                                <Button variant="outline" size="sm" className="mt-2" asChild>
+                                  <Link href="/practice-zone/daily-drill">Practice Now</Link>
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
 
-                          <Card>
-                            <CardHeader className="pb-2">
-                              <CardTitle className="text-base flex items-center">
-                                <FileText className="h-4 w-4 mr-2" />
-                                Essay Mode
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <p className="text-sm">
-                                {(markingResults.essay?.totalMark || 0) < 12 
-                                  ? "Essential: Focus on basic essay structure and demonstrating understanding of your prescribed text."
-                                  : "Practice writing thesis statements and integrating evidence effectively."
-                                }
-                              </p>
-                              <Button variant="outline" size="sm" className="mt-2" asChild>
-                                <Link href="/practice-zone/essay-mode">Practice Now</Link>
-                              </Button>
-                            </CardContent>
-                          </Card>
+                          {(selectedSections === "section2" || selectedSections === "both") && (
+                            <Card>
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-base flex items-center">
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Essay Mode
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent className="pt-0">
+                                <p className="text-sm">
+                                  {(markingResults.essay?.totalMark || 0) < 12 
+                                    ? "Essential: Focus on basic essay structure and demonstrating understanding of your prescribed text."
+                                    : "Practice writing thesis statements and integrating evidence effectively."
+                                  }
+                                </p>
+                                <Button variant="outline" size="sm" className="mt-2" asChild>
+                                  <Link href="/practice-zone/essay-mode">Practice Now</Link>
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
                         </div>
                       </div>
                     </div>

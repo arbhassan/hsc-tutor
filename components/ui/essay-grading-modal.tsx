@@ -231,7 +231,7 @@ export default function EssayGradingModal({
                 <RefreshCw className="h-8 w-8 animate-spin text-primary" />
                 <h3 className="text-lg font-semibold">Grading Your Essay...</h3>
                 <p className="text-muted-foreground text-center text-sm sm:text-base">
-                  Our AI is carefully analyzing your essay structure, content, and argumentation.
+                  We are carefully analyzing your essay structure, content, and argumentation.
                   This may take a few moments.
                 </p>
               </div>
