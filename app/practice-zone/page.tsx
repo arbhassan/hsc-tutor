@@ -44,7 +44,7 @@ export default function PracticeZonePage() {
             title="Quote Memorisation Flashcards"
             description="Master key quotes and paragraphs with interactive cloze passages."
             icon={<Lightbulb className="h-6 w-6" />}
-            href="/practice-zone/quote-flashcards"
+            href="/practice-zone/quote-flashcards-new"
             features={[
               "Cloze passage system for active recall",
               "Create custom flashcard sets",

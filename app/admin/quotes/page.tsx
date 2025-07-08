@@ -1,361 +1,212 @@
 "use client"
 
-import { useState, useEffect, useCallback, memo, useMemo, useRef } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { getBooks, type BookInterface } from "@/lib/books"
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Save, 
+import { useAuth } from "@/lib/auth-context"
+import { quoteFlashcardService, type QuoteWithDetails, type NewQuote, type Theme } from "@/lib/services/quote-flashcard-service"
+import { adminService, type Book } from "@/lib/services/admin-service"
+import {
+  ArrowLeft,
+  Plus,
+  Edit,
+  Trash2,
+  Save,
   X,
+  Quote as QuoteIcon,
+  Search,
+  Filter,
+  AlertCircle,
   BookOpen,
-  Quote,
-  Star
+  Eye,
+  EyeOff,
+  Tags,
+  CreditCard,
+  Zap,
+  Settings,
 } from "lucide-react"
 
-// Available themes for quotes
-const THEMES = [
-  "Creation and Responsibility",
-  "Isolation and Alienation", 
-  "Nature vs. Science",
-  "Totalitarianism",
-  "Individual vs. Society",
-  "Language and Truth",
-  "The American Dream",
-  "Wealth and Class",
-  "Revenge",
-  "Appearance vs. Reality",
-  "Power",
-  "Identity",
-  "Justice",
-  "Conflict",
-  "Redemption",
-  "Nature",
-  "Time",
-  "Death",
-  "Love",
-  "Freedom"
-]
-
-interface Quote {
-  id: number
-  book_id: string
-  theme: string
-  quote_text: string
-  context: string
-  page_reference?: string
-  chapter_reference?: string
-  literary_techniques?: string[]
-  importance_level: number
-  created_at: string
-  updated_at: string
-}
-
-interface QuoteFormData {
-  book_id: string
-  theme: string
-  quote_text: string
-  context: string
-  page_reference: string
-  chapter_reference: string
-  literary_techniques: string[]
-  importance_level: number
-}
-
-const initialFormData: QuoteFormData = {
-  book_id: "",
-  theme: "",
-  quote_text: "",
-  context: "",
-  page_reference: "",
-  chapter_reference: "",
-  literary_techniques: [],
-  importance_level: 3
-}
-
-// Custom hook for optimized input handling
-function useOptimizedInput(initialValue: string, onUpdate?: (value: string) => void) {
-  const [displayValue, setDisplayValue] = useState(initialValue)
-  const updateRef = useRef(onUpdate)
-  const timeoutRef = useRef<NodeJS.Timeout>()
-  const pendingRef = useRef(false)
-
-  // Update the ref when onUpdate changes
-  useEffect(() => {
-    updateRef.current = onUpdate
-  }, [onUpdate])
-
-  const handleChange = useCallback((value: string) => {
-    // Critical path: update display immediately
-    setDisplayValue(value)
-    
-    // Non-critical path: batch updates using requestIdleCallback
-    if (updateRef.current && !pendingRef.current) {
-      pendingRef.current = true
-      
-      // Use requestIdleCallback for better performance, fallback to setTimeout
-      if (typeof requestIdleCallback !== 'undefined') {
-        requestIdleCallback(() => {
-          updateRef.current?.(value)
-          pendingRef.current = false
-        })
-      } else {
-        // Fallback for Safari
-        timeoutRef.current = setTimeout(() => {
-          updateRef.current?.(value)
-          pendingRef.current = false
-        }, 0)
-      }
-    }
-  }, [])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [])
-
-  return [displayValue, handleChange] as const
-}
-
-export default function QuotesAdmin() {
-  const { toast } = useToast()
-  const [quotes, setQuotes] = useState<Quote[]>([])
-  const [books, setBooks] = useState<BookInterface[]>([])
-  const [selectedBook, setSelectedBook] = useState<string>("all")
-  const [selectedTheme, setSelectedTheme] = useState<string>("all")
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState<QuoteFormData>(initialFormData)
-  const [editingQuote, setEditingQuote] = useState<Quote | null>(null)
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [showEditDialog, setShowEditDialog] = useState(false)
+function QuotesAdminContent() {
+  const searchParams = useSearchParams()
+  const action = searchParams.get('action')
+  const editId = searchParams.get('edit')
   
-  // Optimized literary technique input
-  const [literaryTechniqueInput, setLiteraryTechniqueInput] = useOptimizedInput("")
+  return <QuotesAdminPage action={action} editId={editId} />
+}
 
-  // Memoize books to prevent unnecessary re-renders
-  const bookOptions = useMemo(() => books, [books])
+function QuotesAdminPage({ action, editId }: { action: string | null, editId: string | null }) {
+  const { user, loading } = useAuth()
+  const { toast } = useToast()
+  const router = useRouter()
 
-  // Memoize book title lookup
-  const getBookTitle = useCallback((bookId: string) => {
-    const book = books.find(b => b.id === bookId)
-    return book?.title || bookId
-  }, [books])
+  const [quotes, setQuotes] = useState<QuoteWithDetails[]>([])
+  const [themes, setThemes] = useState<Theme[]>([])
+  const [books, setBooks] = useState<Book[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [bookFilter, setBookFilter] = useState<string>("all")
+  const [themeFilter, setThemeFilter] = useState<string[]>([])
+  const [showForm, setShowForm] = useState(action === 'create' || !!editId)
+  const [editingQuote, setEditingQuote] = useState<QuoteWithDetails | null>(null)
+  const [error, setError] = useState("")
 
-  // Load books on component mount
+  const [formData, setFormData] = useState<NewQuote>({
+    title: "",
+    text: "",
+    book_id: "",
+    source: "",
+    theme_ids: [],
+  })
+
+  const [showThemeManager, setShowThemeManager] = useState(false)
+  const [newTheme, setNewTheme] = useState({ name: "", description: "", color: "#6366f1" })
+
+  // Load data
   useEffect(() => {
-    const loadBooks = async () => {
-      try {
-        const booksData = await getBooks()
-        setBooks(booksData)
-        console.log('Books loaded:', booksData.length)
-      } catch (error) {
-        console.error('Error loading books:', error)
-        toast({
-          title: "Error",
-          description: "Failed to load books. Please check your database connection.",
-          variant: "destructive",
+    loadData()
+  }, [])
+
+  // Handle URL params
+  useEffect(() => {
+    if (action === 'create') {
+      setShowForm(true)
+      resetForm()
+    } else if (editId) {
+      const quoteToEdit = quotes.find(quote => quote.id === editId)
+      if (quoteToEdit) {
+        setEditingQuote(quoteToEdit)
+        setFormData({
+          title: quoteToEdit.title,
+          text: quoteToEdit.text,
+          book_id: quoteToEdit.book_id,
+          source: quoteToEdit.source || "",
+          theme_ids: quoteToEdit.themes?.map(t => t.id) || []
         })
+        setShowForm(true)
       }
     }
-    loadBooks()
-  }, [toast])
+  }, [action, editId, quotes])
 
-  // Optimized loadQuotes function with better error handling
-  const loadQuotes = useCallback(async (bookId?: string, theme?: string) => {
-    setLoading(true)
+  const loadData = async () => {
     try {
-      const params = new URLSearchParams()
-      const finalBookId = bookId || selectedBook
-      const finalTheme = theme || selectedTheme
-      
-      if (finalBookId && finalBookId !== "all") params.append('bookId', finalBookId)
-      if (finalTheme && finalTheme !== "all") params.append('theme', finalTheme)
-
-      const response = await fetch(`/api/quotes?${params.toString()}`)
-      if (response.ok) {
-        const quotesData = await response.json()
-        setQuotes(quotesData)
-      } else {
-        throw new Error('Failed to fetch quotes')
-      }
+      setIsLoading(true)
+      const [quotesData, themesData, booksData] = await Promise.all([
+        quoteFlashcardService.getAllQuotes({ only_active: false }),
+        quoteFlashcardService.getAllThemes(),
+        adminService.getAllBooks()
+      ])
+      setQuotes(quotesData)
+      setThemes(themesData)
+      setBooks(booksData)
     } catch (error) {
-      console.error('Error loading quotes:', error)
+      console.error('Error loading data:', error)
       toast({
         title: "Error",
-        description: "Failed to load quotes",
+        description: "Failed to load data",
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }, [selectedBook, selectedTheme, toast])
+  }
 
-  // Debounced load quotes when filters change
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadQuotes()
-    }, 300) // 300ms debounce
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      text: "",
+      book_id: "",
+      source: "",
+      theme_ids: [],
+    })
+    setEditingQuote(null)
+    setError("")
+  }
 
-    return () => clearTimeout(timeoutId)
-  }, [loadQuotes])
-
-  // Optimized form data updates using batching
-  const updateFormDataBatched = useCallback((updates: Partial<QuoteFormData>) => {
-    // Use requestIdleCallback to batch state updates
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => {
-        setFormData(prev => ({ ...prev, ...updates }))
-      })
-    } else {
-      // Fallback for Safari
-      setTimeout(() => {
-        setFormData(prev => ({ ...prev, ...updates }))
-      }, 0)
+  const validateForm = (): boolean => {
+    if (!formData.title.trim()) {
+      setError("Title is required")
+      return false
     }
-  }, [])
+    if (!formData.text.trim()) {
+      setError("Quote text is required")
+      return false
+    }
+    if (!formData.book_id) {
+      setError("Please select a book")
+      return false
+    }
 
-  // Immediate updates for critical form fields
-  const updateFormDataImmediate = useCallback((updates: Partial<QuoteFormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }))
-  }, [])
+    setError("")
+    return true
+  }
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.book_id || !formData.theme || !formData.quote_text || !formData.context) {
+    if (!validateForm() || !user?.id) return
+
+    try {
+      if (editingQuote) {
+        // Update existing quote
+        const success = await quoteFlashcardService.updateQuote(editingQuote.id, formData)
+        if (success) {
+          toast({
+            title: "Success",
+            description: "Quote updated successfully. Flashcards will be regenerated automatically.",
+          })
+        } else {
+          throw new Error("Failed to update quote")
+        }
+      } else {
+        // Create new quote
+        const newQuote = await quoteFlashcardService.createQuote(user.id, formData)
+        if (newQuote) {
+          toast({
+            title: "Success", 
+            description: `Quote created successfully! ${newQuote.card_count || 0} flashcards were automatically generated.`,
+          })
+        } else {
+          throw new Error("Failed to create quote")
+        }
+      }
+      
+      await loadData()
+      setShowForm(false)
+      resetForm()
+      router.push('/admin/quotes')
+    } catch (error) {
+      console.error('Error saving quote:', error)
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: "Error",
+        description: "Failed to save quote",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleDelete = async (quoteId: string) => {
+    if (!confirm("Are you sure you want to delete this quote? This will also delete all associated flashcards and cannot be undone.")) {
       return
     }
 
     try {
-      const payload = {
-        ...formData,
-        literary_techniques: formData.literary_techniques.filter(t => t.trim() !== '')
-      }
-
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
+      const success = await quoteFlashcardService.deleteQuote(quoteId)
+      if (success) {
         toast({
           title: "Success",
-          description: "Quote added successfully",
+          description: "Quote and associated flashcards deleted successfully",
         })
-        setFormData(initialFormData)
-        setShowAddDialog(false)
-        loadQuotes()
+        await loadData()
       } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to add quote')
-      }
-    } catch (error) {
-      console.error('Error adding quote:', error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add quote",
-        variant: "destructive",
-      })
-    }
-  }, [formData, toast, loadQuotes])
-
-  const handleEdit = useCallback((quote: Quote) => {
-    setEditingQuote(quote)
-    setFormData({
-      book_id: quote.book_id,
-      theme: quote.theme,
-      quote_text: quote.quote_text,
-      context: quote.context,
-      page_reference: quote.page_reference || "",
-      chapter_reference: quote.chapter_reference || "",
-      literary_techniques: quote.literary_techniques || [],
-      importance_level: quote.importance_level
-    })
-    setShowEditDialog(true)
-  }, [])
-
-  const handleUpdate = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!editingQuote) return
-
-    try {
-      const payload = {
-        ...formData,
-        literary_techniques: formData.literary_techniques.filter(t => t.trim() !== '')
-      }
-
-      const response = await fetch(`/api/quotes/${editingQuote.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Quote updated successfully",
-        })
-        setShowEditDialog(false)
-        setEditingQuote(null)
-        setFormData(initialFormData)
-        loadQuotes()
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update quote')
-      }
-    } catch (error) {
-      console.error('Error updating quote:', error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update quote",
-        variant: "destructive",
-      })
-    }
-  }, [editingQuote, formData, toast, loadQuotes])
-
-  const handleDelete = useCallback(async (quote: Quote) => {
-    if (!confirm('Are you sure you want to delete this quote?')) return
-
-    try {
-      const response = await fetch(`/api/quotes/${quote.id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Quote deleted successfully",
-        })
-        loadQuotes()
-      } else {
-        throw new Error('Failed to delete quote')
+        throw new Error("Failed to delete quote")
       }
     } catch (error) {
       console.error('Error deleting quote:', error)
@@ -365,383 +216,496 @@ export default function QuotesAdmin() {
         variant: "destructive",
       })
     }
-  }, [toast, loadQuotes])
+  }
 
-  const addLiteraryTechnique = useCallback(() => {
-    const technique = literaryTechniqueInput.trim()
-    if (technique && !formData.literary_techniques.includes(technique)) {
-      updateFormDataImmediate({
-        literary_techniques: [...formData.literary_techniques, technique]
+  const handleToggleActive = async (quoteId: string, isActive: boolean) => {
+    try {
+      const success = await quoteFlashcardService.toggleQuoteActive(quoteId, isActive)
+      if (success) {
+        toast({
+          title: "Success",
+          description: `Quote ${isActive ? 'activated' : 'deactivated'} successfully`,
+        })
+        await loadData()
+      } else {
+        throw new Error("Failed to toggle quote status")
+      }
+    } catch (error) {
+      console.error('Error toggling quote status:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update quote status",
+        variant: "destructive",
       })
-      setLiteraryTechniqueInput("")
     }
-  }, [literaryTechniqueInput, formData.literary_techniques, updateFormDataImmediate])
+  }
 
-  const removeLiteraryTechnique = useCallback((technique: string) => {
-    updateFormDataImmediate({
-      literary_techniques: formData.literary_techniques.filter(t => t !== technique)
-    })
-  }, [formData.literary_techniques, updateFormDataImmediate])
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addLiteraryTechnique()
+  const handleCreateTheme = async () => {
+    try {
+      const theme = await quoteFlashcardService.createTheme(newTheme)
+      if (theme) {
+        toast({
+          title: "Success",
+          description: "Theme created successfully",
+        })
+        setNewTheme({ name: "", description: "", color: "#6366f1" })
+        await loadData()
+      } else {
+        throw new Error("Failed to create theme")
+      }
+    } catch (error) {
+      console.error('Error creating theme:', error)
+      toast({
+        title: "Error",
+        description: "Failed to create theme",
+        variant: "destructive",
+      })
     }
-  }, [addLiteraryTechnique])
+  }
 
-  // Memoized QuoteCard component to prevent unnecessary re-renders
-  const QuoteCard = memo(({ quote, onEdit, onDelete, getBookTitle }: {
-    quote: Quote
-    onEdit: (quote: Quote) => void
-    onDelete: (quote: Quote) => void
-    getBookTitle: (bookId: string) => string
-  }) => (
-    <Card key={quote.id}>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Badge variant="outline">
-                <BookOpen size={12} className="mr-1" />
-                {getBookTitle(quote.book_id)}
-              </Badge>
-              <Badge variant="secondary">{quote.theme}</Badge>
-              <Badge variant={quote.importance_level >= 4 ? "default" : "outline"}>
-                <Star size={12} className="mr-1" />
-                {quote.importance_level}/5
-              </Badge>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => onEdit(quote)}>
-              <Edit size={14} />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => onDelete(quote)}>
-              <Trash2 size={14} />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <blockquote className="border-l-4 border-primary/20 pl-4 italic mb-3">
-          "{quote.quote_text}"
-        </blockquote>
-        <p className="text-sm text-muted-foreground mb-2">{quote.context}</p>
-        
-        {(quote.page_reference || quote.chapter_reference) && (
-          <div className="flex gap-4 text-xs text-muted-foreground mb-2">
-            {quote.chapter_reference && <span>Chapter: {quote.chapter_reference}</span>}
-            {quote.page_reference && <span>Page: {quote.page_reference}</span>}
-          </div>
-        )}
+  const filteredQuotes = quotes.filter(quote => {
+    const matchesSearch = quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quote.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quote.book?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quote.source?.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesBook = bookFilter === "all" || quote.book_id === bookFilter
+    
+    const matchesTheme = themeFilter.length === 0 || 
+                        themeFilter.some(themeId => 
+                          quote.themes?.some(t => t.id === themeId)
+                        )
+    
+    return matchesSearch && matchesBook && matchesTheme
+  })
 
-        {quote.literary_techniques && quote.literary_techniques.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {quote.literary_techniques.map((technique, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {technique}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  ))
-
-  // Memoized QuoteForm component with optimized inputs
-  const QuoteForm = memo(({ onSubmit, submitLabel }: { onSubmit: (e: React.FormEvent) => void, submitLabel: string }) => (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="book_id" id="book_id_label">Book *</Label>
-          <Select 
-            value={formData.book_id} 
-            onValueChange={(value) => updateFormDataImmediate({ book_id: value })}
-            name="book_id"
-          >
-            <SelectTrigger id="book_id" aria-labelledby="book_id_label">
-              <SelectValue placeholder="Select a book" />
-            </SelectTrigger>
-            <SelectContent>
-              {bookOptions.map((book) => (
-                <SelectItem key={book.id} value={book.id}>
-                  {book.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="theme" id="theme_label">Theme *</Label>
-          <Select 
-            value={formData.theme} 
-            onValueChange={(value) => updateFormDataImmediate({ theme: value })}
-            name="theme"
-          >
-            <SelectTrigger id="theme" aria-labelledby="theme_label">
-              <SelectValue placeholder="Select a theme" />
-            </SelectTrigger>
-            <SelectContent>
-              {THEMES.map((theme) => (
-                <SelectItem key={theme} value={theme}>
-                  {theme}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+  // Show loading spinner while auth is loading
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8 px-4 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
+    )
+  }
 
-      <div>
-        <Label htmlFor="quote_text">Quote *</Label>
-        <Textarea
-          id="quote_text"
-          name="quote_text"
-          placeholder="Enter the quote text"
-          value={formData.quote_text}
-          onChange={(e) => updateFormDataBatched({ quote_text: e.target.value })}
-          rows={3}
-        />
+  // Show access denied if not authenticated
+  if (!user) {
+    return (
+      <div className="container mx-auto py-8 px-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+        <p>Please sign in to access the admin panel.</p>
       </div>
-
-      <div>
-        <Label htmlFor="context">Context *</Label>
-        <Textarea
-          id="context"
-          name="context"
-          placeholder="Provide context for the quote"
-          value={formData.context}
-          onChange={(e) => updateFormDataBatched({ context: e.target.value })}
-          rows={2}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="page_reference">Page Reference</Label>
-          <Input
-            id="page_reference"
-            name="page_reference"
-            placeholder="e.g., Page 42"
-            value={formData.page_reference}
-            onChange={(e) => updateFormDataBatched({ page_reference: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="chapter_reference">Chapter Reference</Label>
-          <Input
-            id="chapter_reference"
-            name="chapter_reference"
-            placeholder="e.g., Chapter 5"
-            value={formData.chapter_reference}
-            onChange={(e) => updateFormDataBatched({ chapter_reference: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="importance_level" id="importance_level_label">Importance Level (1-5)</Label>
-        <Select 
-          value={formData.importance_level.toString()} 
-          onValueChange={(value) => updateFormDataImmediate({ importance_level: parseInt(value) })}
-          name="importance_level"
-        >
-          <SelectTrigger id="importance_level" aria-labelledby="importance_level_label">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">1 - Low</SelectItem>
-            <SelectItem value="2">2 - Below Average</SelectItem>
-            <SelectItem value="3">3 - Average</SelectItem>
-            <SelectItem value="4">4 - Important</SelectItem>
-            <SelectItem value="5">5 - Critical</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="literary_technique_input">Literary Techniques</Label>
-        <div className="flex gap-2 mb-2">
-          <Input
-            id="literary_technique_input"
-            name="literary_technique_input"
-            placeholder="Enter literary technique"
-            value={literaryTechniqueInput}
-            onChange={(e) => setLiteraryTechniqueInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            aria-describedby="literary_technique_help"
-          />
-          <Button type="button" onClick={addLiteraryTechnique} variant="outline">
-            Add
-          </Button>
-        </div>
-        <div id="literary_technique_help" className="text-xs text-muted-foreground mb-2">
-          Press Enter or click Add to add a technique
-        </div>
-        <div className="flex flex-wrap gap-2" role="list" aria-label="Added literary techniques">
-          {formData.literary_techniques.map((technique, index) => (
-            <Badge key={index} variant="secondary" role="listitem">
-              {technique}
-              <button
-                type="button"
-                onClick={() => removeLiteraryTechnique(technique)}
-                className="ml-1 hover:text-red-500"
-                aria-label={`Remove ${technique}`}
-              >
-                <X size={12} />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      </div>
-
-      <DialogFooter>
-        <Button type="submit">{submitLabel}</Button>
-      </DialogFooter>
-    </form>
-  ))
-
-  // Memoized filtered quotes list to prevent unnecessary recalculations
-  const filteredQuotes = useMemo(() => {
-    return quotes.filter(quote => {
-      const bookMatch = selectedBook === "all" || quote.book_id === selectedBook
-      const themeMatch = selectedTheme === "all" || quote.theme === selectedTheme
-      return bookMatch && themeMatch
-    })
-  }, [quotes, selectedBook, selectedTheme])
+    )
+  }
 
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Quote Management</h1>
-          <p className="text-muted-foreground mt-2">Add and manage quotes for different texts and themes</p>
-        </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus size={16} className="mr-2" />
-              Add Quote
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Quote</DialogTitle>
-              <DialogDescription>
-                Add a new quote to the database for use in essay mode
-              </DialogDescription>
-            </DialogHeader>
-            <QuoteForm onSubmit={handleSubmit} submitLabel="Add Quote" />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Debug info */}
-      {books.length === 0 && (
-        <Alert className="mb-6">
-          <AlertDescription>
-            No books found. Please check your database connection and RLS policies.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="filter_book" id="filter_book_label">Filter by Book</Label>
-              <Select value={selectedBook} onValueChange={setSelectedBook}>
-                <SelectTrigger id="filter_book" aria-labelledby="filter_book_label">
-                  <SelectValue placeholder="All books" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All books</SelectItem>
-                  {bookOptions.map((book) => (
-                    <SelectItem key={book.id} value={book.id}>
-                      {book.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="filter_theme" id="filter_theme_label">Filter by Theme</Label>
-              <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                <SelectTrigger id="filter_theme" aria-labelledby="filter_theme_label">
-                  <SelectValue placeholder="All themes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All themes</SelectItem>
-                  {THEMES.map((theme) => (
-                    <SelectItem key={theme} value={theme}>
-                      {theme}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => router.push('/admin')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Admin
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Quote Management</h1>
+            <p className="text-muted-foreground">Upload quotes and auto-generate flashcards with intelligent tagging</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Quotes List */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">
-            Quotes ({filteredQuotes.length})
-          </h2>
-          {(selectedBook !== "all" || selectedTheme !== "all") && (
-            <Button variant="outline" onClick={() => { setSelectedBook("all"); setSelectedTheme("all") }}>
-              Clear Filters
-            </Button>
+        </div>
+        
+        <div className="flex gap-2">
+          {!showForm && (
+            <>
+              <Button 
+                variant="outline"
+                onClick={() => setShowThemeManager(!showThemeManager)}
+              >
+                <Tags className="h-4 w-4 mr-2" />
+                Manage Themes
+              </Button>
+              <Button onClick={() => {
+                setShowForm(true)
+                resetForm()
+                router.push('/admin/quotes?action=create')
+              }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Quote
+              </Button>
+            </>
           )}
         </div>
-
-        {loading ? (
-          <div className="text-center py-8">Loading quotes...</div>
-        ) : filteredQuotes.length === 0 ? (
-          <Alert>
-            <AlertDescription>
-              {selectedBook !== "all" || selectedTheme !== "all" ? 
-                "No quotes found matching the selected filters." : 
-                "No quotes available. Add some quotes to get started."}
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="grid gap-4">
-            {filteredQuotes.map((quote) => (
-              <QuoteCard
-                key={quote.id}
-                quote={quote}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                getBookTitle={getBookTitle}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Quote</DialogTitle>
-            <DialogDescription>
-              Update the quote information
-            </DialogDescription>
-          </DialogHeader>
-          <QuoteForm onSubmit={handleUpdate} submitLabel="Update Quote" />
-        </DialogContent>
-      </Dialog>
+      {/* Theme Manager */}
+      {showThemeManager && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Tags className="h-5 w-5" />
+              Theme Management
+            </CardTitle>
+            <CardDescription>
+              Manage themes for organizing quotes and flashcards
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Label htmlFor="theme-name">Theme Name</Label>
+                  <Input
+                    id="theme-name"
+                    value={newTheme.name}
+                    onChange={(e) => setNewTheme(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g. Ambition, Love, Betrayal"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="theme-description">Description</Label>
+                  <Input
+                    id="theme-description"
+                    value={newTheme.description}
+                    onChange={(e) => setNewTheme(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div className="w-24">
+                  <Label htmlFor="theme-color">Color</Label>
+                  <Input
+                    id="theme-color"
+                    type="color"
+                    value={newTheme.color}
+                    onChange={(e) => setNewTheme(prev => ({ ...prev, color: e.target.value }))}
+                  />
+                </div>
+                <Button 
+                  onClick={handleCreateTheme}
+                  disabled={!newTheme.name.trim()}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Theme
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {themes.map((theme) => (
+                  <Badge 
+                    key={theme.id}
+                    variant="outline"
+                    style={{ borderColor: theme.color, color: theme.color }}
+                  >
+                    {theme.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showForm ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <QuoteIcon className="h-5 w-5" />
+              {editingQuote ? "Edit Quote" : "Add New Quote"}
+            </CardTitle>
+            <CardDescription>
+              {editingQuote ? "Update quote information and themes" : "Upload a new quote to automatically generate flashcards"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Quote Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="e.g. Macbeth's Ambition Soliloquy"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="source">Source</Label>
+                  <Input
+                    id="source"
+                    value={formData.source}
+                    onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
+                    placeholder="e.g. Act 1, Scene 7"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="book">Book *</Label>
+                <select
+                  id="book"
+                  value={formData.book_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, book_id: e.target.value }))}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  required
+                >
+                  <option value="">Select a book...</option>
+                  {books.map(book => (
+                    <option key={book.id} value={book.id}>
+                      {book.title} by {book.author}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="text">Quote Text *</Label>
+                <Textarea
+                  id="text"
+                  value={formData.text}
+                  onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))}
+                  placeholder="Paste the full quote or passage here..."
+                  rows={6}
+                  required
+                />
+                <p className="text-sm text-muted-foreground">
+                  The system will automatically generate 1-5 flashcards from this text based on its length and complexity.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Themes</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {themes.map((theme) => (
+                    <div key={theme.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`theme-${theme.id}`}
+                        checked={formData.theme_ids?.includes(theme.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              theme_ids: [...(prev.theme_ids || []), theme.id]
+                            }))
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              theme_ids: prev.theme_ids?.filter(id => id !== theme.id) || []
+                            }))
+                          }
+                        }}
+                      />
+                      <Label 
+                        htmlFor={`theme-${theme.id}`}
+                        className="text-sm"
+                        style={{ color: theme.color }}
+                      >
+                        {theme.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button type="submit">
+                  <Save className="h-4 w-4 mr-2" />
+                  {editingQuote ? "Update Quote" : "Create Quote & Generate Cards"}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowForm(false)
+                    resetForm()
+                    router.push('/admin/quotes')
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Search and Filter */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex gap-4 flex-wrap">
+                <div className="flex-1 min-w-64">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search quotes by title, text, book, or source..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="w-48">
+                  <select
+                    value={bookFilter}
+                    onChange={(e) => setBookFilter(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  >
+                    <option value="all">All Books</option>
+                    {books.map(book => (
+                      <option key={book.id} value={book.id}>
+                        {book.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-48">
+                  <select
+                    multiple
+                    value={themeFilter}
+                    onChange={(e) => {
+                      const values = Array.from(e.target.selectedOptions, option => option.value)
+                      setThemeFilter(values)
+                    }}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  >
+                    {themes.map(theme => (
+                      <option key={theme.id} value={theme.id}>
+                        {theme.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quotes List */}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading quotes...</p>
+            </div>
+          ) : filteredQuotes.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <QuoteIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">No quotes found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || bookFilter !== "all" || themeFilter.length > 0
+                    ? "Try adjusting your search or filter criteria"
+                    : "Get started by adding your first quote"
+                  }
+                </p>
+                {!searchTerm && bookFilter === "all" && themeFilter.length === 0 && (
+                  <Button onClick={() => {
+                    setShowForm(true)
+                    resetForm()
+                    router.push('/admin/quotes?action=create')
+                  }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Quote
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredQuotes.map((quote) => (
+                <Card key={quote.id} className={`hover:shadow-lg transition-shadow ${!quote.is_active ? 'opacity-60' : ''}`}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CardTitle className="text-lg">{quote.title}</CardTitle>
+                          {!quote.is_active && (
+                            <Badge variant="destructive">Inactive</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline">
+                            {quote.book?.title} by {quote.book?.author}
+                          </Badge>
+                          {quote.source && (
+                            <Badge variant="secondary">{quote.source}</Badge>
+                          )}
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <CreditCard className="h-3 w-3" />
+                            <span>{quote.card_count || 0} cards</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {quote.themes?.map((theme) => (
+                            <Badge 
+                              key={theme.id}
+                              variant="outline"
+                              style={{ borderColor: theme.color, color: theme.color }}
+                              className="text-xs"
+                            >
+                              {theme.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 ml-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleToggleActive(quote.id, !quote.is_active)}
+                          title={quote.is_active ? "Hide from students" : "Show to students"}
+                        >
+                          {quote.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => router.push(`/admin/quotes?edit=${quote.id}`)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(quote.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground">
+                      {quote.text.length > 200 ? `${quote.text.substring(0, 200)}...` : quote.text}
+                    </blockquote>
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      Created: {new Date(quote.created_at).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
+  )
+}
+
+export default function QuotesAdminPageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>}>
+      <QuotesAdminContent />
+    </Suspense>
   )
 } 

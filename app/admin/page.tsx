@@ -136,61 +136,26 @@ export default function AdminPage() {
 
       {/* Admin Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Book Management
-            </CardTitle>
-            <CardDescription>
-              Add, edit, and manage books in the system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => router.push('/admin/books')}
-                className="flex-1"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                View Books
-              </Button>
-              <Button 
-                onClick={() => router.push('/admin/books?action=create')}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Book
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Flashcard Sets
+              <Settings className="h-5 w-5" />
+              Flashcard Cards
             </CardTitle>
             <CardDescription>
-              Manage flashcard sets and passages
+              Manage auto-generated cards with bulk actions and editing
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
               <Button 
-                onClick={() => router.push('/admin/flashcards')}
+                onClick={() => router.push('/admin/flashcard-cards')}
                 className="flex-1"
               >
                 <Eye className="h-4 w-4 mr-2" />
-                View Sets
-              </Button>
-              <Button 
-                onClick={() => router.push('/admin/flashcards?action=create')}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Set
+                Manage Cards
               </Button>
             </div>
           </CardContent>
@@ -244,6 +209,36 @@ export default function AdminPage() {
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Manage Content
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Quote Bank
+            </CardTitle>
+            <CardDescription>
+              Upload quotes and auto-generate flashcards with theme tagging
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => router.push('/admin/quotes')}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Manage Quotes
+              </Button>
+              <Button 
+                onClick={() => router.push('/admin/quotes?action=create')}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Quote
               </Button>
             </div>
           </CardContent>

@@ -491,6 +491,209 @@ export interface Database {
           created_at?: string
         }
       }
+      quotes: {
+        Row: {
+          id: string
+          title: string
+          text: string
+          book_id: string
+          source: string | null
+          created_by: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          text: string
+          book_id: string
+          source?: string | null
+          created_by?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          text?: string
+          book_id?: string
+          source?: string | null
+          created_by?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      themes: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          color: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      quote_themes: {
+        Row: {
+          id: string
+          quote_id: string
+          theme_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          quote_id: string
+          theme_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          quote_id?: string
+          theme_id?: string
+          created_at?: string
+        }
+      }
+      flashcard_cards: {
+        Row: {
+          id: string
+          quote_id: string
+          card_text: string
+          missing_word: string
+          missing_position: number
+          difficulty_level: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          quote_id: string
+          card_text: string
+          missing_word: string
+          missing_position: number
+          difficulty_level?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          quote_id?: string
+          card_text?: string
+          missing_word?: string
+          missing_position?: number
+          difficulty_level?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      student_card_sets: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      student_card_set_items: {
+        Row: {
+          id: string
+          set_id: string
+          card_id: string
+          added_at: string
+        }
+        Insert: {
+          id?: string
+          set_id: string
+          card_id: string
+          added_at?: string
+        }
+        Update: {
+          id?: string
+          set_id?: string
+          card_id?: string
+          added_at?: string
+        }
+      }
+      card_progress: {
+        Row: {
+          id: string
+          user_id: string
+          card_id: string
+          attempts: number
+          correct_attempts: number
+          last_attempt_at: string | null
+          next_review_at: string | null
+          ease_factor: number
+          interval_days: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          card_id: string
+          attempts?: number
+          correct_attempts?: number
+          last_attempt_at?: string | null
+          next_review_at?: string | null
+          ease_factor?: number
+          interval_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          card_id?: string
+          attempts?: number
+          correct_attempts?: number
+          last_attempt_at?: string | null
+          next_review_at?: string | null
+          ease_factor?: number
+          interval_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -508,4 +711,13 @@ export type ShortAnswerProgressDetailed = Database['public']['Tables']['short_an
 export type EssayComponentProgress = Database['public']['Tables']['essay_component_progress']['Row']
 export type UserSubmission = Database['public']['Tables']['user_submissions']['Row']
 export type SubmissionQuestion = Database['public']['Tables']['submission_questions']['Row']
-export type SubmissionEssay = Database['public']['Tables']['submission_essays']['Row'] 
+export type SubmissionEssay = Database['public']['Tables']['submission_essays']['Row']
+
+// New flashcard workflow types
+export type Quote = Database['public']['Tables']['quotes']['Row']
+export type Theme = Database['public']['Tables']['themes']['Row']
+export type QuoteTheme = Database['public']['Tables']['quote_themes']['Row']
+export type FlashcardCard = Database['public']['Tables']['flashcard_cards']['Row']
+export type StudentCardSet = Database['public']['Tables']['student_card_sets']['Row']
+export type StudentCardSetItem = Database['public']['Tables']['student_card_set_items']['Row']
+export type CardProgress = Database['public']['Tables']['card_progress']['Row'] 
