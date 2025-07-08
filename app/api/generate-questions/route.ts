@@ -18,17 +18,19 @@ export async function POST(request: Request) {
 
     const { theme, text, textDescription } = await request.json()
     
-    // Validate input
-    if (!theme || !text) {
+    // Validate input - only text is required now
+    if (!text) {
       return NextResponse.json(
-        { error: 'Theme and text are required' },
+        { error: 'Text is required' },
         { status: 400 }
       )
     }
 
     console.log('Generating questions for:', { theme, text })
 
-    const prompt = `Generate 4 HSC English essay questions focusing on the theme of "${theme}" in "${text}".
+    // Create prompt based on whether theme is provided or not
+    const prompt = theme 
+      ? `Generate 4 HSC English essay questions focusing on the theme of "${theme}" in "${text}".
 
 Requirements:
 - Each question should be suitable for a 40-minute essay
@@ -40,6 +42,20 @@ IMPORTANT: Respond ONLY with a valid JSON array. No additional text before or af
 ["Question 1 text here", "Question 2 text here", "Question 3 text here", "Question 4 text here"]
 
 Theme: ${theme}
+Text: ${text}
+Description: ${textDescription}`
+      : `Generate 4 HSC English essay questions for "${text}".
+
+Requirements:
+- Each question should be suitable for a 40-minute essay
+- Questions should encourage deep analysis and critical thinking
+- Use HSC-appropriate language and formats
+- Cover different aspects of literary analysis (themes, techniques, character development, structure, etc.)
+- Questions should be varied and comprehensive
+
+IMPORTANT: Respond ONLY with a valid JSON array. No additional text before or after. Example format:
+["Question 1 text here", "Question 2 text here", "Question 3 text here", "Question 4 text here"]
+
 Text: ${text}
 Description: ${textDescription}`
 
@@ -111,7 +127,10 @@ Description: ${textDescription}`
     if (finalQuestions.length < 4) {
       // Pad with generic questions if needed
       while (finalQuestions.length < 4) {
-        finalQuestions.push(`How does ${text} explore the theme of ${theme}?`)
+        const genericQuestion = theme 
+          ? `How does ${text} explore the theme of ${theme}?`
+          : `How does the author use literary techniques to develop meaning in ${text}?`
+        finalQuestions.push(genericQuestion)
       }
     }
 
@@ -159,7 +178,17 @@ function extractQuestionsFromText(text: string): string[] {
 }
 
 // Fallback questions for different themes
-function getFallbackQuestions(theme: string, text: string): string[] {
+function getFallbackQuestions(theme: string | undefined, text: string): string[] {
+  // If no theme provided, return general literary analysis questions
+  if (!theme) {
+    return [
+      `How does the author use literary techniques to develop meaning in ${text}?`,
+      `To what extent does ${text} reflect the social context of its time?`,
+      `Analyze the role of characterization in conveying the central concerns of ${text}.`,
+      `How does the structure of ${text} contribute to its overall meaning and impact?`
+    ]
+  }
+
   const fallbackQuestions = {
     love: [
       `How does ${text} explore different forms of love?`,

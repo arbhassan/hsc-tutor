@@ -350,6 +350,8 @@ export default function EssayMode() {
 
   // Handle closing grading modal and resetting
   const handleGradingModalClose = async (finalScore?: number) => {
+    console.log('🔍 handleGradingModalClose called with finalScore:', finalScore)
+    
     // Track essay completion if user is authenticated
     if (user?.id && wordCount > 0) {
       try {
@@ -357,9 +359,19 @@ export default function EssayMode() {
         const quoteCount = (essayContent.match(/"/g) || []).length / 2
         
         // Use provided score or estimate based on word count and content quality
-        const score = finalScore || Math.min(100, Math.max(50, 
-          (wordCount >= 800 ? 80 : 60) + (quoteCount >= 2 ? 10 : 0)
-        ))
+        const score = finalScore !== undefined && finalScore !== null 
+          ? finalScore 
+          : Math.min(100, Math.max(50, 
+              (wordCount >= 800 ? 80 : 60) + (quoteCount >= 2 ? 10 : 0)
+            ))
+        
+        console.log('🔍 Tracking essay with:', {
+          userId: user.id,
+          score,
+          wordCount,
+          quoteCount: Math.floor(quoteCount),
+          finalScoreProvided: finalScore
+        })
         
         await trackEssayCompletion(
           score,
@@ -383,6 +395,12 @@ export default function EssayMode() {
       } catch (error) {
         console.error('Failed to track essay progress:', error)
       }
+    } else {
+      console.log('🔍 Essay tracking skipped:', {
+        hasUser: !!user?.id,
+        wordCount,
+        userAuth: user?.id
+      })
     }
 
     setShowGradingModal(false)
@@ -977,6 +995,7 @@ export default function EssayMode() {
         essayContent={essayContent}
         question={selectedQuestion}
         selectedText={selectedBook?.title || ""}
+        selectedTheme={selectedQuestion.includes("theme") ? "Various themes" : "Literary analysis"}
       />
     </div>
   )

@@ -331,7 +331,23 @@ export async function updateEssayProgress(
         console.log('Essay progress updated successfully')
       }
     } else {
-      console.log('No current essay progress found - this might be the issue!')
+      // If no progress record exists at all, create one
+      console.log('No essay progress record found, creating new one')
+      
+      const { error } = await supabase
+        .from('essay_progress')
+        .insert({
+          user_id: userId,
+          total_essays: 1,
+          average_score: score,
+          average_word_count: wordCount
+        })
+
+      if (error) {
+        console.error('Error creating new essay progress:', error)
+      } else {
+        console.log('New essay progress record created successfully')
+      }
     }
 
     // Update overall user progress

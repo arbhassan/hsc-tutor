@@ -252,11 +252,37 @@ function EssaysTab({
   essayProgress: EssayProgress | null;
   essayComponents: EssayComponentProgress[];
 }) {
+  const { user } = useAuth()
+  
   // Create a map for easy lookup by component type
   const componentData = {}
   essayComponents.forEach(item => {
     componentData[item.component_type] = item.average_score
   })
+
+  // Debug function to reset essay progress
+  const resetEssayProgress = async () => {
+    if (!user?.id) return
+    
+    if (confirm('Are you sure you want to reset your essay progress? This will clear all essay scores and start fresh.')) {
+      try {
+        const response = await fetch('/api/debug/reset-essay-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id })
+        })
+        
+        if (response.ok) {
+          window.location.reload() // Refresh to see changes
+        } else {
+          alert('Failed to reset progress')
+        }
+      } catch (error) {
+        console.error('Error resetting progress:', error)
+        alert('Error resetting progress')
+      }
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -268,12 +294,25 @@ function EssaysTab({
           description="Exam mode & Essay mode"
           icon={<BookOpen className="h-5 w-5" />}
         />
-        <StatCard
-          title="Average Score"
-          value={essayProgress?.average_score ? `${essayProgress.average_score}%` : "0%"}
-          description="All time average"
-          icon={<CheckCircle className="h-5 w-5" />}
-        />
+        <div className="relative">
+          <StatCard
+            title="Average Score"
+            value={essayProgress?.average_score ? `${essayProgress.average_score}%` : "0%"}
+            description="All time average"
+            icon={<CheckCircle className="h-5 w-5" />}
+          />
+          {/* Debug reset button - remove this after fixing the issue */}
+          {essayProgress?.average_score === 60 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="absolute top-2 right-2 text-xs"
+              onClick={resetEssayProgress}
+            >
+              Reset
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Component Scores */}

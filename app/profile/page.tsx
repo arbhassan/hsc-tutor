@@ -292,11 +292,15 @@ export default function ProfilePage() {
               )}
             </div>
             
-            {showPasswordErrors && passwordErrors.length > 0 && (
+            {((showPasswordErrors && passwordErrors.length > 0) || 
+              (formData.newPassword && formData.confirmPassword && formData.newPassword !== formData.confirmPassword)) && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {passwordErrors.join(", ")}
+                  {formData.newPassword && formData.confirmPassword && formData.newPassword !== formData.confirmPassword 
+                    ? "Passwords do not match"
+                    : passwordErrors.join(", ")
+                  }
                 </AlertDescription>
               </Alert>
             )}
