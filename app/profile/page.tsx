@@ -28,6 +28,7 @@ export default function ProfilePage() {
     confirmPassword: ""
   })
   const [passwordErrors, setPasswordErrors] = useState<string[]>([])
+  const [showPasswordErrors, setShowPasswordErrors] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -77,12 +78,16 @@ export default function ProfilePage() {
       [field]: value
     }))
 
-    // Validate password in real-time
+    // Validate password in real-time but don't show errors until submit attempt
     if (field === "newPassword" || field === "confirmPassword") {
       const newPassword = field === "newPassword" ? value : formData.newPassword
       const confirmPassword = field === "confirmPassword" ? value : formData.confirmPassword
       const errors = validatePassword(newPassword, confirmPassword)
       setPasswordErrors(errors)
+      // Hide errors when user starts fixing them
+      if (showPasswordErrors && errors.length === 0) {
+        setShowPasswordErrors(false)
+      }
     }
   }
 
@@ -94,11 +99,7 @@ export default function ProfilePage() {
       const errors = validatePassword(formData.newPassword, formData.confirmPassword)
       if (errors.length > 0) {
         setPasswordErrors(errors)
-        toast({
-          title: "Validation Error",
-          description: errors.join(", "),
-          variant: "destructive",
-        })
+        setShowPasswordErrors(true)
         return
       }
     }
@@ -139,6 +140,7 @@ export default function ProfilePage() {
         confirmPassword: ""
       }))
       setPasswordErrors([])
+      setShowPasswordErrors(false)
     } catch (error) {
       console.error("Error updating profile:", error)
       toast({
@@ -280,23 +282,17 @@ export default function ProfilePage() {
                 placeholder="Confirm new password"
                 className={passwordErrors.some(error => error.includes("match")) && formData.confirmPassword ? "border-red-500" : ""}
               />
-              {formData.confirmPassword && (
+              {formData.confirmPassword && formData.newPassword === formData.confirmPassword && (
                 <div className="mt-2">
-                  <div className={`flex items-center text-sm ${
-                    formData.newPassword === formData.confirmPassword ? "text-green-600" : "text-red-600"
-                  }`}>
-                    {formData.newPassword === formData.confirmPassword ? (
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 mr-1" />
-                    )}
+                  <div className="flex items-center text-sm text-green-600">
+                    <CheckCircle className="h-4 w-4 mr-1" />
                     Passwords match
                   </div>
                 </div>
               )}
             </div>
             
-            {passwordErrors.length > 0 && hasPasswordChanges && (
+            {showPasswordErrors && passwordErrors.length > 0 && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
