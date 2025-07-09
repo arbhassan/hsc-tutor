@@ -533,9 +533,6 @@ export default function EssayMode() {
               <p>Get custom questions and real-time feedback.</p>
               <ul className="mt-4 space-y-2">
                 <li className="flex items-center">
-                  <Check size={16} className="mr-2 text-green-500" /> AI-powered question generation
-                </li>
-                <li className="flex items-center">
                   <Check size={16} className="mr-2 text-green-500" /> Live feedback and suggestions
                 </li>
                 <li className="flex items-center">

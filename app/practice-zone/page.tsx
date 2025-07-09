@@ -62,7 +62,7 @@ export default function PracticeZonePage() {
               "Random question generation",
               "Step-by-step introduction guidance",
               "Quote-based body paragraph practice",
-              "AI feedback and tips",
+              "Feedback and tips",
             ]}
           />
         </div>
