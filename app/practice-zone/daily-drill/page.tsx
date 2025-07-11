@@ -7,10 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   RefreshCw,
   ChevronLeft,
-  Home,
   CheckCircle,
   AlertCircle,
   ArrowRight,
+  Check,
 } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -331,84 +331,97 @@ const analyzeResponse = (response, questionId) => {
 
 // Function to generate improved version of student response
 const generateImprovedResponse = (originalResponse, feedback, questionId) => {
-  // Start with the original response
-  let improved = originalResponse
+  // Generate a completely new improved response instead of building on the original
+  const improvedResponseTemplates = {
+    101: `The author effectively conveys James's emotional connection to the mountains through several carefully selected language features. 
 
-  // Add a clear introduction if missing
-  if (!feedback.petalAnalysis.point.present) {
-    const introText =
-      {
-        101: "The author effectively conveys James's emotional connection to the mountains through several carefully selected language features. ",
-        201: "Throughout 'The Crossing,' the poet employs rich imagery to represent the speaker's complex emotional state. ",
-        301: "The playwright creates tension in this extract through a skillful combination of dialogue and stage directions. ",
-        302: "This dramatic extract contains several symbolic elements that contribute to its exploration of waiting and uncertainty. ",
-        102: "The author creates a sense of reluctance in this passage through various techniques that highlight James's emotional attachment to the mountains. ",
-        202: "The structure of the poem significantly contributes to its exploration of decision-making through its stanza organization, line length variations, and progression of ideas. ",
-      }[questionId] || "This text effectively uses various literary techniques to convey its meaning. "
+The opening sentence, "Leaving the mountains wasn't going to be easy," immediately establishes the emotional difficulty of the departure, suggesting a deep attachment. The author then reinforces this connection through the repetition of time references, noting that James "had lived there since he was three years old," which emphasizes the mountains as the foundation of his conscious memory.
 
-    improved = introText + improved
+The author also employs contrasting sentence structures to highlight James's emotional state. When asked if he's ready to leave, James's response is described in short, abrupt sentences: "James didn't say anything. He just nodded." This brevity suggests emotional restraint and reluctance, contrasting with the more flowing description of the mountains that follows.
+
+Most significantly, the author uses personification and emotive language in the final paragraph when describing how the mountains "jutted up into the sky." The concluding rhetorical question, "How could anything else compare?" powerfully conveys James's belief that the mountains are incomparable, revealing his deep emotional connection to this landscape that has shaped his identity.
+
+Therefore, through these carefully selected language features, the author effectively conveys James's profound emotional connection to the mountains, presenting it as a fundamental part of his identity and memory.`,
+
+    102: `The author creates a sense of reluctance in this passage through various techniques that highlight James's emotional attachment to the mountains and his unwillingness to leave.
+
+The author establishes reluctance from the very beginning with the declarative statement, "Leaving the mountains wasn't going to be easy." This immediately sets the tone of difficulty and resistance to the departure. The use of the negative construction "wasn't going to be" suggests an inevitability that James is fighting against.
+
+The author reinforces this reluctance through James's minimal verbal communication. When his father asks if he's ready, "James didn't say anything. He just nodded." The brevity of these sentences mirrors James's emotional restraint and suggests his inability or unwillingness to verbally acknowledge his readiness to leave. The physical gesture of nodding, rather than speaking, implies compliance without enthusiasm.
+
+The author further develops this sense of reluctance through the description of James's final look at the mountains. The text states they "jutted up into the sky" and were "so beautiful" and "so severe." This emotive language emphasizes the magnificence of what James is leaving behind, making his departure feel like a significant loss.
+
+The passage culminates with the rhetorical question, "How could anything else compare?" This technique effectively captures James's belief that nothing could match the mountains' beauty and significance in his life, thereby emphasizing his deep reluctance to leave.
+
+Ultimately, the author creates a powerful sense of reluctance throughout the passage by contrasting James's minimal verbal responses with the emotional significance of the mountains in his life.`,
+
+    201: `Throughout 'The Crossing,' the poet employs rich imagery to represent the speaker's complex emotional state, creating a multi-layered exploration of decision-making and transition.
+
+The central metaphor of the bridge creates a powerful visual representation of the speaker's psychological position. The bridge is described as "A thin line between what was and what will be," directly mapping physical geography onto emotional and temporal experience. This imagery establishes the speaker's position as precarious and transitional, caught between two distinct phases of life.
+
+Water imagery is strategically used to represent the speaker's subconscious fears and uncertainties. The description of water that "churns dark and deep" with "Secrets and stories it promises to keep" suggests the turbulent emotions beneath the speaker's outward deliberation. The verb "churns" particularly evokes a sense of ongoing emotional turmoil, while the personification of the water as keeping "secrets and stories" adds an element of mystery and depth to the speaker's psychological state.
+
+The poet also employs tactile and auditory imagery to represent internal conflict. The speaker feels "The weight of decision heavy on weary feet," which transforms the abstract concept of decision-making into a physical burden. This is contrasted with the "whispers of doubt" that "fall like rain," creating a sensory experience of the speaker's hesitation and uncertainty.
+
+Weather imagery in the final stanza reinforces the emotional representation, where doubt becomes precipitation that continuously affects the speaker. This rainfall imagery effectively conveys how uncertainty persistently dampens the speaker's confidence and creates an atmosphere of hesitation.
+
+Thus, the poet's use of imagery creates a rich representation of the speaker's emotional state, effectively conveying the psychological complexity of standing at a point of significant transition.`,
+
+    202: `The structure of the poem significantly contributes to its exploration of decision-making through its careful organization of stanzas, balanced constructions, and progressive development of ideas.
+
+The poem's four-stanza structure mirrors the decision-making process itself. Each stanza represents a different stage of contemplation: establishing the situation, examining what lies beneath, considering the options, and facing the ongoing uncertainty. This systematic progression reflects how individuals work through major life decisions.
+
+Within each stanza, the poet employs parallel constructions that emphasize the balance inherent in decision-making. The third stanza particularly demonstrates this with "Behind: the comfort of familiar pain. / Ahead: the terror of unknown terrain." This balanced structure physically represents the weighing of options that characterizes decision-making, with each choice receiving equal structural emphasis.
+
+The progression of line lengths and rhythms throughout the poem also contributes to the exploration of decision-making. The opening lines flow smoothly, reflecting initial confidence, while later lines become more fragmented and hesitant, mirroring the speaker's growing uncertainty. This structural evolution parallels the psychological journey from initial determination to doubt and hesitation.
+
+The poem's circular structure, beginning and ending with images of the bridge and movement, reflects the cyclical nature of decision-making. The speaker begins with forward motion ("stretches before me") but ends with static imagery ("bridge sways gently"), suggesting that decision-making often involves periods of progress and pause.
+
+The consistent present tense throughout maintains immediacy and tension, keeping the reader in the moment of decision rather than reflecting on a completed choice. This structural choice emphasizes that decision-making is an ongoing process rather than a single moment.
+
+In conclusion, the structure of the poem is integral to its exploration of decision-making, physically embodying the balance, progression, and uncertainty inherent in facing life's crossroads.`,
+
+    301: `The playwright creates tension in this extract through a skillful combination of dialogue techniques and stage directions that establish an atmosphere of uncertainty and anticipation.
+
+The dialogue immediately establishes tension through what is unsaid rather than what is spoken. When ELIZA asks, "Is this seat taken?" MARCUS responds defensively with "Does it look taken?" This exchange reveals underlying stress and irritability, suggesting both characters are dealing with significant pressure. The playwright uses this opening to establish that both characters are on edge before any explicit conflict emerges.
+
+Stage directions contribute significantly to the tension through symbolic elements. The broken clock that "reads 3:45" but "hasn't moved in twenty minutes" creates an atmosphere of suspended time and waiting. This malfunctioning timepiece symbolizes the characters' trapped situation and builds tension through the suggestion that normal progression has stopped.
+
+The playwright employs dramatic irony to heighten tension, as both characters recognize their shared predicament without fully understanding it. When ELIZA observes that they're "all in the same boat," the audience senses a deeper meaning that the characters themselves may not fully grasp. This creates tension through the gap between character knowledge and audience perception.
+
+Physical staging directions contribute to the tense atmosphere. The "sparsely furnished waiting room" with only "three chairs against the wall" creates a sense of emptiness and isolation. The lighting that "flickers briefly" serves as an external manifestation of the internal instability both characters are experiencing.
+
+The dialogue structure itself builds tension through interruptions and pauses. The "[Beat]" notation and MARCUS's "unexpected" laughter indicate moments where normal conversation breaks down, suggesting underlying emotional pressure that occasionally surfaces.
+
+The extract concludes with both characters looking up at the flickering lights, a shared moment that suggests they are both subject to the same mysterious forces, creating tension through the implication of external control or influence over their situation.
+
+In conclusion, the playwright creates tension through a careful balance of revealing dialogue and suggestive stage directions, establishing an atmosphere of uncertainty that mirrors the characters' internal states.`,
+
+    302: `This dramatic extract contains several symbolic elements that contribute to its exploration of waiting and uncertainty, creating layers of meaning that extend beyond the literal situation.
+
+The waiting room itself functions as a central symbol representing liminal space - a threshold between one state of being and another. The "sparsely furnished" nature of the room suggests temporary occupation and lack of comfort, reflecting how waiting periods in life are often uncomfortable and unfamiliar. The room becomes a metaphor for the uncertainty that accompanies major life transitions.
+
+The broken clock serves as a powerful symbol of suspended time and disrupted expectations. Reading "3:45" but remaining motionless for "twenty minutes," the clock represents how waiting distorts our perception of time and progress. It symbolizes the frustration of being unable to move forward and suggests that the characters exist in a moment outside normal temporal flow.
+
+The three chairs "against the wall" create symbolic significance through their number and positioning. Three suggests incompleteness (neither the pair of two nor the stability of four), while their position against the wall implies defensiveness and lack of agency. The characters cannot control their environment but must conform to its limitations.
+
+The flickering lights function symbolically as representations of instability and uncertainty. Light traditionally symbolizes knowledge and clarity, so flickering lights suggest that understanding comes and goes unpredictably. This creates an atmosphere where revelation seems possible but remains elusive.
+
+The characters' dialogue reveals symbolic elements in their interaction patterns. MARCUS's question "Do you know why I'm here?" extends beyond the immediate situation to represent existential uncertainty about purpose and direction. His response about waiting "My whole life" transforms the specific situation into a symbol for life's broader patterns of anticipation and unfulfillment.
+
+The shared recognition of the broken clock creates symbolic unity between the characters, suggesting that waiting and uncertainty are universal human experiences that create unexpected connections between strangers.
+
+These symbolic elements work together to transform a simple waiting room scene into an exploration of how humans cope with uncertainty, the passage of time, and the search for meaning during transitional periods.`
   }
 
-  // Add technique analysis if missing
-  if (!feedback.petalAnalysis.technique.present) {
-    const techniqueText =
-      {
-        101: "\n\nThe author employs several notable techniques, including the use of short, abrupt sentences to convey James's emotional restraint, and a powerful rhetorical question at the conclusion that emphasizes his attachment to the mountains. ",
-        201: "\n\nThe poet employs metaphor, symbolism, and sensory imagery throughout the poem. The bridge serves as a central metaphor for transition, while the water imagery symbolizes the speaker's subconscious fears. ",
-        301: "\n\nThe playwright employs techniques such as pauses indicated by stage directions, symbolic props like the broken clock, and dialogue that reveals character tension without explicitly stating it. ",
-        102: "\n\nThe author uses contrasting sentence structures, repetition of time references, and emotive language to build a sense of reluctance throughout the passage. ",
-        202: "\n\nThe poem's structure mirrors its thematic exploration of decision-making through its balanced stanzas, parallel constructions, and the tension between forward movement and hesitation. ",
-      }[questionId] ||
-      "\n\nThe text employs various literary techniques including imagery, symbolism, and structural elements that work together to create meaning. "
+  // Return the complete improved response for the question, or a generic one if not found
+  return improvedResponseTemplates[questionId] || `This text effectively uses various literary techniques to convey its meaning through careful attention to language, structure, and form.
 
-    improved += techniqueText
-  }
+The author employs specific techniques that work together to create a cohesive and impactful piece of writing. Through the use of imagery, symbolism, and structural elements, the text engages the reader and conveys its central themes effectively.
 
-  // Add evidence if missing
-  if (!feedback.petalAnalysis.evidence.present) {
-    const evidenceText =
-      {
-        101: 'For example, the text states, "Leaving the mountains wasn\'t going to be easy" and concludes with the rhetorical question, "How could anything else compare?" ',
-        201: 'The text provides evidence in lines such as "The bridge stretches before me, / A thin line between what was and what will be" and "The water below churns dark and deep." ',
-        301: 'Evidence can be seen in MARCUS\'s line, "My whole life, it feels like" and the stage direction "[The lights flicker briefly. Both look up.]" ',
-        102: 'The text provides evidence when it states, "James didn\'t say anything. He just nodded" and describes the mountains as "so beautiful" and "so severe." ',
-        202: 'The poem provides evidence in its structural elements, such as the parallel construction in "Behind: the comfort of familiar pain. / Ahead: the terror of unknown terrain." ',
-      }[questionId] || "The text provides evidence through specific language choices and structural elements. "
+Evidence from the text supports this analysis through specific examples that demonstrate the author's skillful use of language and technique. These elements combine to create meaning that resonates with readers and achieves the author's intended purpose.
 
-    improved += evidenceText
-  }
-
-  // Add analysis if missing or weak
-  if (!feedback.petalAnalysis.analysis.present) {
-    const analysisText =
-      {
-        101: "These techniques work together to convey James's deep emotional connection to the mountains by emphasizing both his history with the place and his reluctance to leave it behind. ",
-        201: "These imagery patterns work together to create a multi-sensory representation of the speaker's emotional state, characterized by uncertainty, fear, and the tension between moving forward and looking back. ",
-        301: "These elements create tension by establishing an atmosphere of uncertainty and unease, suggesting that both characters are trapped in a liminal space both physically and metaphorically. ",
-        102: "These techniques effectively create a sense of reluctance by contrasting James's minimal verbal response with the emotional weight conveyed through the description of the mountains. ",
-        202: "This structure effectively mirrors the decision-making process by physically representing the balance between options and the progressive movement toward resolution despite doubt. ",
-      }[questionId] ||
-      "These elements work together to create meaning by establishing connections between form and content, enhancing the reader's understanding of the text's themes. "
-
-    improved += analysisText
-  }
-
-  // Add link back to question if missing
-  if (!feedback.petalAnalysis.link.present) {
-    const linkText =
-      {
-        101: "\n\nTherefore, through these carefully selected language features, the author effectively conveys James's profound emotional connection to the mountains, presenting it as a fundamental part of his identity and memory.",
-        201: "\n\nThus, the poet's use of imagery creates a rich representation of the speaker's emotional state, effectively conveying the psychological complexity of standing at a point of significant transition.",
-        301: "\n\nIn conclusion, the playwright creates tension through a careful balance of revealing dialogue and suggestive stage directions, establishing an atmosphere of uncertainty that mirrors the characters' internal states.",
-        102: "\n\nUltimately, the author creates a powerful sense of reluctance throughout the passage by contrasting James's minimal verbal responses with the emotional significance of the mountains in his life.",
-        202: "\n\nIn conclusion, the structure of the poem is integral to its exploration of decision-making, physically embodying the balance, progression, and uncertainty inherent in facing life's crossroads.",
-      }[questionId] ||
-      "\n\nIn conclusion, the text effectively uses various techniques to convey its meaning and engage the reader in its thematic exploration."
-
-    improved += linkText
-  }
-
-  return improved
+In conclusion, the text demonstrates sophisticated use of literary techniques that work together to create a compelling and meaningful piece of writing.`
 }
 
 export default function DailyDrillPage() {
@@ -418,6 +431,7 @@ export default function DailyDrillPage() {
   const [practiceStarted, setPracticeStarted] = useState(false)
   const [feedback, setFeedback] = useState({})
   const [improvedResponses, setImprovedResponses] = useState({})
+  const [copiedQuestions, setCopiedQuestions] = useState({})
 
   const { user } = useAuth()
   const { trackShortAnswerDetailed, trackStudySession } = useProgressTracker()
@@ -434,6 +448,20 @@ export default function DailyDrillPage() {
       ...prev,
       [questionId]: response
     }))
+  }
+
+  const handleCopy = async (questionId) => {
+    try {
+      await navigator.clipboard.writeText(improvedResponses[questionId] || "")
+      setCopiedQuestions(prev => ({ ...prev, [questionId]: true }))
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedQuestions(prev => ({ ...prev, [questionId]: false }))
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
   }
 
   const allQuestionsAnswered = () => {
@@ -529,6 +557,7 @@ export default function DailyDrillPage() {
       setSubmitted(false)
       setFeedback({})
       setImprovedResponses({})
+      setCopiedQuestions({})
     }
   }
 
@@ -540,6 +569,7 @@ export default function DailyDrillPage() {
     setSubmitted(false)
     setFeedback({})
     setImprovedResponses({})
+    setCopiedQuestions({})
   }
 
   const startPractice = () => {
@@ -794,11 +824,17 @@ export default function DailyDrillPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                navigator.clipboard.writeText(improvedResponses[question.id] || "")
-                              }}
+                              onClick={() => handleCopy(question.id)}
+                              disabled={copiedQuestions[question.id]}
                             >
-                              Copy
+                              {copiedQuestions[question.id] ? (
+                                <>
+                                  <Check className="mr-1 h-3 w-3" />
+                                  Copied
+                                </>
+                              ) : (
+                                "Copy"
+                              )}
                             </Button>
                           </div>
 
@@ -817,8 +853,8 @@ export default function DailyDrillPage() {
                       {currentText.questions.map((question, index) => (
                         <Card key={question.id} className="p-4">
                           <h3 className="text-lg font-medium mb-2">Question {index + 1} - Your Answer</h3>
-                          <div className="prose max-w-none text-sm">
-                            <p>{responses[question.id] || ""}</p>
+                          <div className="prose max-w-none text-sm break-words overflow-hidden">
+                            <p className="whitespace-pre-wrap break-words">{responses[question.id] || ""}</p>
                           </div>
                           <div className="text-sm text-muted-foreground mt-4">
                             Word count: {getWordCount(responses[question.id] || "")} words
@@ -834,7 +870,6 @@ export default function DailyDrillPage() {
             <div className="flex justify-center mt-6">
               <Button variant="outline" size="sm" asChild>
                 <Link href="/practice-zone">
-                  <Home className="mr-2 h-4 w-4" />
                   Exit to Practice Zone
                 </Link>
               </Button>

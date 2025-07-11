@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('quotes')
       .select('*')
-      .order('importance_level', { ascending: false })
       .order('created_at', { ascending: false })
 
     // Filter by book if specified
@@ -32,7 +31,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch quotes' }, { status: 500 })
     }
 
-    return NextResponse.json(quotes || [])
+    // Map the database structure to what the frontend expects
+    const mappedQuotes = (quotes || []).map(quote => ({
+      id: quote.id,
+      book_id: quote.book_id,
+      theme: quote.theme || 'General', // Default theme if missing
+      quote_text: quote.text || quote.quote_text, // Handle both field names
+      context: quote.title || quote.context, // Handle both field names
+      page_reference: quote.page_reference,
+      chapter_reference: quote.chapter_reference,
+      literary_techniques: quote.literary_techniques,
+      importance_level: quote.importance_level || 3
+    }))
+
+    return NextResponse.json(mappedQuotes)
   } catch (error) {
     console.error('Error in quotes API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -68,19 +80,26 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Prepare the insert object, only including importance_level if the column exists
+    const insertData: any = {
+      book_id,
+      theme,
+      quote_text,
+      context,
+      page_reference,
+      chapter_reference,
+      literary_techniques,
+      created_by: user.id
+    }
+
+    // Only add importance_level if it was provided (to avoid column errors)
+    if (importance_level !== undefined) {
+      insertData.importance_level = importance_level
+    }
+
     const { data: quote, error } = await supabase
       .from('quotes')
-      .insert({
-        book_id,
-        theme,
-        quote_text,
-        context,
-        page_reference,
-        chapter_reference,
-        literary_techniques,
-        importance_level: importance_level || 3,
-        created_by: user.id
-      })
+      .insert(insertData)
       .select()
       .single()
 

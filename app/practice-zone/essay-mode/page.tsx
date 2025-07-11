@@ -32,7 +32,7 @@ import { getBooks, type BookInterface } from "@/lib/books"
 
 // Quote interface for database quotes
 interface DatabaseQuote {
-  id: number;
+  id: string;
   book_id: string;
   theme: string;
   quote_text: string;
@@ -40,7 +40,7 @@ interface DatabaseQuote {
   page_reference?: string;
   chapter_reference?: string;
   literary_techniques?: string[];
-  importance_level: number;
+  importance_level?: number;
 }
 
 // Essay questions by text
@@ -123,6 +123,26 @@ export default function EssayMode() {
     }
   }, [selectedBook, user, toast])
 
+  // Handle browser back button to stay within essay mode
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // Always go back to start stage when back button is pressed
+      // Don't use updateStage here as this is responding to history change
+      setStage("start")
+      localStorage.setItem("essayModeStage", "start")
+    }
+
+    // Push initial state
+    window.history.pushState({ stage: "start" }, "", "")
+    
+    // Listen for back button
+    window.addEventListener("popstate", handlePopState)
+    
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [])
+
   // Load quotes when book changes
   useEffect(() => {
     if (selectedBook) {
@@ -130,25 +150,39 @@ export default function EssayMode() {
     }
   }, [selectedBook])
 
-  // Load saved draft - always load if available
+  // Check for saved draft and restore stage on page refresh
   useEffect(() => {
     const savedEssay = localStorage.getItem("essayDraft")
     const savedQuestion = localStorage.getItem("selectedQuestion")
+    const savedStage = localStorage.getItem("essayModeStage")
 
-    if (savedEssay) {
-      setEssayContent(savedEssay)
-      setWordCount(savedEssay.trim().split(/\s+/).length)
-    }
-
-    if (savedQuestion) {
-      setSelectedQuestion(savedQuestion)
-    }
-
-    // Set savedDraft to true if there's any saved content
+    // Only set savedDraft flag to show the "Continue Working" option
+    // Don't automatically load the content - wait for user's choice
     if (savedEssay || savedQuestion) {
       setSavedDraft(true)
     }
+
+    // Restore stage on page refresh if user was in the middle of writing
+    if (savedStage && savedStage !== "start") {
+      // If user was writing (practice stage) and has content, restore to practice
+      if (savedStage === "practice" && savedEssay && savedQuestion) {
+        setStage("practice") // Don't use updateStage here to avoid circular updates
+        setSelectedQuestion(savedQuestion)
+        setEssayContent(savedEssay)
+        setWordCount(savedEssay.trim().split(/\s+/).length)
+      }
+      // If user was on question generation, restore to that stage
+      else if (savedStage === "question-generation") {
+        setStage("question-generation") // Don't use updateStage here to avoid circular updates
+      }
+    }
   }, [selectedBook])
+
+  // Helper function to update stage and save to localStorage
+  const updateStage = (newStage) => {
+    setStage(newStage)
+    localStorage.setItem("essayModeStage", newStage)
+  }
 
   // Function to load quotes from database
   const loadQuotes = async () => {
@@ -267,15 +301,11 @@ export default function EssayMode() {
             setGeneratedQuestions(dbQuestions)
           } else {
             setNoPastQuestions(true)
-            // Fallback to hardcoded questions if no database questions exist
-            const fallbackQuestions = questionsByText[selectedBook.id] || []
-            setGeneratedQuestions(fallbackQuestions)
+            setGeneratedQuestions([])
           }
         } else {
           setNoPastQuestions(true)
-          // Fallback to hardcoded questions on API error
-          const fallbackQuestions = questionsByText[selectedBook.id] || []
-          setGeneratedQuestions(fallbackQuestions)
+          setGeneratedQuestions([])
         }
       } else if (method === "ai") {
         // Use custom generation
@@ -324,8 +354,20 @@ export default function EssayMode() {
   // Handle essay content change
   const handleEssayChange = (e) => {
     const content = e.target.value
+    const newWordCount = content.trim() ? content.trim().split(/\s+/).length : 0
+    
+    // Check word limit (1000 words max - strict target limit)
+    if (newWordCount > 1000) {
+      toast({
+        title: "Word Limit Exceeded",
+        description: "Essays cannot exceed 1000 words. Please edit your content to stay within the limit.",
+        variant: "destructive",
+      })
+      return // Don't update if over limit
+    }
+    
     setEssayContent(content)
-    setWordCount(content.trim() ? content.trim().split(/\s+/).length : 0)
+    setWordCount(newWordCount)
 
     // Auto-save draft
     localStorage.setItem("essayDraft", content)
@@ -350,6 +392,28 @@ export default function EssayMode() {
 
   // Handle essay submission
   const handleSubmitEssay = () => {
+    // Validate essay content before submission
+    if (!essayContent.trim()) {
+      toast({
+        title: "Cannot Submit Empty Essay",
+        description: "Please write your essay before submitting for grading.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Check for minimum word count
+    if (wordCount < 20) {
+      toast({
+        title: "Essay Too Short",
+        description: "Please write at least 20 words before submitting for grading.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // No need for submission warning since hard limit prevents going over 1000 words
+
     setShowGradingModal(true)
   }
 
@@ -419,9 +483,12 @@ export default function EssayMode() {
     // Clear saved draft after submission
     localStorage.removeItem("essayDraft")
     localStorage.removeItem("selectedQuestion")
+    localStorage.removeItem("essayModeStage")
 
     // Reset state
-    setStage("start")
+    updateStage("start")
+    // Push history state when resetting to start
+    window.history.pushState({ stage: "start" }, "", "")
     setSelectedQuestion("")
     setEssayContent("")
     setWordCount(0)
@@ -436,11 +503,23 @@ export default function EssayMode() {
 
   // Handle continue from saved draft
   const handleContinueDraft = () => {
-    if (selectedQuestion) {
-      setStage("practice")
-    } else {
-      setStage("question-generation")
+    // Load saved content when user explicitly chooses to continue
+    const savedEssay = localStorage.getItem("essayDraft")
+    const savedQuestion = localStorage.getItem("selectedQuestion")
+
+    if (savedEssay) {
+      setEssayContent(savedEssay)
+      setWordCount(savedEssay.trim().split(/\s+/).length)
     }
+
+    if (savedQuestion) {
+      setSelectedQuestion(savedQuestion)
+    }
+
+    const newStage = savedQuestion ? "practice" : "question-generation"
+    updateStage(newStage)
+    // Push history state for back button navigation
+    window.history.pushState({ stage: newStage }, "", "")
     
     // Track session start time for study time calculation
     if (user?.id) {
@@ -451,19 +530,40 @@ export default function EssayMode() {
 
   // Handle start new essay
   const handleStartNew = () => {
-    setStage("question-generation")
+    // Clear any existing state to start completely fresh
+    setSelectedQuestion("")
+    setEssayContent("")
+    setWordCount(0)
+    setGeneratedQuestions([])
+    setQuestionMethod("")
+    setNoPastQuestions(false)
+    setAiFeedback([])
+    
+    updateStage("question-generation")
+    // Push history state for back button navigation
+    window.history.pushState({ stage: "question-generation" }, "", "")
   }
 
   // Handle clear draft manually
   const handleClearDraft = () => {
+    // Clear localStorage
     localStorage.removeItem("essayDraft")
     localStorage.removeItem("selectedQuestion")
+    localStorage.removeItem("essayModeStage")
+    
+    // Reset all state to fresh start
     setEssayContent("")
     setSelectedQuestion("")
     setWordCount(0)
     setSavedDraft(false)
     setNoPastQuestions(false)
-    setStage("start")
+    setGeneratedQuestions([])
+    setQuestionMethod("")
+    setAiFeedback([])
+    updateStage("start")
+    
+    // Reset history state
+    window.history.pushState({ stage: "start" }, "", "")
   }
 
   // Clear feedback
@@ -510,8 +610,18 @@ export default function EssayMode() {
               </CardHeader>
               <CardContent>
                 <p className="font-medium">Text: {selectedBook?.title}</p>
-                {selectedQuestion && <p className="mt-2 text-sm text-gray-600">Question: {selectedQuestion}</p>}
-                {essayContent && <p className="mt-2 text-sm">Word Count: {wordCount} words</p>}
+                {(() => {
+                  const savedQuestion = localStorage.getItem("selectedQuestion")
+                  const savedEssay = localStorage.getItem("essayDraft")
+                  const savedWordCount = savedEssay ? savedEssay.trim().split(/\s+/).length : 0
+                  
+                  return (
+                    <>
+                      {savedQuestion && <p className="mt-2 text-sm text-gray-600">Question: {savedQuestion}</p>}
+                      {savedEssay && <p className="mt-2 text-sm">Word Count: {savedWordCount} words</p>}
+                    </>
+                  )
+                })()}
               </CardContent>
               <CardFooter className="flex gap-2">
                 <Button onClick={handleContinueDraft} className="flex-1">
@@ -640,7 +750,8 @@ export default function EssayMode() {
               <div>
                 <h3 className="font-medium text-yellow-800">No Past Exam Questions Available</h3>
                 <p className="text-sm text-yellow-700 mt-1">
-                  There are no past HSC exam questions in our database for "{selectedBook?.title}".
+                  There are no past HSC exam questions in our database for "{selectedBook?.title}". 
+                  Please try generating custom questions instead.
                 </p>
               </div>
             </div>
@@ -671,7 +782,10 @@ export default function EssayMode() {
             
             {selectedQuestion && (
               <div className="text-center pt-4">
-                <Button onClick={() => setStage("practice")} size="lg">
+                <Button onClick={() => {
+                  updateStage("practice")
+                  window.history.pushState({ stage: "practice" }, "", "")
+                }} size="lg">
                   Start Writing Essay
                   <ChevronRight size={16} className="ml-2" />
                 </Button>
@@ -681,7 +795,10 @@ export default function EssayMode() {
         )}
 
         <div className="mt-8 text-center">
-          <Button variant="outline" onClick={() => setStage("start")}>
+          <Button variant="outline" onClick={() => {
+            updateStage("start")
+            window.history.pushState({ stage: "start" }, "", "")
+          }}>
             Back to Start
           </Button>
         </div>
@@ -736,12 +853,12 @@ export default function EssayMode() {
                     <AccordionContent>
                       <div className="space-y-4">
                         {themeQuotes
-                          .sort((a, b) => b.importance_level - a.importance_level) // Sort by importance
+                          .sort((a, b) => (b.importance_level || 3) - (a.importance_level || 3)) // Sort by importance
                           .map((quoteObj) => (
                           <div key={quoteObj.id} className="bg-background rounded-md p-3 text-sm">
                             <div className="flex justify-between items-start mb-2">
                               <div className="flex gap-1">
-                                {Array.from({ length: quoteObj.importance_level }).map((_, i) => (
+                                {Array.from({ length: quoteObj.importance_level || 3 }).map((_, i) => (
                                   <span key={i} className="text-yellow-500 text-xs">★</span>
                                 ))}
                               </div>
@@ -892,6 +1009,20 @@ export default function EssayMode() {
             <p className="text-sm">
               Word Count: <span className="font-medium">{wordCount}</span>
               <span className="text-muted-foreground ml-2">Target: 800-1000 words</span>
+              
+              {/* Word count status indicators */}
+              {wordCount > 0 && wordCount < 20 && (
+                <span className="text-orange-600 ml-2 text-xs">Need {20 - wordCount} more words to submit</span>
+              )}
+              {wordCount >= 20 && wordCount < 800 && (
+                <span className="text-blue-600 ml-2 text-xs">✓ Ready to submit</span>
+              )}
+              {wordCount >= 800 && wordCount <= 950 && (
+                <span className="text-green-600 ml-2 text-xs">✓ Perfect length!</span>
+              )}
+              {wordCount > 950 && wordCount <= 1000 && (
+                <span className="text-yellow-600 ml-2 text-xs">⚠ Approaching limit ({1000 - wordCount} words remaining)</span>
+              )}
             </p>
           </div>
           <div className="flex space-x-2">
@@ -901,7 +1032,11 @@ export default function EssayMode() {
                 Show Feedback
               </Button>
             )}
-            <Button onClick={handleSubmitEssay} className="flex items-center">
+            <Button 
+              onClick={handleSubmitEssay} 
+              className="flex items-center"
+              disabled={!essayContent.trim() || wordCount < 20}
+            >
               <Send size={16} className="mr-2" />
               Submit Essay
             </Button>
