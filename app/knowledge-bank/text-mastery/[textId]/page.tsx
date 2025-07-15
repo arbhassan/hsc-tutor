@@ -1164,10 +1164,6 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
                       description: "The quote has been copied to your clipboard.",
                       duration: 3000,
                     })
-                    // Reset the copied state after 2 seconds
-                    setTimeout(() => {
-                      setIsCopied(false)
-                    }, 2000)
                   }}
                   className="flex items-center gap-2"
                   disabled={isCopied}
