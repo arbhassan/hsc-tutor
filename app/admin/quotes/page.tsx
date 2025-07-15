@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
 import { quoteFlashcardService, type QuoteWithDetails, type NewQuote, type Theme } from "@/lib/services/quote-flashcard-service"
@@ -569,21 +570,61 @@ function QuotesAdminPage({ action, editId }: { action: string | null, editId: st
                   </select>
                 </div>
                 <div className="w-48">
-                  <select
-                    multiple
-                    value={themeFilter}
-                    onChange={(e) => {
-                      const values = Array.from(e.target.selectedOptions, option => option.value)
-                      setThemeFilter(values)
-                    }}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  >
-                    {themes.map(theme => (
-                      <option key={theme.id} value={theme.id}>
-                        {theme.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                      >
+                        <span>
+                          {themeFilter.length === 0
+                            ? "Filter by themes"
+                            : `${themeFilter.length} theme${themeFilter.length > 1 ? 's' : ''} selected`
+                          }
+                        </span>
+                        <Filter className="h-4 w-4 ml-2" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-3">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="text-sm font-medium">Filter by Themes</h4>
+                          {themeFilter.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setThemeFilter([])}
+                              className="h-6 px-2 text-xs"
+                            >
+                              Clear
+                            </Button>
+                          )}
+                        </div>
+                        {themes.map((theme) => (
+                          <div key={theme.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`filter-theme-${theme.id}`}
+                              checked={themeFilter.includes(theme.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setThemeFilter(prev => [...prev, theme.id])
+                                } else {
+                                  setThemeFilter(prev => prev.filter(id => id !== theme.id))
+                                }
+                              }}
+                            />
+                            <Label 
+                              htmlFor={`filter-theme-${theme.id}`}
+                              className="text-sm cursor-pointer"
+                              style={{ color: theme.color }}
+                            >
+                              {theme.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </CardContent>
@@ -621,8 +662,8 @@ function QuotesAdminPage({ action, editId }: { action: string | null, editId: st
           ) : (
             <div className="space-y-4">
               {filteredQuotes.map((quote) => (
-                <Card key={quote.id} className={`hover:shadow-lg transition-shadow ${!quote.is_active ? 'opacity-60' : ''}`}>
-                  <CardHeader>
+                <Card key={quote.id} className={`hover:shadow-lg transition-shadow ${!quote.is_active ? 'opacity-60' : ''} flex flex-col min-h-[280px]`}>
+                  <CardHeader className="flex-shrink-0">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -656,7 +697,17 @@ function QuotesAdminPage({ action, editId }: { action: string | null, editId: st
                           ))}
                         </div>
                       </div>
-                      <div className="flex gap-1 ml-2">
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow flex flex-col">
+                    <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground flex-grow min-h-[80px] flex items-start">
+                      <span>{quote.text.length > 200 ? `${quote.text.substring(0, 200)}...` : quote.text}</span>
+                    </blockquote>
+                    <div className="mt-3 flex justify-between items-center">
+                      <div className="text-xs text-muted-foreground">
+                        Created: {new Date(quote.created_at).toLocaleDateString()}
+                      </div>
+                      <div className="flex gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
@@ -680,14 +731,6 @@ function QuotesAdminPage({ action, editId }: { action: string | null, editId: st
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground">
-                      {quote.text.length > 200 ? `${quote.text.substring(0, 200)}...` : quote.text}
-                    </blockquote>
-                    <div className="mt-3 text-xs text-muted-foreground">
-                      Created: {new Date(quote.created_at).toLocaleDateString()}
                     </div>
                   </CardContent>
                 </Card>

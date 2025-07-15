@@ -216,9 +216,25 @@ export default function EssayMode() {
       }, 1000)
     } else if (timer === 0) {
       setTimerRunning(false)
+      // Auto-submit when timer expires
+      if (essayContent.trim() && wordCount >= 20) {
+        toast({
+          title: "Time's Up!",
+          description: "Your essay has been automatically submitted for grading.",
+          variant: "default",
+        })
+        setShowGradingModal(true)
+      } else {
+        toast({
+          title: "Time's Up!",
+          description: "Timer expired. Your current progress has been saved as a draft.",
+          variant: "destructive",
+        })
+        handleSaveDraft()
+      }
     }
     return () => clearInterval(interval)
-  }, [timerRunning, timer])
+  }, [timerRunning, timer, essayContent, wordCount])
 
   // Format timer display
   const formatTime = (seconds) => {

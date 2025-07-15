@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowLeft,
   BookOpen,
@@ -341,6 +342,8 @@ const TECHNIQUES = [
 
 export default function InteractiveEssayBuilder() {
   const { user, selectedBook } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [currentQuestion, setCurrentQuestion] = useState("")
   const [currentStep, setCurrentStep] = useState(0)
   const [essayComponent, setEssayComponent] = useState("introduction")
@@ -355,9 +358,109 @@ export default function InteractiveEssayBuilder() {
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [allStepsContent, setAllStepsContent] = useState({})
+  const [isInitialized, setIsInitialized] = useState(false)
+  const prevStateRef = useRef({ component: 'introduction', step: 0, content: '' })
 
   // Map selectedBook to the expected format
   const selectedText = getTextKey(selectedBook?.id)
+
+  // URL state management functions
+  const updateUrl = (component: string, step: number) => {
+    const currentComponent = searchParams.get('component') || 'introduction'
+    const currentStep = parseInt(searchParams.get('step') || '0')
+    
+    // Only update URL if state has actually changed
+    if (currentComponent !== component || currentStep !== step) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('component', component)
+      params.set('step', step.toString())
+      router.push(`?${params.toString()}`, { scroll: false })
+    }
+  }
+
+  const readFromUrl = () => {
+    const component = searchParams.get('component') || 'introduction'
+    const step = parseInt(searchParams.get('step') || '0')
+    
+    if (['introduction', 'body-paragraph', 'conclusion'].includes(component)) {
+      setEssayComponent(component)
+      
+      // Get the correct steps array for validation
+      const getStepsForComponent = (comp: string) => {
+        switch (comp) {
+          case "introduction": return introSteps
+          case "body-paragraph": return petalSteps
+          case "conclusion": return conclusionSteps
+          default: return introSteps
+        }
+      }
+      
+      const validSteps = getStepsForComponent(component)
+      const validStep = Math.max(0, Math.min(step, validSteps.length - 1))
+      setCurrentStep(validStep)
+      
+      // If step was invalid, update URL with the corrected step
+      if (step !== validStep) {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('component', component)
+        params.set('step', validStep.toString())
+        router.replace(`?${params.toString()}`, { scroll: false })
+      }
+      
+      // Load content for the current step
+      setTimeout(() => {
+        const stepKey = `${component}-${validStep}`
+        setAllStepsContent(current => {
+          const savedContent = current[stepKey] || ""
+          setEssayContent(savedContent)
+          return current
+        })
+      }, 0)
+    }
+  }
+
+  // Initialize from URL on mount and handle URL changes
+  useEffect(() => {
+    if (!isInitialized) {
+      const hasUrlParams = searchParams.get('component') || searchParams.get('step')
+      
+      if (!hasUrlParams) {
+        // First load without URL params - use replace to set initial state
+        const params = new URLSearchParams()
+        params.set('component', 'introduction')
+        params.set('step', '0')
+        router.replace(`?${params.toString()}`, { scroll: false })
+      } else {
+        readFromUrl()
+      }
+      setIsInitialized(true)
+    }
+  }, [])
+
+  // Watch for URL changes (back/forward navigation)
+  useEffect(() => {
+    if (isInitialized) {
+      // Save previous content before navigating
+      const prevContent = prevStateRef.current.content
+      if (prevContent.trim()) {
+        const prevStepKey = `${prevStateRef.current.component}-${prevStateRef.current.step}`
+        setAllStepsContent(prev => ({
+          ...prev,
+          [prevStepKey]: prevContent
+        }))
+      }
+      readFromUrl()
+    }
+  }, [searchParams])
+
+  // Update ref when state changes
+  useEffect(() => {
+    prevStateRef.current = {
+      component: essayComponent,
+      step: currentStep,
+      content: essayContent
+    }
+  }, [essayComponent, currentStep, essayContent])
 
   // Generate a random question
   const generateRandomQuestion = () => {
@@ -378,6 +481,8 @@ export default function InteractiveEssayBuilder() {
       setFeedback(null)
       setShowFeedback(false)
       setAllStepsContent({})
+      // Reset URL to step 0
+      updateUrl(essayComponent, 0)
     } else {
       console.log("No questions available for selectedText:", selectedText)
     }
@@ -511,13 +616,34 @@ export default function InteractiveEssayBuilder() {
 
   // Handle component selection
   const handleComponentChange = (value) => {
+    // Save current content before switching components
+    if (essayContent.trim()) {
+      const currentStepKey = `${essayComponent}-${currentStep}`
+      setAllStepsContent(prev => ({
+        ...prev,
+        [currentStepKey]: essayContent
+      }))
+    }
+
     setEssayComponent(value)
     setCurrentStep(0)
-    setEssayContent("")
     setAiTip("")
     setFeedback(null)
     setShowFeedback(false)
-    setAllStepsContent({})
+    // Don't reset allStepsContent - keep all progress
+    
+    // Load content for step 0 of the new component
+    setTimeout(() => {
+      setAllStepsContent(prev => {
+        const newComponentStepKey = `${value}-0`
+        const savedContent = prev[newComponentStepKey] || ""
+        setEssayContent(savedContent)
+        return prev
+      })
+    }, 0)
+    
+    // Update URL
+    updateUrl(value, 0)
     
     // Get new quotes for body paragraphs
     if (value === "body-paragraph") {
@@ -581,16 +707,32 @@ export default function InteractiveEssayBuilder() {
 
     // Save current step content
     const stepKey = `${essayComponent}-${currentStep}`
-    setAllStepsContent(prev => ({
-      ...prev,
-      [stepKey]: essayContent
-    }))
     
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1)
-      setEssayContent("")
+      const nextStep = currentStep + 1
+      
+      setAllStepsContent(prev => {
+        const updatedContent = {
+          ...prev,
+          [stepKey]: essayContent
+        }
+        
+        // Load next step content from the updated state
+        const nextStepKey = `${essayComponent}-${nextStep}`
+        setEssayContent(updatedContent[nextStepKey] || "")
+        
+        return updatedContent
+      })
+
+      setCurrentStep(nextStep)
+      // Update URL for next step
+      updateUrl(essayComponent, nextStep)
     } else {
-      // All steps completed, get AI feedback for the entire component
+      // Save final step and get AI feedback for the entire component
+      setAllStepsContent(prev => ({
+        ...prev,
+        [stepKey]: essayContent
+      }))
       handleGetFinalFeedback()
     }
   }
@@ -598,10 +740,26 @@ export default function InteractiveEssayBuilder() {
   // Handle previous step
   const handlePrevious = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
-      // Load previous step content
-      const stepKey = `${essayComponent}-${currentStep - 1}`
-      setEssayContent(allStepsContent[stepKey] || "")
+      // Save current step content before moving
+      const currentStepKey = `${essayComponent}-${currentStep}`
+      const prevStep = currentStep - 1
+      
+      setAllStepsContent(prev => {
+        const updatedContent = {
+          ...prev,
+          [currentStepKey]: essayContent
+        }
+        
+        // Load previous step content from the updated state
+        const stepKey = `${essayComponent}-${prevStep}`
+        setEssayContent(updatedContent[stepKey] || "")
+        
+        return updatedContent
+      })
+
+      setCurrentStep(prevStep)
+      // Update URL for previous step
+      updateUrl(essayComponent, prevStep)
     }
   }
 

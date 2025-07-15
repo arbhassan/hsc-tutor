@@ -136,10 +136,8 @@ export default function AdminPage() {
 
       {/* Admin Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        
-
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
+          <CardHeader className="flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
               Flashcard Cards
@@ -148,7 +146,7 @@ export default function AdminPage() {
               Manage auto-generated cards with bulk actions and editing
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-grow flex flex-col justify-end">
             <div className="flex gap-2">
               <Button 
                 onClick={() => router.push('/admin/flashcard-cards')}
@@ -161,8 +159,8 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
+          <CardHeader className="flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
               Past Exam Questions
@@ -171,7 +169,7 @@ export default function AdminPage() {
               Manage HSC past exam questions for essay practice
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-grow flex flex-col justify-end">
             <div className="flex gap-2">
               <Button 
                 onClick={() => router.push('/admin/past-exam-questions')}
@@ -191,8 +189,8 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
+          <CardHeader className="flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
               <Monitor className="h-5 w-5" />
               Exam Simulator
@@ -201,7 +199,7 @@ export default function AdminPage() {
               Manage unseen texts, essay questions, and thematic quotes
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-grow flex flex-col justify-end">
             <div className="flex gap-2">
               <Button 
                 onClick={() => router.push('/admin/exam-simulator')}
@@ -214,8 +212,8 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardHeader>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
+          <CardHeader className="flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
               Quote Bank
@@ -224,7 +222,7 @@ export default function AdminPage() {
               Upload quotes and auto-generate flashcards with theme tagging
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-grow flex flex-col justify-end">
             <div className="flex gap-2">
               <Button 
                 onClick={() => router.push('/admin/quotes')}

@@ -131,47 +131,7 @@ export default function TextMasteryPage() {
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">Your Progress</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-primary mr-2" />
-                  <div>
-                    <p className="text-2xl font-semibold">0</p>
-                    <p className="text-sm text-muted-foreground">Study Sessions</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <Star className="h-5 w-5 text-primary mr-2" />
-                  <div>
-                    <p className="text-2xl font-semibold">0</p>
-                    <p className="text-sm text-muted-foreground">Quotes Mastered</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <BookOpen className="h-5 w-5 text-primary mr-2" />
-                  <div>
-                    <p className="text-2xl font-semibold">0%</p>
-                    <p className="text-sm text-muted-foreground">Completion</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        
       </div>
     </main>
   )

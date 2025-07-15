@@ -342,19 +342,19 @@ export default function PastSubmissionsPage() {
                     <CardContent>
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
                             <span className="text-muted-foreground">Questions:</span>
                             <span className="font-medium">{stats.questions}</span>
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
                             <span className="text-muted-foreground">Essays:</span>
                             <span className="font-medium">{stats.essays}</span>
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
                             <span className="text-muted-foreground">Daily Drill:</span>
                             <span className="font-medium">{stats.dailyDrill}</span>
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
                             <span className="text-muted-foreground">Exam Sim:</span>
                             <span className="font-medium">{stats.examSimulator}</span>
                           </div>
@@ -448,7 +448,7 @@ export default function PastSubmissionsPage() {
                                 return (
                                   <>
                                     {calculatedScore !== null && maxScore !== null && (
-                                      <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1">
                                         <span className="text-sm">Score:</span>
                                         <Badge className={getScoreColor(calculatedScore, maxScore)}>
                                           {calculatedScore}/{maxScore}
@@ -456,7 +456,7 @@ export default function PastSubmissionsPage() {
                                       </div>
                                     )}
                                     {essay?.word_count && (
-                                      <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1">
                                         <span className="text-sm">Words:</span>
                                         <span className="text-sm font-medium">{essay.word_count}</span>
                                       </div>
@@ -467,21 +467,21 @@ export default function PastSubmissionsPage() {
                             ) : (
                               <>
                                 {submission.total_score !== null && submission.max_score !== null && (
-                                  <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
                                     <span className="text-sm">Score:</span>
                                     <Badge className={getScoreColor(submission.total_score, submission.max_score)}>
                                       {submission.total_score}/{submission.max_score}
                                     </Badge>
                                   </div>
                                 )}
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
                                   <span className="text-sm">Questions:</span>
                                   <span className="text-sm font-medium">{submission.submission_questions?.length || 0}</span>
                                 </div>
                               </>
                             )}
                             {submission.completion_time_minutes && (
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
                                 <span className="text-sm">Time:</span>
                                 <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
                               </div>
@@ -516,19 +516,19 @@ export default function PastSubmissionsPage() {
                         <CardContent>
                           <div className="space-y-2">
                             {submission.total_score !== null && submission.max_score !== null && (
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
                                 <span className="text-sm">Score:</span>
                                 <Badge className={getScoreColor(submission.total_score, submission.max_score)}>
                                   {submission.total_score}/{submission.max_score}
                                 </Badge>
                               </div>
                             )}
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
                               <span className="text-sm">Questions:</span>
                               <span className="text-sm font-medium">{submission.submission_questions?.length || 0}</span>
                             </div>
                             {submission.completion_time_minutes && (
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
                                 <span className="text-sm">Time:</span>
                                 <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
                               </div>
@@ -575,7 +575,7 @@ export default function PastSubmissionsPage() {
                               }
                               
                               return calculatedScore !== null && maxScore !== null ? (
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1">
                                   <span className="text-sm">Score:</span>
                                   <Badge className={getScoreColor(calculatedScore, maxScore)}>
                                     {calculatedScore}/{maxScore}
@@ -584,13 +584,13 @@ export default function PastSubmissionsPage() {
                               ) : null;
                             })()}
                             {submission.submission_essays?.[0]?.word_count && (
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
                                 <span className="text-sm">Words:</span>
                                 <span className="text-sm font-medium">{submission.submission_essays[0].word_count}</span>
                               </div>
                             )}
                             {submission.completion_time_minutes && (
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
                                 <span className="text-sm">Time:</span>
                                 <span className="text-sm font-medium">{submission.completion_time_minutes}m</span>
                               </div>
@@ -808,7 +808,7 @@ export default function PastSubmissionsPage() {
                                     const score = typeof data === 'object' ? data.mark : data;
                                     return (
                                       <div key={criterion} className="space-y-1">
-                                        <div className="flex justify-between">
+                                        <div className="flex items-center gap-1">
                                           <span className="capitalize">{criterion}:</span>
                                           <span className="font-medium">{score}/5</span>
                                         </div>

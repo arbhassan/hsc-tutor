@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,6 +44,7 @@ interface StudySession {
 export default function QuoteFlashcardsNewPage() {
   const { user, selectedBook } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
 
   const [allCards, setAllCards] = useState<FlashcardCardWithDetails[]>([])
   const [filteredCards, setFilteredCards] = useState<FlashcardCardWithDetails[]>([])
@@ -67,6 +69,14 @@ export default function QuoteFlashcardsNewPage() {
   const [newSetName, setNewSetName] = useState("")
   const [newSetDescription, setNewSetDescription] = useState("")
 
+  // Restore study session from browser history on page load
+  useEffect(() => {
+    const currentState = window.history.state
+    if (currentState && currentState.studySession) {
+      setStudySession(currentState.studySession)
+    }
+  }, [])
+
   // Load initial data
   useEffect(() => {
     if (!user?.id || !selectedBook?.id) return
@@ -77,6 +87,25 @@ export default function QuoteFlashcardsNewPage() {
   useEffect(() => {
     applyFilters()
   }, [allCards, filters])
+
+  // Handle browser navigation during study session
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.studySession) {
+        // Restore study session from history state
+        setStudySession(event.state.studySession)
+      } else {
+        // No study session in history state, clear current session
+        setStudySession(null)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
 
   const loadData = async () => {
     if (!user?.id || !selectedBook?.id) return
@@ -231,26 +260,33 @@ export default function QuoteFlashcardsNewPage() {
       return
     }
 
-    setStudySession({
+    const newSession = {
       cards: [...cards],
       currentIndex: 0,
       userInputs: {},
       results: {},
       showAnswers: false
-    })
+    }
+
+    setStudySession(newSession)
+    // Replace current state with study session state
+    window.history.replaceState({ studySession: newSession }, "")
   }
 
   const handleStudyInput = (value: string) => {
     if (!studySession) return
 
     const currentCard = studySession.cards[studySession.currentIndex]
-    setStudySession(prev => ({
-      ...prev!,
+    const newSession = {
+      ...studySession,
       userInputs: {
-        ...prev!.userInputs,
+        ...studySession.userInputs,
         [currentCard.id]: value
       }
-    }))
+    }
+    setStudySession(newSession)
+    // Update current history state to preserve input
+    window.history.replaceState({ studySession: newSession }, "")
   }
 
   const checkAnswer = async () => {
@@ -278,13 +314,16 @@ export default function QuoteFlashcardsNewPage() {
     // Update progress
     await quoteFlashcardService.updateCardProgress(user.id, currentCard.id, isCorrect)
 
-    setStudySession(prev => ({
-      ...prev!,
+    const newSession = {
+      ...studySession,
       results: {
-        ...prev!.results,
+        ...studySession.results,
         [currentCard.id]: isCorrect
       }
-    }))
+    }
+    setStudySession(newSession)
+    // Update current history state to preserve result
+    window.history.replaceState({ studySession: newSession }, "")
 
     toast({
       title: isCorrect ? "Correct!" : "Incorrect",
@@ -297,10 +336,13 @@ export default function QuoteFlashcardsNewPage() {
     if (!studySession) return
 
     if (studySession.currentIndex < studySession.cards.length - 1) {
-      setStudySession(prev => ({
-        ...prev!,
-        currentIndex: prev!.currentIndex + 1
-      }))
+      const newSession = {
+        ...studySession,
+        currentIndex: studySession.currentIndex + 1
+      }
+      setStudySession(newSession)
+      // Push new state to history
+      window.history.pushState({ studySession: newSession }, "")
     } else {
       // Session complete
       const totalCards = studySession.cards.length
@@ -310,11 +352,22 @@ export default function QuoteFlashcardsNewPage() {
         description: `You got ${correctCards} out of ${totalCards} cards correct`,
       })
       setStudySession(null)
+      // Clear study session from history
+      window.history.replaceState({}, "")
     }
   }
 
+  const previousCard = () => {
+    if (!studySession || studySession.currentIndex <= 0) return
+
+    // Use browser back to go to previous card
+    window.history.back()
+  }
+
   const endStudySession = () => {
+    // Replace current state to exit study session
     setStudySession(null)
+    window.history.replaceState({}, "")
   }
 
   // Show message if no book is selected
@@ -421,7 +474,14 @@ export default function QuoteFlashcardsNewPage() {
                       </div>
                     )}
                   </div>
-                  <div className="text-center">
+                  <div className="flex justify-center gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={previousCard}
+                      disabled={studySession.currentIndex === 0}
+                    >
+                      Previous Card
+                    </Button>
                     <Button onClick={nextCard}>
                       {studySession.currentIndex < studySession.cards.length - 1 ? 'Next Card' : 'Finish Session'}
                     </Button>

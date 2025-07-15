@@ -98,6 +98,10 @@ export default function ExamSimulatorPage() {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [customExamTime, setCustomExamTime] = useState(examConfig.totalTime)
   const [selectedSections, setSelectedSections] = useState("both") // "section1", "section2", or "both"
+  
+  // Temporary state for settings dialog
+  const [tempCustomExamTime, setTempCustomExamTime] = useState(examConfig.totalTime)
+  const [tempSelectedSections, setTempSelectedSections] = useState("both")
   const [examSubmitted, setExamSubmitted] = useState(false)
   const [markingResults, setMarkingResults] = useState(null)
   const [isMarking, setIsMarking] = useState(false)
@@ -206,11 +210,38 @@ export default function ExamSimulatorPage() {
     }
   }
 
+  // Settings dialog handlers
+  const openSettingsDialog = () => {
+    // Sync temporary state with current state when opening
+    setTempCustomExamTime(customExamTime)
+    setTempSelectedSections(selectedSections)
+    setShowSettingsDialog(true)
+  }
+
+  const applySettings = () => {
+    // Apply temporary settings to actual state
+    setCustomExamTime(tempCustomExamTime)
+    setSelectedSections(tempSelectedSections)
+    setShowSettingsDialog(false)
+  }
+
+  const cancelSettings = () => {
+    // Reset temporary state to current state and close dialog
+    setTempCustomExamTime(customExamTime)
+    setTempSelectedSections(selectedSections)
+    setShowSettingsDialog(false)
+  }
+
   // Clear saved draft
   const clearSavedDraft = () => {
     localStorage.removeItem("examSimulatorDraft")
     setSavedDraft(false)
     setShowContinueDialog(false)
+    // Reset exam settings to defaults when starting fresh
+    setCustomExamTime(examConfig.totalTime)
+    setSelectedSections("both")
+    setTempCustomExamTime(examConfig.totalTime)
+    setTempSelectedSections("both")
   }
 
   // Auto-save when important responses change (excluding elapsedTime to avoid excessive saves)
@@ -285,7 +316,10 @@ export default function ExamSimulatorPage() {
         setRemainingTime((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current)
-            handleExamSubmit()
+            // Auto-submit when time expires
+            setTimeout(() => {
+              handleExamSubmit()
+            }, 100) // Small delay to ensure UI updates
             return 0
           }
           return prev - 1
@@ -809,7 +843,7 @@ export default function ExamSimulatorPage() {
                     </p>
                   </div>
                   <div className="space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => setShowSettingsDialog(true)}>
+                    <Button variant="outline" size="sm" onClick={openSettingsDialog}>
                       <Settings className="mr-2 h-4 w-4" />
                       Exam Settings
                     </Button>
@@ -848,8 +882,8 @@ export default function ExamSimulatorPage() {
               <div className="space-y-2">
                 <Label htmlFor="exam-sections">Exam Sections</Label>
                 <Select
-                  value={selectedSections}
-                  onValueChange={(value) => setSelectedSections(value)}
+                  value={tempSelectedSections}
+                  onValueChange={(value) => setTempSelectedSections(value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select sections to include" />
@@ -865,8 +899,8 @@ export default function ExamSimulatorPage() {
               <div className="space-y-2">
                 <Label htmlFor="exam-time">Total Exam Time (minutes)</Label>
                 <Select
-                  value={customExamTime.toString()}
-                  onValueChange={(value) => setCustomExamTime(Number.parseInt(value))}
+                  value={tempCustomExamTime.toString()}
+                  onValueChange={(value) => setTempCustomExamTime(Number.parseInt(value))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select exam time" />
@@ -884,10 +918,10 @@ export default function ExamSimulatorPage() {
 
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowSettingsDialog(false)}>
+              <Button variant="outline" onClick={cancelSettings}>
                 Cancel
               </Button>
-              <Button onClick={() => setShowSettingsDialog(false)}>Apply Settings</Button>
+              <Button onClick={applySettings}>Apply Settings</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -965,14 +999,21 @@ export default function ExamSimulatorPage() {
             <div className="flex items-center space-x-4">
               <div
                 className={`flex items-center space-x-2 px-3 py-1 rounded-md ${
-                  remainingTime < 300 ? "bg-red-100 text-red-800" : "bg-muted"
+                  remainingTime <= 0 ? "bg-red-600 text-white" : remainingTime < 300 ? "bg-red-100 text-red-800" : "bg-muted"
                 }`}
               >
                 <Clock className="h-4 w-4" />
-                <span className="text-sm font-medium">Time Remaining: {formatTime(remainingTime)}</span>
+                <span className="text-sm font-medium">
+                  {remainingTime <= 0 ? "TIME EXPIRED" : `Time Remaining: ${formatTime(remainingTime)}`}
+                </span>
               </div>
               <div className="flex items-center space-x-4">
-                <Button variant="outline" size="sm" onClick={() => setShowQuestionNavigation(!showQuestionNavigation)}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowQuestionNavigation(!showQuestionNavigation)}
+                  disabled={remainingTime <= 0 || examSubmitted}
+                >
                   {showQuestionNavigation ? (
                     <>
                       <X className="mr-2 h-4 w-4" /> Hide Navigation
@@ -986,17 +1027,34 @@ export default function ExamSimulatorPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={pauseExam}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={pauseExam}
+                        disabled={remainingTime <= 0 || examSubmitted}
+                      >
                         {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{isPaused ? "Resume Exam" : "Pause Exam"}</TooltipContent>
+                    <TooltipContent>
+                      {remainingTime <= 0 ? "Time Expired" : isPaused ? "Resume Exam" : "Pause Exam"}
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
             </div>
           </div>
         </header>
+
+        {/* Time Expired Banner */}
+        {remainingTime <= 0 && !examSubmitted && (
+          <div className="bg-red-600 text-white px-4 py-2 text-center">
+            <div className="flex items-center justify-center space-x-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="font-medium">TIME EXPIRED - Exam automatically submitted</span>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left panel - Unseen text */}
@@ -1047,11 +1105,11 @@ export default function ExamSimulatorPage() {
               <div className="mb-6">
                 <h3 className="text-sm font-medium mb-2">Your Response</h3>
                 <textarea
-                  className="w-full h-64 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-64 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   value={currentResponse}
                   onChange={(e) => handleResponseChange(currentText.id, currentQuestion.id, e.target.value)}
-                  placeholder="Type your response here..."
-                  disabled={isPaused}
+                  placeholder={remainingTime <= 0 ? "Time expired - exam automatically submitted" : "Type your response here..."}
+                  disabled={isPaused || remainingTime <= 0 || examSubmitted}
                 />
               </div>
 
@@ -1059,7 +1117,7 @@ export default function ExamSimulatorPage() {
                 <Button
                   variant="outline"
                   onClick={handlePrevQuestion}
-                  disabled={currentTextIndex === 0 && currentQuestionIndex === 0}
+                  disabled={currentTextIndex === 0 && currentQuestionIndex === 0 || remainingTime <= 0 || examSubmitted}
                 >
                   <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous Question
@@ -1067,9 +1125,17 @@ export default function ExamSimulatorPage() {
 
                 {currentTextIndex === unseenTexts.length - 1 &&
                 currentQuestionIndex === currentText.questions.length - 1 ? (
-                  <Button onClick={() => setShowSubmitSectionDialog(true)}>Submit Section I</Button>
+                  <Button 
+                    onClick={() => setShowSubmitSectionDialog(true)}
+                    disabled={remainingTime <= 0 || examSubmitted}
+                  >
+                    Submit Section I
+                  </Button>
                 ) : (
-                  <Button onClick={handleNextQuestion}>
+                  <Button 
+                    onClick={handleNextQuestion}
+                    disabled={remainingTime <= 0 || examSubmitted}
+                  >
                     Next Question
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
@@ -1096,8 +1162,9 @@ export default function ExamSimulatorPage() {
                               <button
                                 key={question.id}
                                 onClick={() => navigateToQuestion(textIndex, questionIndex)}
+                                disabled={remainingTime <= 0 || examSubmitted}
                                 className={`
-                                  h-10 w-10 rounded-md text-sm font-medium border transition-colors
+                                  h-10 w-10 rounded-md text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed
                                   ${isCurrent 
                                     ? 'bg-primary text-primary-foreground border-primary' 
                                     : isAnswered 
@@ -1187,13 +1254,20 @@ export default function ExamSimulatorPage() {
             <div className="flex items-center space-x-4">
               <div
                 className={`flex items-center space-x-2 px-3 py-1 rounded-md ${
-                  remainingTime < 300 ? "bg-red-100 text-red-800" : "bg-muted"
+                  remainingTime <= 0 ? "bg-red-600 text-white" : remainingTime < 300 ? "bg-red-100 text-red-800" : "bg-muted"
                 }`}
               >
                 <Clock className="h-4 w-4" />
-                <span className="text-sm font-medium">Time Remaining: {formatTime(remainingTime)}</span>
+                <span className="text-sm font-medium">
+                  {remainingTime <= 0 ? "TIME EXPIRED" : `Time Remaining: ${formatTime(remainingTime)}`}
+                </span>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setShowQuoteBank(!showQuoteBank)}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowQuoteBank(!showQuoteBank)}
+                disabled={remainingTime <= 0 || examSubmitted}
+              >
                 {showQuoteBank ? (
                   <>
                     <PanelLeftClose className="mr-2 h-4 w-4" /> Hide Quotes
@@ -1207,16 +1281,33 @@ export default function ExamSimulatorPage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={pauseExam}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={pauseExam}
+                      disabled={remainingTime <= 0 || examSubmitted}
+                    >
                       {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>{isPaused ? "Resume Exam" : "Pause Exam"}</TooltipContent>
+                  <TooltipContent>
+                    {remainingTime <= 0 ? "Time Expired" : isPaused ? "Resume Exam" : "Pause Exam"}
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
           </div>
         </header>
+
+        {/* Time Expired Banner */}
+        {remainingTime <= 0 && !examSubmitted && (
+          <div className="bg-red-600 text-white px-4 py-2 text-center">
+            <div className="flex items-center justify-center space-x-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="font-medium">TIME EXPIRED - Exam automatically submitted</span>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-1 overflow-hidden">
           {/* Left panel - Quote Bank (optional) */}
@@ -1246,7 +1337,7 @@ export default function ExamSimulatorPage() {
                                   size="sm"
                                   className="w-full text-xs"
                                   onClick={() => insertQuote(quote)}
-                                  disabled={isPaused}
+                                  disabled={isPaused || remainingTime <= 0 || examSubmitted}
                                 >
                                   Insert Quote
                                 </Button>
@@ -1316,21 +1407,28 @@ export default function ExamSimulatorPage() {
                 </div>
 
                 <textarea
-                  className="w-full h-[calc(100vh-240px)] p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-serif"
+                  className="w-full h-[calc(100vh-240px)] p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-serif disabled:opacity-50 disabled:cursor-not-allowed"
                   value={essayResponse}
                   onChange={(e) => handleEssayResponseChange(e.target.value)}
-                  placeholder="Begin your essay here..."
-                  disabled={isPaused}
+                  placeholder={remainingTime <= 0 ? "Time expired - exam automatically submitted" : "Begin your essay here..."}
+                  disabled={isPaused || remainingTime <= 0 || examSubmitted}
                 />
               </div>
 
               <div className="flex justify-between">
                 {selectedSections === "both" && (
-                  <Button variant="outline" onClick={() => setShowSubmitSectionDialog(true)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowSubmitSectionDialog(true)}
+                    disabled={remainingTime <= 0 || examSubmitted}
+                  >
                     Return to Section I
                   </Button>
                 )}
-                <Button onClick={() => setShowSubmitExamDialog(true)}>
+                <Button 
+                  onClick={() => setShowSubmitExamDialog(true)}
+                  disabled={remainingTime <= 0 || examSubmitted}
+                >
                   {selectedSections === "section2" ? "Submit Essay" : "Submit Entire Exam"}
                 </Button>
               </div>
@@ -2074,6 +2172,11 @@ export default function ExamSimulatorPage() {
                 setMarkingResults(null)
                 setIsMarking(false)
                 setMarkingError(null)
+                // Reset exam settings to defaults
+                setCustomExamTime(examConfig.totalTime)
+                setSelectedSections("both")
+                setTempCustomExamTime(examConfig.totalTime)
+                setTempSelectedSections("both")
               }}
               >
                 <RefreshCw className="mr-2 h-4 w-4" />

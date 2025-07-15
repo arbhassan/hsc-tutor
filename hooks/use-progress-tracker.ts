@@ -41,8 +41,8 @@ export function useProgressTracker() {
 
   const trackStudySession = async (timeMinutes: number) => {
     if (!user?.id) return
-    await addStudyTime(user.id, timeMinutes)
-    await updateStudyStreak(user.id)
+    await updateStudyStreak(user.id)          // ✅ Check streak first with old timestamp
+    await addStudyTime(user.id, timeMinutes)  // ✅ Then update timestamp
   }
 
   const trackShortAnswerDetailed = async (markerType: number, score: number, maxScore: number, completionTime: number) => {

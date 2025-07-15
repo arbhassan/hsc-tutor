@@ -27,6 +27,7 @@ import {
   AlertCircle,
   Heart,
   X,
+  Check,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -65,6 +66,7 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
   const [favoriteQuotes, setFavoriteQuotes] = useState<string[]>([])
   const [selectedQuoteForDetails, setSelectedQuoteForDetails] = useState<any>(null)
   const [showQuoteDetails, setShowQuoteDetails] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
 
   // Load favorites from localStorage on component mount
   useEffect(() => {
@@ -614,40 +616,7 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
               </div>
             </section>
 
-            {/* Additional Resources */}
-            <section id="additional-resources" className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Additional Resources</h2>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recommended Reading and Resources</CardTitle>
-                  <CardDescription>Deepen your understanding with these carefully selected materials</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {text.additionalResources.map((resource, idx) => (
-                      <div key={idx} className="flex items-start border-b pb-4 last:border-0 last:pb-0">
-                        <div className="bg-gray-100 p-2 rounded-md mr-4">
-                          {resource.type === "Book" && <BookOpen className="h-5 w-5 text-blue-600" />}
-                          {resource.type === "Essay" && <FileDown className="h-5 w-5 text-green-600" />}
-                          {resource.type === "Academic Resource" && <BookText className="h-5 w-5 text-amber-600" />}
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{resource.title}</h3>
-                          <p className="text-sm text-gray-600">{resource.author}</p>
-                          <p className="text-sm text-gray-700 mt-1">{resource.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter className="bg-gray-50">
-                  <Button variant="outline" className="w-full">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Complete Resource List (PDF)
-                  </Button>
-                </CardFooter>
-              </Card>
-            </section>
+            
           </TabsContent>
 
           <TabsContent value="quotes" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
@@ -1189,16 +1158,31 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
                   variant="outline"
                   onClick={() => {
                     navigator.clipboard.writeText(selectedQuoteForDetails.text)
+                    setIsCopied(true)
                     toast({
                       title: "Quote copied",
                       description: "The quote has been copied to your clipboard.",
                       duration: 3000,
                     })
+                    // Reset the copied state after 2 seconds
+                    setTimeout(() => {
+                      setIsCopied(false)
+                    }, 2000)
                   }}
                   className="flex items-center gap-2"
+                  disabled={isCopied}
                 >
-                  <Copy className="h-4 w-4" />
-                  Copy Quote
+                  {isCopied ? (
+                    <>
+                      <Check className="h-4 w-4 text-green-600" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy Quote
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
