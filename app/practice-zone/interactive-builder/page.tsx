@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
@@ -340,7 +340,37 @@ const TECHNIQUES = [
   "Setting", "Tone", "Dialogue", "Narrative perspective", "Paradox"
 ]
 
-export default function InteractiveEssayBuilder() {
+// Loading component for Suspense fallback
+function InteractiveBuilderLoading() {
+  return (
+    <main className="min-h-screen bg-gray-50 pb-16">
+      <div className="bg-white border-b">
+        <div className="container py-4 px-4">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/practice-zone"
+              className="flex items-center text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              <span>Back to Practice Zone</span>
+            </Link>
+            <h1 className="text-xl font-semibold">Interactive Essay Builder</h1>
+            <div></div>
+          </div>
+        </div>
+      </div>
+      <div className="container px-4 py-8">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading Interactive Essay Builder...</p>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+// Move the main component logic to a separate component
+function InteractiveEssayBuilderContent() {
   const { user, selectedBook } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -1223,5 +1253,13 @@ export default function InteractiveEssayBuilder() {
         )}
       </div>
     </main>
+  )
+}
+
+export default function InteractiveEssayBuilder() {
+  return (
+    <Suspense fallback={<InteractiveBuilderLoading />}>
+      <InteractiveEssayBuilderContent />
+    </Suspense>
   )
 }
