@@ -250,17 +250,19 @@ function PastExamQuestionsAdminPage({ action, editId }: { action: string | null,
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Past Exam Questions Management</h1>
-            <p className="text-muted-foreground">
-              Manage HSC past exam questions for essay practice
-            </p>
-          </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => router.push('/admin')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Admin
             </Button>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Past Exam Questions Management</h1>
+              <p className="text-muted-foreground">
+                Manage HSC past exam questions for essay practice
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
             {!showForm && (
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
