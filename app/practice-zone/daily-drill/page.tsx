@@ -424,6 +424,52 @@ Evidence from the text supports this analysis through specific examples that dem
 In conclusion, the text demonstrates sophisticated use of literary techniques that work together to create a compelling and meaningful piece of writing.`
 }
 
+// Session storage keys
+const STORAGE_KEYS = {
+  PRACTICE_STARTED: 'dailyDrill_practiceStarted',
+  CURRENT_TEXT_INDEX: 'dailyDrill_currentTextIndex',
+  RESPONSES: 'dailyDrill_responses',
+  SUBMITTED: 'dailyDrill_submitted',
+  FEEDBACK: 'dailyDrill_feedback',
+  IMPROVED_RESPONSES: 'dailyDrill_improvedResponses',
+  SESSION_ID: 'dailyDrill_sessionId'
+}
+
+// Helper functions for session persistence
+const saveToStorage = (key: string, value: any) => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(value))
+    }
+  } catch (error) {
+    console.error('Failed to save to localStorage:', error)
+  }
+}
+
+const loadFromStorage = (key: string, defaultValue: any = null) => {
+  try {
+    if (typeof window !== 'undefined') {
+      const item = localStorage.getItem(key)
+      return item ? JSON.parse(item) : defaultValue
+    }
+  } catch (error) {
+    console.error('Failed to load from localStorage:', error)
+  }
+  return defaultValue
+}
+
+const clearStorage = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key)
+      })
+    }
+  } catch (error) {
+    console.error('Failed to clear localStorage:', error)
+  }
+}
+
 export default function DailyDrillPage() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
   const [responses, setResponses] = useState({})
@@ -432,9 +478,70 @@ export default function DailyDrillPage() {
   const [feedback, setFeedback] = useState({})
   const [improvedResponses, setImprovedResponses] = useState({})
   const [copiedQuestions, setCopiedQuestions] = useState({})
+  const [isLoaded, setIsLoaded] = useState(false)
 
   const { user } = useAuth()
   const { trackShortAnswerDetailed, trackStudySession } = useProgressTracker()
+
+  // Load state from localStorage on component mount
+  useEffect(() => {
+    const loadedPracticeStarted = loadFromStorage(STORAGE_KEYS.PRACTICE_STARTED, false)
+    const loadedCurrentTextIndex = loadFromStorage(STORAGE_KEYS.CURRENT_TEXT_INDEX, 0)
+    const loadedResponses = loadFromStorage(STORAGE_KEYS.RESPONSES, {})
+    const loadedSubmitted = loadFromStorage(STORAGE_KEYS.SUBMITTED, false)
+    const loadedFeedback = loadFromStorage(STORAGE_KEYS.FEEDBACK, {})
+    const loadedImprovedResponses = loadFromStorage(STORAGE_KEYS.IMPROVED_RESPONSES, {})
+
+    // Only restore state if there's an active session
+    const sessionId = loadFromStorage(STORAGE_KEYS.SESSION_ID)
+    if (sessionId && loadedPracticeStarted) {
+      setPracticeStarted(loadedPracticeStarted)
+      setCurrentTextIndex(loadedCurrentTextIndex)
+      setResponses(loadedResponses)
+      setSubmitted(loadedSubmitted)
+      setFeedback(loadedFeedback)
+      setImprovedResponses(loadedImprovedResponses)
+    }
+
+    setIsLoaded(true)
+  }, [])
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.PRACTICE_STARTED, practiceStarted)
+    }
+  }, [practiceStarted, isLoaded])
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.CURRENT_TEXT_INDEX, currentTextIndex)
+    }
+  }, [currentTextIndex, isLoaded])
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.RESPONSES, responses)
+    }
+  }, [responses, isLoaded])
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.SUBMITTED, submitted)
+    }
+  }, [submitted, isLoaded])
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.FEEDBACK, feedback)
+    }
+  }, [feedback, isLoaded])
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.IMPROVED_RESPONSES, improvedResponses)
+    }
+  }, [improvedResponses, isLoaded])
 
   const currentText = unseenTexts[currentTextIndex]
 
@@ -558,6 +665,9 @@ export default function DailyDrillPage() {
       setFeedback({})
       setImprovedResponses({})
       setCopiedQuestions({})
+      
+      // Generate new session ID for the new text
+      saveToStorage(STORAGE_KEYS.SESSION_ID, Date.now().toString())
     }
   }
 
@@ -570,10 +680,42 @@ export default function DailyDrillPage() {
     setFeedback({})
     setImprovedResponses({})
     setCopiedQuestions({})
+    
+    // Generate new session ID for the new drill
+    saveToStorage(STORAGE_KEYS.SESSION_ID, Date.now().toString())
   }
 
   const startPractice = () => {
     setPracticeStarted(true)
+    // Generate a session ID to track this practice session
+    saveToStorage(STORAGE_KEYS.SESSION_ID, Date.now().toString())
+  }
+
+  const exitPractice = () => {
+    // Clear all session data when exiting
+    clearStorage()
+    setPracticeStarted(false)
+    setCurrentTextIndex(0)
+    setResponses({})
+    setSubmitted(false)
+    setFeedback({})
+    setImprovedResponses({})
+    setCopiedQuestions({})
+  }
+
+  // Show loading state while restoring from localStorage
+  if (!isLoaded) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Start screen
@@ -868,10 +1010,8 @@ export default function DailyDrillPage() {
             )}
 
             <div className="flex justify-center mt-6">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/practice-zone">
-                  Exit to Practice Zone
-                </Link>
+              <Button variant="outline" size="sm" onClick={exitPractice}>
+                Exit to Practice Zone
               </Button>
             </div>
           </div>

@@ -94,8 +94,8 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
             </div>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Core Themes</h1>
-          <p className="text-xl text-gray-600 mb-4">{text.title}</p>
-          <p className="max-w-3xl mx-auto text-gray-700 leading-relaxed">
+          <p className="text-xl text-gray-800 mb-4">{text.title}</p>
+          <p className="max-w-3xl mx-auto text-gray-800 leading-relaxed">
             Explore the fundamental themes that drive the narrative and character development in {text.title}. 
             Each theme is analyzed with detailed explanations, textual evidence, and connections to the broader 
             human experience.
@@ -156,7 +156,7 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
                       </div>
                       <h3 className="font-semibold text-lg">{theme.title}</h3>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{theme.summary}</p>
+                    <p className="text-sm text-gray-800 mb-2">{theme.summary}</p>
                     <div className="flex justify-between items-center">
                       <Badge variant="secondary" className="text-xs">
                         {getQuotesForTheme(theme.title).length} quotes
@@ -176,7 +176,7 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
         <div className="space-y-8">
           {filteredThemes.map((theme) => (
             <Card key={theme.id} className="overflow-hidden">
-              <CardHeader className={`${theme.color} text-white`}>
+              <CardHeader className={`${theme.color} text-gray-900`}>
                 <CardTitle className="flex items-center text-2xl">
                   <div className="mr-3 text-3xl">
                     {theme.icon === "shield" && "🛡️"}
@@ -187,7 +187,7 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
                   </div>
                   {theme.title}
                 </CardTitle>
-                <CardDescription className="text-white/90 text-lg">
+                <CardDescription className="text-gray-900 text-lg">
                   {theme.summary}
                 </CardDescription>
               </CardHeader>
@@ -208,10 +208,10 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
                           Detailed Analysis
                         </h4>
                         <div className="prose prose-sm max-w-none">
-                          <p className="text-gray-700 leading-relaxed mb-4">
+                          <p className="text-gray-800 leading-relaxed mb-4">
                             {theme.summary}
                           </p>
-                          <p className="text-gray-700 leading-relaxed">
+                          <p className="text-gray-800 leading-relaxed">
                             This theme manifests throughout the text through various literary devices and character 
                             interactions. The author uses this theme to explore fundamental questions about human nature, 
                             society, and the individual's place within larger systems of power and meaning.
@@ -229,19 +229,19 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <Card className="p-4">
                             <h5 className="font-medium mb-2">Beginning</h5>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-800">
                               The theme is introduced through initial character interactions and establishing circumstances.
                             </p>
                           </Card>
                           <Card className="p-4">
                             <h5 className="font-medium mb-2">Development</h5>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-800">
                               The theme deepens through conflict, character growth, and increasingly complex situations.
                             </p>
                           </Card>
                           <Card className="p-4">
                             <h5 className="font-medium mb-2">Resolution</h5>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-800">
                               The theme reaches its culmination, often with profound implications for understanding.
                             </p>
                           </Card>
@@ -264,7 +264,7 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
                                 <span className="text-blue-600 font-semibold text-sm">{idx + 1}</span>
                               </div>
                               <div className="flex-1">
-                                <p className="text-gray-700">{example}</p>
+                                <p className="text-gray-800">{example}</p>
                               </div>
                             </div>
                           </Card>
@@ -285,7 +285,7 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
                             <blockquote className="text-sm italic mb-2">
                               "{quote.text.length > 100 ? `${quote.text.substring(0, 100)}...` : quote.text}"
                             </blockquote>
-                            <div className="flex justify-between items-center text-xs text-gray-500">
+                            <div className="flex justify-between items-center text-xs text-gray-700">
                               <span>{quote.chapter} - {quote.character}</span>
                               <Badge variant="outline" className="text-xs">
                                 {quote.technique}
@@ -313,21 +313,21 @@ export default function CoreThemes({ params }: { params: Promise<{ textId: strin
                       <div className="space-y-3">
                         <Card className="p-4">
                           <h5 className="font-medium mb-2">Historical Context</h5>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-800">
                             This theme reflects the historical period in which the text was written, 
                             addressing contemporary social issues and concerns.
                           </p>
                         </Card>
                         <Card className="p-4">
                           <h5 className="font-medium mb-2">Universal Relevance</h5>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-800">
                             The theme transcends its original context to address timeless human experiences 
                             that remain relevant to modern readers.
                           </p>
                         </Card>
                         <Card className="p-4">
                           <h5 className="font-medium mb-2">Literary Tradition</h5>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-800">
                             This theme connects to broader literary traditions and influences, 
                             showing how the author engages with established literary conventions.
                           </p>
