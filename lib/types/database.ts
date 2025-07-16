@@ -577,8 +577,8 @@ export interface Database {
           id: string
           quote_id: string
           card_text: string
-          missing_word: string
-          missing_position: number
+          missing_words: string[] // Changed from missing_word to array
+          missing_positions: number[] // Changed from missing_position to array
           difficulty_level: number
           is_active: boolean
           created_at: string
@@ -588,8 +588,8 @@ export interface Database {
           id?: string
           quote_id: string
           card_text: string
-          missing_word: string
-          missing_position: number
+          missing_words: string[] // Changed from missing_word to array
+          missing_positions: number[] // Changed from missing_position to array
           difficulty_level?: number
           is_active?: boolean
           created_at?: string
@@ -599,8 +599,8 @@ export interface Database {
           id?: string
           quote_id?: string
           card_text?: string
-          missing_word?: string
-          missing_position?: number
+          missing_words?: string[] // Changed from missing_word to array
+          missing_positions?: number[] // Changed from missing_position to array
           difficulty_level?: number
           is_active?: boolean
           created_at?: string

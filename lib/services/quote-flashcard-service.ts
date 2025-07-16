@@ -1001,14 +1001,15 @@ export class QuoteFlashcardService {
         return false
       }
 
-      // Regenerate cards by calling the database function for each quote
-      for (const card of cards) {
-        if (card.quotes) {
-          await this.supabase.rpc('generate_flashcard_cards_for_quote', {
-            quote_id: card.quotes.id
-          })
+              // Regenerate cards by calling the database function for each quote
+        for (const card of cards) {
+          if (card.quotes) {
+            await this.supabase.rpc('generate_flashcards_for_quote_manual', {
+              quote_id_param: card.quotes.id,
+              quote_text_param: card.quotes.text
+            })
+          }
         }
-      }
 
       return true
     } catch (error) {

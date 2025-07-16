@@ -37,8 +37,8 @@ import {
 interface StudySession {
   cards: FlashcardCardWithDetails[]
   currentIndex: number
-  userInputs: { [key: string]: string }
-  results: { [key: string]: boolean }
+  userInputs: { [key: string]: string[] } // Changed to support multiple inputs per card
+  results: { [key: string]: boolean[] } // Changed to support multiple results per card
   showAnswers: boolean
 }
 
@@ -150,7 +150,7 @@ export default function QuoteFlashcardsNewPage() {
       const searchTerm = filters.search.toLowerCase()
       filtered = filtered.filter(card => 
         card.card_text.toLowerCase().includes(searchTerm) ||
-        card.missing_word.toLowerCase().includes(searchTerm) ||
+        (card.missing_words || []).some(word => word.toLowerCase().includes(searchTerm)) ||
         card.quote?.text.toLowerCase().includes(searchTerm) ||
         card.quote?.title.toLowerCase().includes(searchTerm)
       )
@@ -362,15 +362,19 @@ export default function QuoteFlashcardsNewPage() {
     window.history.replaceState({ studySession: newSession }, "")
   }
 
-  const handleStudyInput = (value: string) => {
+  const handleStudyInput = (value: string, blankIndex: number) => {
     if (!studySession) return
 
     const currentCard = studySession.cards[studySession.currentIndex]
+    const currentInputs = studySession.userInputs[currentCard.id] || new Array(currentCard.missing_words?.length || 1).fill("")
+    const newInputs = [...currentInputs]
+    newInputs[blankIndex] = value
+
     const newSession = {
       ...studySession,
       userInputs: {
         ...studySession.userInputs,
-        [currentCard.id]: value
+        [currentCard.id]: newInputs
       }
     }
     setStudySession(newSession)
@@ -382,11 +386,11 @@ export default function QuoteFlashcardsNewPage() {
     if (!studySession || !user?.id) return
 
     const currentCard = studySession.cards[studySession.currentIndex]
-    const userInput = studySession.userInputs[currentCard.id] || ""
+    const userInputs = studySession.userInputs[currentCard.id] || []
     
-    // Check if missing_word exists
-    if (!currentCard.missing_word) {
-      console.error('Missing word not found for card:', currentCard.id)
+    // Check if missing_words exists
+    if (!currentCard.missing_words || currentCard.missing_words.length === 0) {
+      console.error('Missing words not found for card:', currentCard.id)
       toast({
         title: "Error",
         description: "Card data is incomplete. Please try again.",
@@ -395,29 +399,46 @@ export default function QuoteFlashcardsNewPage() {
       return
     }
     
-    // Simple comparison with tolerance for capitalization and punctuation
-    const cleanUserInput = userInput.toLowerCase().replace(/[.,!?;:]/g, '').trim()
-    const cleanCorrectWord = currentCard.missing_word.toLowerCase().replace(/[.,!?;:]/g, '').trim()
-    const isCorrect = cleanUserInput === cleanCorrectWord
+    // Check each blank individually
+    const results: boolean[] = []
+    let allCorrect = true
+    
+    for (let i = 0; i < currentCard.missing_words.length; i++) {
+      const userInput = userInputs[i] || ""
+      const correctWord = currentCard.missing_words[i]
+      
+      // Simple comparison with tolerance for capitalization and punctuation
+      const cleanUserInput = userInput.toLowerCase().replace(/[.,!?;:]/g, '').trim()
+      const cleanCorrectWord = correctWord.toLowerCase().replace(/[.,!?;:]/g, '').trim()
+      const isCorrect = cleanUserInput === cleanCorrectWord
+      
+      results.push(isCorrect)
+      if (!isCorrect) allCorrect = false
+    }
 
-    // Update progress
-    await quoteFlashcardService.updateCardProgress(user.id, currentCard.id, isCorrect)
+    // Update progress (consider card correct only if all blanks are correct)
+    await quoteFlashcardService.updateCardProgress(user.id, currentCard.id, allCorrect)
 
     const newSession = {
       ...studySession,
       results: {
         ...studySession.results,
-        [currentCard.id]: isCorrect
+        [currentCard.id]: results
       }
     }
     setStudySession(newSession)
     // Update current history state to preserve result
     window.history.replaceState({ studySession: newSession }, "")
 
+    const correctCount = results.filter(Boolean).length
+    const totalCount = results.length
+    
     toast({
-      title: isCorrect ? "Correct!" : "Incorrect",
-      description: isCorrect ? "Well done!" : `The correct answer is: ${currentCard.missing_word || 'Unknown'}`,
-      variant: isCorrect ? "default" : "destructive",
+      title: allCorrect ? "Perfect!" : correctCount > 0 ? "Partially Correct" : "Incorrect",
+      description: allCorrect 
+        ? "All blanks correct! Well done!" 
+        : `${correctCount} out of ${totalCount} blanks correct`,
+      variant: allCorrect ? "default" : "destructive",
     })
   }
 
@@ -435,10 +456,20 @@ export default function QuoteFlashcardsNewPage() {
     } else {
       // Session complete
       const totalCards = studySession.cards.length
-      const correctCards = Object.values(studySession.results).filter(Boolean).length
+      const correctCards = Object.values(studySession.results).filter(cardResults => {
+        // Card is correct if all blanks are correct
+        return Array.isArray(cardResults) ? cardResults.every(Boolean) : Boolean(cardResults)
+      }).length
+      const totalBlanks = Object.values(studySession.results).reduce((sum, cardResults) => {
+        return sum + (Array.isArray(cardResults) ? cardResults.length : 1)
+      }, 0)
+      const correctBlanks = Object.values(studySession.results).reduce((sum, cardResults) => {
+        return sum + (Array.isArray(cardResults) ? cardResults.filter(Boolean).length : (cardResults ? 1 : 0))
+      }, 0)
+      
       toast({
         title: "Session Complete!",
-        description: `You got ${correctCards} out of ${totalCards} cards correct`,
+        description: `Cards: ${correctCards}/${totalCards} • Blanks: ${correctBlanks}/${totalBlanks}`,
       })
       setStudySession(null)
       // Clear study session from history
@@ -480,6 +511,9 @@ export default function QuoteFlashcardsNewPage() {
     const currentCard = studySession.cards[studySession.currentIndex]
     const progress = ((studySession.currentIndex + 1) / studySession.cards.length) * 100
     const hasAnswered = currentCard.id in studySession.results
+    const missingWordsCount = currentCard.missing_words?.length || 0
+    const userInputs = studySession.userInputs[currentCard.id] || new Array(missingWordsCount).fill("")
+    const results = studySession.results[currentCard.id] || []
 
     return (
       <div className="container mx-auto py-8 px-4">
@@ -527,42 +561,85 @@ export default function QuoteFlashcardsNewPage() {
 
               {!hasAnswered ? (
                 <div className="space-y-4">
-                  <Input
-                    placeholder="Type your answer here..."
-                    value={studySession.userInputs[currentCard.id] || ""}
-                    onChange={(e) => handleStudyInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        checkAnswer()
-                      }
-                    }}
-                    className="text-center text-lg"
-                    autoFocus
-                  />
+                  <div className="text-sm text-muted-foreground text-center mb-4">
+                    Fill in the blanks (numbered 1-{missingWordsCount}):
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {Array.from({ length: missingWordsCount }, (_, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </div>
+                        <Input
+                          placeholder={`Blank ${index + 1}...`}
+                          value={userInputs[index] || ""}
+                          onChange={(e) => handleStudyInput(e.target.value, index)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && index === missingWordsCount - 1) {
+                              checkAnswer()
+                            }
+                          }}
+                          className="text-lg"
+                          autoFocus={index === 0}
+                        />
+                      </div>
+                    ))}
+                  </div>
                   <div className="text-center">
                     <Button 
                       onClick={checkAnswer}
-                      disabled={!studySession.userInputs[currentCard.id]?.trim()}
+                      disabled={userInputs.some(input => !input?.trim())}
                     >
-                      Check Answer
+                      Check All Answers
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="text-center">
-                    <div className={`text-lg font-semibold ${studySession.results[currentCard.id] ? 'text-green-600' : 'text-red-600'}`}>
-                      {studySession.results[currentCard.id] ? '✓ Correct!' : '✗ Incorrect'}
+                    <div className={`text-lg font-semibold ${results.every(Boolean) ? 'text-green-600' : results.some(Boolean) ? 'text-orange-600' : 'text-red-600'}`}>
+                      {results.every(Boolean) ? '✓ Perfect!' : results.some(Boolean) ? '◐ Partially Correct' : '✗ Incorrect'}
                     </div>
-                    <div className="text-muted-foreground">
-                      Correct answer: <span className="font-semibold">{currentCard.missing_word || 'Unknown'}</span>
+                    <div className="text-sm text-muted-foreground mb-4">
+                      {results.filter(Boolean).length} out of {results.length} blanks correct
                     </div>
-                    {currentCard.quote?.source && (
-                      <div className="text-sm text-muted-foreground mt-2">
-                        From: {currentCard.quote.source}
-                      </div>
-                    )}
                   </div>
+                  
+                  <div className="space-y-3">
+                    {currentCard.missing_words?.map((correctWord, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                        <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="text-sm text-muted-foreground">Your answer: </span>
+                              <span className={`font-medium ${results[index] ? 'text-green-600' : 'text-red-600'}`}>
+                                {userInputs[index] || '(blank)'}
+                              </span>
+                            </div>
+                            <div className={`text-sm ${results[index] ? 'text-green-600' : 'text-red-600'}`}>
+                              {results[index] ? '✓' : '✗'}
+                            </div>
+                          </div>
+                          {!results[index] && (
+                            <div className="mt-1">
+                              <span className="text-sm text-muted-foreground">Correct: </span>
+                              <span className="font-semibold text-green-600">{correctWord}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {currentCard.quote?.source && (
+                    <div className="text-sm text-muted-foreground text-center mt-4">
+                      From: {currentCard.quote.source}
+                    </div>
+                  )}
+                  
                   <div className="flex justify-center gap-3">
                     <Button 
                       variant="outline" 

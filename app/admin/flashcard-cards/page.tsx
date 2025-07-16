@@ -69,7 +69,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
 
   const [formData, setFormData] = useState({
     card_text: "",
-    missing_word: "",
+    missing_words: [""],
     difficulty_level: 1
   })
 
@@ -91,7 +91,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
         setEditingCard(cardToEdit)
         setFormData({
           card_text: cardToEdit.card_text,
-          missing_word: cardToEdit.missing_word,
+          missing_words: cardToEdit.missing_words || [""],
           difficulty_level: cardToEdit.difficulty_level
         })
         setShowForm(true)
@@ -152,7 +152,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
   const resetForm = () => {
     setFormData({
       card_text: "",
-      missing_word: "",
+      missing_words: [""],
       difficulty_level: 1
     })
     setEditingCard(null)
@@ -164,8 +164,8 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
       setError("Card text is required")
       return false
     }
-    if (!formData.missing_word.trim()) {
-      setError("Missing word is required")
+    if (!formData.missing_words || formData.missing_words.length === 0 || formData.missing_words.some(word => !word.trim())) {
+      setError("All missing words are required")
       return false
     }
 
@@ -181,7 +181,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
     try {
       const success = await quoteFlashcardService.updateCard(editingCard.id, {
         card_text: formData.card_text,
-        missing_word: formData.missing_word,
+        missing_words: formData.missing_words,
         difficulty_level: formData.difficulty_level
       })
 
@@ -499,16 +499,53 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="missing_word">Missing Word *</Label>
-                  <Input
-                    id="missing_word"
-                    value={formData.missing_word}
-                    onChange={(e) => setFormData(prev => ({ ...prev, missing_word: e.target.value }))}
-                    placeholder="The word/phrase to fill in"
-                    required
-                  />
+                  <Label>Missing Words *</Label>
+                  <div className="space-y-3">
+                    {formData.missing_words.map((word, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </div>
+                        <Input
+                          value={word}
+                          onChange={(e) => {
+                            const newWords = [...formData.missing_words]
+                            newWords[index] = e.target.value
+                            setFormData(prev => ({ ...prev, missing_words: newWords }))
+                          }}
+                          placeholder={`Missing word ${index + 1}`}
+                          required
+                          className="flex-1"
+                        />
+                        {formData.missing_words.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newWords = formData.missing_words.filter((_, i) => i !== index)
+                              setFormData(prev => ({ ...prev, missing_words: newWords }))
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, missing_words: [...prev.missing_words, ""] }))
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Another Word
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -891,8 +928,14 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                         </div>
                         
                         <div className="text-sm">
-                          <p className="font-medium text-muted-foreground mb-1">Missing Word:</p>
-                          <Badge variant="secondary">{card.missing_word}</Badge>
+                          <p className="font-medium text-muted-foreground mb-1">Missing Words:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {(card.missing_words || []).map((word, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {index + 1}: {word}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-2 text-xs">
