@@ -609,6 +609,46 @@ export class QuoteFlashcardService {
     }
   }
 
+  async deleteStudentCardSet(setId: string): Promise<boolean> {
+    try {
+      // First delete all items in the set
+      const { error: itemsError } = await this.supabase
+        .from('student_card_set_items')
+        .delete()
+        .eq('set_id', setId)
+
+      if (itemsError) {
+        console.error('Error deleting set items:', itemsError)
+        return false
+      }
+
+      // Then delete the set itself
+      const { error: setError } = await this.supabase
+        .from('student_card_sets')
+        .delete()
+        .eq('id', setId)
+
+      return !setError
+    } catch (error) {
+      console.error('Error in deleteStudentCardSet:', error)
+      return false
+    }
+  }
+
+  async updateStudentCardSet(setId: string, updates: Partial<NewStudentCardSet>): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('student_card_sets')
+        .update(updates)
+        .eq('id', setId)
+
+      return !error
+    } catch (error) {
+      console.error('Error in updateStudentCardSet:', error)
+      return false
+    }
+  }
+
   async getCardsInSet(setId: string): Promise<FlashcardCardWithDetails[]> {
     try {
       const { data: items, error } = await this.supabase
@@ -822,6 +862,172 @@ export class QuoteFlashcardService {
     } catch (error) {
       console.error('Error in getCardsForReview:', error)
       return []
+    }
+  }
+
+  // ============================================================================
+  // BULK OPERATIONS
+  // ============================================================================
+
+  async bulkDeleteCards(cardIds: string[]): Promise<boolean> {
+    try {
+      // First delete any related card progress records
+      const { error: progressError } = await this.supabase
+        .from('card_progress')
+        .delete()
+        .in('card_id', cardIds)
+
+      if (progressError) {
+        console.error('Error deleting card progress:', progressError)
+        return false
+      }
+
+      // Delete from student card sets
+      const { error: setItemsError } = await this.supabase
+        .from('student_card_set_items')
+        .delete()
+        .in('card_id', cardIds)
+
+      if (setItemsError) {
+        console.error('Error deleting from student sets:', setItemsError)
+        return false
+      }
+
+      // Finally delete the cards themselves
+      const { error: cardsError } = await this.supabase
+        .from('flashcard_cards')
+        .delete()
+        .in('id', cardIds)
+
+      return !cardsError
+    } catch (error) {
+      console.error('Error in bulkDeleteCards:', error)
+      return false
+    }
+  }
+
+  async bulkArchiveCards(cardIds: string[], archived: boolean = true): Promise<boolean> {
+    try {
+      // Use is_active column for archive functionality (archived = !active)
+      const { error } = await this.supabase
+        .from('flashcard_cards')
+        .update({ is_active: !archived })
+        .in('id', cardIds)
+
+      return !error
+    } catch (error) {
+      console.error('Error in bulkArchiveCards:', error)
+      return false
+    }
+  }
+
+  async bulkUpdateCardThemes(cardIds: string[], themeIds: string[]): Promise<boolean> {
+    try {
+      // Get the quote IDs for these cards
+      const { data: cards, error: cardsError } = await this.supabase
+        .from('flashcard_cards')
+        .select('quote_id')
+        .in('id', cardIds)
+
+      if (cardsError || !cards) {
+        console.error('Error getting card quote IDs:', cardsError)
+        return false
+      }
+
+      const quoteIds = cards.map(card => card.quote_id)
+
+      // Remove existing theme relationships for these quotes
+      const { error: deleteError } = await this.supabase
+        .from('quote_themes')
+        .delete()
+        .in('quote_id', quoteIds)
+
+      if (deleteError) {
+        console.error('Error removing existing themes:', deleteError)
+        return false
+      }
+
+      // Add new theme relationships
+      if (themeIds.length > 0) {
+        const themeRelations = []
+        for (const quoteId of quoteIds) {
+          for (const themeId of themeIds) {
+            themeRelations.push({
+              quote_id: quoteId,
+              theme_id: themeId
+            })
+          }
+        }
+
+        const { error: insertError } = await this.supabase
+          .from('quote_themes')
+          .insert(themeRelations)
+
+        if (insertError) {
+          console.error('Error adding new themes:', insertError)
+          return false
+        }
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error in bulkUpdateCardThemes:', error)
+      return false
+    }
+  }
+
+  async bulkRegenerateCards(cardIds: string[]): Promise<boolean> {
+    try {
+      // Get the cards and their quotes
+      const { data: cards, error: cardsError } = await this.supabase
+        .from('flashcard_cards')
+        .select(`
+          id,
+          quote_id,
+          quotes (
+            id, text
+          )
+        `)
+        .in('id', cardIds)
+
+      if (cardsError || !cards) {
+        console.error('Error getting cards for regeneration:', cardsError)
+        return false
+      }
+
+      // Delete existing cards
+      const deleteSuccess = await this.bulkDeleteCards(cardIds)
+      if (!deleteSuccess) {
+        return false
+      }
+
+      // Regenerate cards by calling the database function for each quote
+      for (const card of cards) {
+        if (card.quotes) {
+          await this.supabase.rpc('generate_flashcard_cards_for_quote', {
+            quote_id: card.quotes.id
+          })
+        }
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error in bulkRegenerateCards:', error)
+      return false
+    }
+  }
+
+  async bulkToggleActive(cardIds: string[], isActive: boolean): Promise<boolean> {
+    try {
+      const { error } = await this.supabase
+        .from('flashcard_cards')
+        .update({ is_active: isActive })
+        .in('id', cardIds)
+
+      return !error
+    } catch (error) {
+      console.error('Error in bulkToggleActive:', error)
+      return false
     }
   }
 }

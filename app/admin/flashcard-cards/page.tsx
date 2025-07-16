@@ -62,7 +62,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
     difficulty_level: undefined,
     only_active: true
   })
-  const [showForm, setShowForm] = useState(action === 'edit' && !!editId)
+  const [showForm, setShowForm] = useState(!!editId)
   const [editingCard, setEditingCard] = useState<FlashcardCardWithDetails | null>(null)
   const [selectedCards, setSelectedCards] = useState<string[]>([])
   const [error, setError] = useState("")
@@ -73,6 +73,11 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
     difficulty_level: 1
   })
 
+  // New state for bulk operations
+  const [showRetagDialog, setShowRetagDialog] = useState(false)
+  const [selectedThemesForRetag, setSelectedThemesForRetag] = useState<string[]>([])
+  const [isOperationInProgress, setIsOperationInProgress] = useState(false)
+
   // Load data
   useEffect(() => {
     loadData()
@@ -80,7 +85,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
 
   // Handle URL params
   useEffect(() => {
-    if (action === 'edit' && editId) {
+    if (editId && cards.length > 0) {
       const cardToEdit = cards.find(card => card.id === editId)
       if (cardToEdit) {
         setEditingCard(cardToEdit)
@@ -90,9 +95,17 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
           difficulty_level: cardToEdit.difficulty_level
         })
         setShowForm(true)
+      } else {
+        // Card not found, clear URL params
+        router.push('/admin/flashcard-cards')
       }
+    } else if (!editId) {
+      // No edit ID, make sure form is hidden
+      setShowForm(false)
+      setEditingCard(null)
+      resetForm()
     }
-  }, [action, editId, cards])
+  }, [editId, cards, router])
 
   // Load cards when filters change
   useEffect(() => {
@@ -220,17 +233,18 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
     if (selectedCards.length === 0) return
 
     try {
-      const promises = selectedCards.map(cardId => 
-        quoteFlashcardService.toggleCardActive(cardId, isActive)
-      )
-      await Promise.all(promises)
+      const success = await quoteFlashcardService.bulkToggleActive(selectedCards, isActive)
       
-      toast({
-        title: "Success",
-        description: `${selectedCards.length} cards ${isActive ? 'activated' : 'hidden'} successfully`,
-      })
-      setSelectedCards([])
-      await loadCards()
+      if (success) {
+        toast({
+          title: "Success",
+          description: `${selectedCards.length} cards ${isActive ? 'activated' : 'hidden'} successfully`,
+        })
+        setSelectedCards([])
+        await loadCards()
+      } else {
+        throw new Error("Failed to update cards")
+      }
     } catch (error) {
       console.error('Error with bulk operation:', error)
       toast({
@@ -238,6 +252,137 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
         description: "Failed to update cards",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedCards.length === 0) return
+
+    const confirmed = window.confirm(`Are you sure you want to permanently delete ${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''}? This action cannot be undone.`)
+    if (!confirmed) return
+
+    try {
+      setIsOperationInProgress(true)
+      const success = await quoteFlashcardService.bulkDeleteCards(selectedCards)
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: `${selectedCards.length} cards deleted successfully`,
+        })
+        setSelectedCards([])
+        await loadCards()
+      } else {
+        throw new Error("Failed to delete cards")
+      }
+    } catch (error) {
+      console.error('Error deleting cards:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete cards",
+        variant: "destructive",
+      })
+    } finally {
+      setIsOperationInProgress(false)
+    }
+  }
+
+  const handleBulkArchive = async (archived: boolean = true) => {
+    if (selectedCards.length === 0) return
+
+    try {
+      setIsOperationInProgress(true)
+      const success = await quoteFlashcardService.bulkArchiveCards(selectedCards, archived)
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: `${selectedCards.length} cards ${archived ? 'archived' : 'unarchived'} successfully`,
+        })
+        setSelectedCards([])
+        await loadCards()
+      } else {
+        throw new Error("Failed to archive cards")
+      }
+    } catch (error) {
+      console.error('Error archiving cards:', error)
+      toast({
+        title: "Error",
+        description: "Failed to archive cards",
+        variant: "destructive",
+      })
+    } finally {
+      setIsOperationInProgress(false)
+    }
+  }
+
+  const handleBulkRetag = async () => {
+    if (selectedCards.length === 0 || selectedThemesForRetag.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one theme",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsOperationInProgress(true)
+      const success = await quoteFlashcardService.bulkUpdateCardThemes(selectedCards, selectedThemesForRetag)
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: `Themes updated for ${selectedCards.length} cards successfully`,
+        })
+        setSelectedCards([])
+        setSelectedThemesForRetag([])
+        setShowRetagDialog(false)
+        await loadCards()
+      } else {
+        throw new Error("Failed to update themes")
+      }
+    } catch (error) {
+      console.error('Error updating themes:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update themes",
+        variant: "destructive",
+      })
+    } finally {
+      setIsOperationInProgress(false)
+    }
+  }
+
+  const handleBulkRegenerate = async () => {
+    if (selectedCards.length === 0) return
+
+    const confirmed = window.confirm(`Are you sure you want to regenerate ${selectedCards.length} card${selectedCards.length > 1 ? 's' : ''}? The existing cards will be deleted and new ones will be generated from their quotes.`)
+    if (!confirmed) return
+
+    try {
+      setIsOperationInProgress(true)
+      const success = await quoteFlashcardService.bulkRegenerateCards(selectedCards)
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: `${selectedCards.length} cards regenerated successfully`,
+        })
+        setSelectedCards([])
+        await loadCards()
+      } else {
+        throw new Error("Failed to regenerate cards")
+      }
+    } catch (error) {
+      console.error('Error regenerating cards:', error)
+      toast({
+        title: "Error",
+        description: "Failed to regenerate cards",
+        variant: "destructive",
+      })
+    } finally {
+      setIsOperationInProgress(false)
     }
   }
 
@@ -508,29 +653,145 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                   <span className="text-sm font-medium">
                     {selectedCards.length} card{selectedCards.length > 1 ? 's' : ''} selected
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleBulkToggleActive(true)}
+                      disabled={isOperationInProgress}
                     >
                       <Eye className="h-4 w-4 mr-2" />
-                      Show Selected
+                      Show
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleBulkToggleActive(false)}
+                      disabled={isOperationInProgress}
                     >
                       <EyeOff className="h-4 w-4 mr-2" />
-                      Hide Selected
+                      Hide
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleBulkArchive(true)}
+                      disabled={isOperationInProgress}
+                    >
+                      <Archive className="h-4 w-4 mr-2" />
+                      Archive
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowRetagDialog(true)}
+                      disabled={isOperationInProgress}
+                    >
+                      <Tags className="h-4 w-4 mr-2" />
+                      Re-tag
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkRegenerate}
+                      disabled={isOperationInProgress}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Regenerate
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                      disabled={isOperationInProgress}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setSelectedCards([])}
+                      disabled={isOperationInProgress}
                     >
                       Clear Selection
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Re-tag Dialog */}
+          {showRetagDialog && (
+            <Card className="mb-6 border-blue-500">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tags className="h-5 w-5" />
+                  Re-tag Selected Cards
+                </CardTitle>
+                <CardDescription>
+                  Select themes to apply to all {selectedCards.length} selected cards. This will replace existing themes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium mb-3 block">Available Themes</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {themes.map((theme) => (
+                        <Badge
+                          key={theme.id}
+                          variant={selectedThemesForRetag.includes(theme.id) ? "default" : "outline"}
+                          style={selectedThemesForRetag.includes(theme.id) ? { backgroundColor: theme.color, borderColor: theme.color } : { borderColor: theme.color, color: theme.color }}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            const isSelected = selectedThemesForRetag.includes(theme.id)
+                            if (isSelected) {
+                              setSelectedThemesForRetag(prev => prev.filter(id => id !== theme.id))
+                            } else {
+                              setSelectedThemesForRetag(prev => [...prev, theme.id])
+                            }
+                          }}
+                        >
+                          {theme.name}
+                        </Badge>
+                      ))}
+                    </div>
+                    {selectedThemesForRetag.length === 0 && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Click on themes above to select them
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      onClick={handleBulkRetag}
+                      disabled={isOperationInProgress || selectedThemesForRetag.length === 0}
+                    >
+                      {isOperationInProgress ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Apply Themes
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowRetagDialog(false)
+                        setSelectedThemesForRetag([])
+                      }}
+                      disabled={isOperationInProgress}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
                     </Button>
                   </div>
                 </div>

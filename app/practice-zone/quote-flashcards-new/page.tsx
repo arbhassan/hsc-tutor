@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-context"
 import { 
@@ -68,6 +69,12 @@ export default function QuoteFlashcardsNewPage() {
   const [showCreateSetDialog, setShowCreateSetDialog] = useState(false)
   const [newSetName, setNewSetName] = useState("")
   const [newSetDescription, setNewSetDescription] = useState("")
+  const [showSetDetailsDialog, setShowSetDetailsDialog] = useState(false)
+  const [selectedSet, setSelectedSet] = useState<StudentCardSetWithDetails | null>(null)
+  const [cardsInSelectedSet, setCardsInSelectedSet] = useState<FlashcardCardWithDetails[]>([])
+  const [showEditSetDialog, setShowEditSetDialog] = useState(false)
+  const [editSetName, setEditSetName] = useState("")
+  const [editSetDescription, setEditSetDescription] = useState("")
 
   // Restore study session from browser history on page load
   useEffect(() => {
@@ -237,6 +244,11 @@ export default function QuoteFlashcardsNewPage() {
           description: "Card removed from personal set",
         })
         await loadData()
+        // Refresh cards in selected set if it's open
+        if (selectedSet && selectedSet.id === setId) {
+          const updatedCards = await quoteFlashcardService.getCardsInSet(setId)
+          setCardsInSelectedSet(updatedCards)
+        }
       } else {
         throw new Error("Failed to remove card")
       }
@@ -248,6 +260,83 @@ export default function QuoteFlashcardsNewPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleDeleteSet = async (setId: string) => {
+    try {
+      const success = await quoteFlashcardService.deleteStudentCardSet(setId)
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Personal set deleted successfully",
+        })
+        setShowSetDetailsDialog(false)
+        setSelectedSet(null)
+        await loadData()
+      } else {
+        throw new Error("Failed to delete set")
+      }
+    } catch (error) {
+      console.error('Error deleting set:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete personal set",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEditSet = async () => {
+    if (!selectedSet || !editSetName.trim()) return
+
+    try {
+      const success = await quoteFlashcardService.updateStudentCardSet(selectedSet.id, {
+        name: editSetName.trim(),
+        description: editSetDescription.trim() || undefined
+      })
+
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Set updated successfully",
+        })
+        setShowEditSetDialog(false)
+        setShowSetDetailsDialog(false)
+        await loadData()
+      } else {
+        throw new Error("Failed to update set")
+      }
+    } catch (error) {
+      console.error('Error updating set:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update set",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const openSetDetails = async (set: StudentCardSetWithDetails) => {
+    setSelectedSet(set)
+    try {
+      const cards = await quoteFlashcardService.getCardsInSet(set.id)
+      setCardsInSelectedSet(cards)
+      setShowSetDetailsDialog(true)
+    } catch (error) {
+      console.error('Error loading set cards:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load set details",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const openEditSetDialog = (set: StudentCardSetWithDetails) => {
+    setSelectedSet(set)
+    setEditSetName(set.name)
+    setEditSetDescription(set.description || "")
+    setShowEditSetDialog(true)
   }
 
   const startStudySession = async (cards: FlashcardCardWithDetails[]) => {
@@ -623,19 +712,37 @@ export default function QuoteFlashcardsNewPage() {
                       <CardHeader>
                         <div className="flex justify-between items-start">
                           <Badge variant="outline">Level {card.difficulty_level}</Badge>
-                          <div className="flex gap-1">
-                            {studentSets.map((set) => (
-                              <Button
-                                key={set.id}
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAddCardToSet(set.id, card.id)}
-                                className="text-xs"
-                              >
-                                + {set.name}
-                              </Button>
-                            ))}
-                          </div>
+                          {studentSets.length > 0 && (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button size="sm" variant="outline" className="text-xs">
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add to Set
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Add to Personal Set</DialogTitle>
+                                  <DialogDescription>
+                                    Choose which sets to add this card to
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-2">
+                                  {studentSets.map((set) => (
+                                    <Button
+                                      key={set.id}
+                                      variant="outline"
+                                      className="w-full justify-start"
+                                      onClick={() => handleAddCardToSet(set.id, card.id)}
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      {set.name} ({set.card_count || 0} cards)
+                                    </Button>
+                                  ))}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -757,10 +864,10 @@ export default function QuoteFlashcardsNewPage() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2">
+                    <div className="space-y-2">
                       <Button 
                         size="sm" 
-                        className="flex-1"
+                        className="w-full"
                         onClick={async () => {
                           const cards = await quoteFlashcardService.getCardsInSet(set.id)
                           startStudySession(cards)
@@ -768,11 +875,54 @@ export default function QuoteFlashcardsNewPage() {
                         disabled={set.card_count === 0}
                       >
                         <Play className="h-4 w-4 mr-2" />
-                        Study
+                        Study ({set.card_count || 0})
                       </Button>
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={() => openSetDetails(set)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => openEditSetDialog(set)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Set</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{set.name}"? This action cannot be undone and will remove all cards from this set.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteSet(set.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -781,6 +931,140 @@ export default function QuoteFlashcardsNewPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Set Details Dialog */}
+      <Dialog open={showSetDetailsDialog} onOpenChange={setShowSetDetailsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{selectedSet?.name}</span>
+              <Badge variant="outline">
+                {cardsInSelectedSet.length} card{cardsInSelectedSet.length !== 1 ? 's' : ''}
+              </Badge>
+            </DialogTitle>
+            {selectedSet?.description && (
+              <DialogDescription>{selectedSet.description}</DialogDescription>
+            )}
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {cardsInSelectedSet.length === 0 ? (
+              <div className="text-center py-8">
+                <CreditCard className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-muted-foreground">No cards in this set</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {cardsInSelectedSet.map((card) => (
+                  <Card key={card.id} className="relative">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <Badge variant="outline">Level {card.difficulty_level}</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRemoveCardFromSet(selectedSet!.id, card.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="text-sm">
+                          <div className="p-2 bg-muted rounded text-center">
+                            {card.card_text}
+                          </div>
+                        </div>
+
+                        {card.themes && card.themes.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {card.themes.map((theme) => (
+                              <Badge
+                                key={theme.id}
+                                variant="outline"
+                                style={{ borderColor: theme.color, color: theme.color }}
+                                className="text-xs"
+                              >
+                                {theme.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {card.quote && (
+                          <div className="text-xs text-muted-foreground">
+                            <p className="italic">
+                              "{card.quote.text.length > 60 ? `${card.quote.text.substring(0, 60)}...` : card.quote.text}"
+                            </p>
+                            {card.quote.source && (
+                              <p className="mt-1">— {card.quote.source}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button 
+              onClick={async () => {
+                if (selectedSet) {
+                  const cards = await quoteFlashcardService.getCardsInSet(selectedSet.id)
+                  setShowSetDetailsDialog(false)
+                  startStudySession(cards)
+                }
+              }}
+              disabled={cardsInSelectedSet.length === 0}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Study This Set
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Set Dialog */}
+      <Dialog open={showEditSetDialog} onOpenChange={setShowEditSetDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Set</DialogTitle>
+            <DialogDescription>
+              Update the name and description of your set
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-set-name">Set Name</Label>
+              <Input
+                id="edit-set-name"
+                value={editSetName}
+                onChange={(e) => setEditSetName(e.target.value)}
+                placeholder="e.g. Exam Week, Difficult Cards"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-set-description">Description (optional)</Label>
+              <Input
+                id="edit-set-description"
+                value={editSetDescription}
+                onChange={(e) => setEditSetDescription(e.target.value)}
+                placeholder="Brief description of this set"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleEditSet} disabled={!editSetName.trim()}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
