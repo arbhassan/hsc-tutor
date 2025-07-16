@@ -561,11 +561,6 @@ export default function DailyDrillPage() {
     try {
       await navigator.clipboard.writeText(improvedResponses[questionId] || "")
       setCopiedQuestions(prev => ({ ...prev, [questionId]: true }))
-      
-      // Reset the copied state after 2 seconds
-      setTimeout(() => {
-        setCopiedQuestions(prev => ({ ...prev, [questionId]: false }))
-      }, 2000)
     } catch (err) {
       console.error('Failed to copy text: ', err)
     }

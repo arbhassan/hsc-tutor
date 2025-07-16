@@ -60,6 +60,11 @@ export function useProgressTracker() {
     await updateEssayComponentProgress(user.id, componentScores)
   }
 
+  const updateStreak = async () => {
+    if (!user?.id) return
+    await updateStudyStreak(user.id)
+  }
+
   return {
     trackFlashcard,
     trackFlashcardAttempt,
@@ -69,5 +74,6 @@ export function useProgressTracker() {
     trackStudySession,
     trackShortAnswerDetailed,
     trackEssayComponents,
+    updateStreak,
   }
 } 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import { getBookById, type Book } from "@/lib/books"
+import { updateStudyStreak } from "@/lib/services/progress-service"
 
 interface UserProfile {
   id: string
@@ -80,6 +81,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setSelectedBook(null)
+      }
+
+      // Update study streak when user opens the app
+      try {
+        await updateStudyStreak(currentUser.id)
+      } catch (error) {
+        console.error('Error updating study streak on app open:', error)
+        // Don't throw - streak update failure shouldn't break auth flow
       }
     } catch (error) {
       console.error('Error loading user data:', error)
