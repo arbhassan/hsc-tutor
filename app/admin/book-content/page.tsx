@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, BookOpen, Edit, Plus, FileText, Quote, Lightbulb, Globe, User, BookText, PlusCircle } from "lucide-react"
+import { Search, BookOpen, Edit, Plus, PlusCircle } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 const supabase = createClient()
@@ -130,58 +130,6 @@ export default function BookContentAdminPage() {
 
               {/* Content Management Buttons */}
               <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/admin/book-content/${book.id}/basic`}>
-                      <BookOpen className="h-3 w-3 mr-1" />
-                      Basic Info
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/admin/book-content/${book.id}/contexts`}>
-                      <FileText className="h-3 w-3 mr-1" />
-                      Contexts
-                    </Link>
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/admin/book-content/${book.id}/rubric`}>
-                      <User className="h-3 w-3 mr-1" />
-                      Rubric
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/admin/book-content/${book.id}/plot`}>
-                      <BookText className="h-3 w-3 mr-1" />
-                      Plot
-                    </Link>
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/admin/book-content/${book.id}/contemporary`}>
-                      <Globe className="h-3 w-3 mr-1" />
-                      Contemporary
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/admin/book-content/${book.id}/essay`}>
-                      <Lightbulb className="h-3 w-3 mr-1" />
-                      Essay Guide
-                    </Link>
-                  </Button>
-                </div>
-
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href={`/admin/book-content/${book.id}/quotes`}>
-                    <Quote className="h-3 w-3 mr-1" />
-                    Quotes & Techniques
-                  </Link>
-                </Button>
-
                 <Button className="w-full" asChild>
                   <Link href={`/admin/book-content/${book.id}`}>
                     <Edit className="h-4 w-4 mr-2" />
