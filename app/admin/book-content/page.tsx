@@ -71,12 +71,7 @@ export default function BookContentAdminPage() {
           <h1 className="text-3xl font-bold text-gray-900">Book Content Management</h1>
           <p className="text-gray-600 mt-2">Manage detailed content for all books including contexts, quotes, and lesson materials.</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/book-content/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Book
-          </Link>
-        </Button>
+        
       </div>
 
       {/* Search */}
