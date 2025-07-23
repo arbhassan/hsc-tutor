@@ -42,6 +42,224 @@ export interface Database {
           updated_at?: string
         }
       }
+      book_detailed_contexts: {
+        Row: {
+          id: string
+          book_id: string
+          context_type: 'historical' | 'political' | 'biographical' | 'philosophical'
+          title: string
+          sections: any[] // JSONB array
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          context_type: 'historical' | 'political' | 'biographical' | 'philosophical'
+          title: string
+          sections: any[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          context_type?: 'historical' | 'political' | 'biographical' | 'philosophical'
+          title?: string
+          sections?: any[]
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      book_rubric_connections: {
+        Row: {
+          id: string
+          book_id: string
+          rubric_type: 'anomaliesAndParadoxes' | 'emotionalExperiences' | 'relationships' | 'humanCapacityForUnderstanding'
+          title: string
+          subsections: any[] // JSONB array
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          rubric_type: 'anomaliesAndParadoxes' | 'emotionalExperiences' | 'relationships' | 'humanCapacityForUnderstanding'
+          title: string
+          subsections: any[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          rubric_type?: 'anomaliesAndParadoxes' | 'emotionalExperiences' | 'relationships' | 'humanCapacityForUnderstanding'
+          title?: string
+          subsections?: any[]
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      book_plot_summaries: {
+        Row: {
+          id: string
+          book_id: string
+          parts: any[] // JSONB array
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          parts: any[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          parts?: any[]
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      book_contemporary_connections: {
+        Row: {
+          id: string
+          book_id: string
+          sections: any[] // JSONB array
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          sections: any[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          sections?: any[]
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      book_essay_guides: {
+        Row: {
+          id: string
+          book_id: string
+          structure: any // JSONB object
+          techniques: any // JSONB object
+          mistakes: any // JSONB object
+          sample_question: any // JSONB object
+          tips: any // JSONB object
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          structure: any
+          techniques: any
+          mistakes: any
+          sample_question: any
+          tips: any
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          structure?: any
+          techniques?: any
+          mistakes?: any
+          sample_question?: any
+          tips?: any
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      book_quotes: {
+        Row: {
+          id: string
+          book_id: string
+          quote_id: string
+          text: string
+          reference: string
+          technique: string
+          themes: string[]
+          explanation: string
+          rubric_connection: string
+          chapter: string
+          character: string
+          significance: 'high' | 'medium' | 'low'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          quote_id: string
+          text: string
+          reference: string
+          technique: string
+          themes: string[]
+          explanation: string
+          rubric_connection: string
+          chapter: string
+          character: string
+          significance: 'high' | 'medium' | 'low'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          quote_id?: string
+          text?: string
+          reference?: string
+          technique?: string
+          themes?: string[]
+          explanation?: string
+          rubric_connection?: string
+          chapter?: string
+          character?: string
+          significance?: 'high' | 'medium' | 'low'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      book_techniques: {
+        Row: {
+          id: string
+          book_id: string
+          name: string
+          definition: string
+          example: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          name: string
+          definition: string
+          example?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          name?: string
+          definition?: string
+          example?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       user_profiles: {
         Row: {
           id: string

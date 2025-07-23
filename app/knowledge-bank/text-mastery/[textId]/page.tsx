@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import {
   ArrowLeft,
+  ArrowRight,
   Download,
   BookOpen,
   Quote,
@@ -28,6 +29,7 @@ import {
   Heart,
   X,
   Check,
+  FileText,
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,17 +46,13 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
-import { getBookData } from "@/lib/data/book-data"
-
-// Get text data from the centralized book data file
-const getText = (textId: string) => {
-  return getBookData(textId)
-}
+import { getBookData, BookData } from "@/lib/data/book-data"
 
 export default function TextExplore({ params }: { params: Promise<{ textId: string }> }) {
   const [activeTab, setActiveTab] = useState("context")
   const { textId } = use(params)
-  const text = getText(textId)
+  const [text, setText] = useState<BookData | null>(null)
+  const [loading, setLoading] = useState(true)
 
   // Quote Bank state
   const [searchQuery, setSearchQuery] = useState("")
@@ -68,6 +66,23 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
   const [showQuoteDetails, setShowQuoteDetails] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
 
+  // Load book data on mount
+  useEffect(() => {
+    const fetchBookData = async () => {
+      try {
+        setLoading(true)
+        const bookData = await getBookData(textId)
+        setText(bookData)
+      } catch (error) {
+        console.error('Error fetching book data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBookData()
+  }, [textId])
+
   // Load favorites from localStorage on component mount
   useEffect(() => {
     const savedFavorites = localStorage.getItem(`favorites-${textId}`)
@@ -80,6 +95,17 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
   useEffect(() => {
     localStorage.setItem(`favorites-${textId}`, JSON.stringify(favoriteQuotes))
   }, [favoriteQuotes, textId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading book content...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!text || text.title === "Book Not Found") {
     return (
@@ -288,7 +314,7 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="context" className="flex gap-2 items-center">
               <BookOpen size={18} />
-              <span>Context and Summary</span>
+              <span>Study Lessons</span>
             </TabsTrigger>
             <TabsTrigger value="quotes" className="flex gap-2 items-center">
               <Quote size={18} />
@@ -301,322 +327,125 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
           </TabsList>
 
           <TabsContent value="context" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-            {/* Table of Contents */}
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Table of Contents</CardTitle>
-                <CardDescription>Navigate to different sections of the analysis</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <Button
-                    variant="outline"
-                    className="justify-start text-left"
-                    asChild
-                  >
-                    <Link href={`/knowledge-bank/text-mastery/${textId}/core-themes`}>
-                      <BookOpenCheck className="mr-2 h-4 w-4" />
-                      Core Themes
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start text-left"
-                    asChild
-                  >
-                    <Link href={`/knowledge-bank/text-mastery/${textId}/hsc-rubric-connections`}>
-                      <BookText className="mr-2 h-4 w-4" />
-                      HSC Rubric Connections
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start text-left"
-                    asChild
-                  >
-                    <Link href={`/knowledge-bank/text-mastery/${textId}/context-information`}>
-                      <Globe className="mr-2 h-4 w-4" />
-                      Context Information
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start text-left"
-                    onClick={() => document.getElementById("timeline")?.scrollIntoView({ behavior: "smooth" })}
-                  >
-                    <Clock className="mr-2 h-4 w-4" />
-                    Timeline
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start text-left"
-                    onClick={() =>
-                      document.getElementById("contemporary-connections")?.scrollIntoView({ behavior: "smooth" })
-                    }
-                  >
-                    <Lightbulb className="mr-2 h-4 w-4" />
-                    Contemporary Connections
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="justify-start text-left"
-                    onClick={() =>
-                      document.getElementById("additional-resources")?.scrollIntoView({ behavior: "smooth" })
-                    }
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Additional Resources
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Teaching Points Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Context Card */}
+              <Link href={`/knowledge-bank/text-mastery/${textId}/context`}>
+                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+                      <BookOpen className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <CardTitle className="text-xl">Context</CardTitle>
+                    <CardDescription>Historical, political, and biographical context</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Explore the historical events, political climate, and {text.author}'s personal experiences that shaped
+                      this literary work.
+                    </p>
+                    <div className="flex items-center justify-center text-blue-600 group-hover:text-blue-700">
+                      <span className="text-sm font-medium">Learn More</span>
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
 
-            {/* Core Themes Section */}
-            <section id="core-themes" className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Core Themes</h2>
+              {/* Themes + Rubric Card */}
+              <Link href={`/knowledge-bank/text-mastery/${textId}/themes-rubric`}>
+                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+                      <User className="h-8 w-8 text-green-600" />
+                    </div>
+                    <CardTitle className="text-xl">Themes + Rubric</CardTitle>
+                    <CardDescription>Key themes linked to HSC rubric points</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Understand how the {text.genre.toLowerCase()}'s major themes connect directly to HSC Common Module rubric requirements
+                      and assessment criteria.
+                    </p>
+                    <div className="flex items-center justify-center text-green-600 group-hover:text-green-700">
+                      <span className="text-sm font-medium">Explore Themes</span>
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
 
-              <div className="space-y-4">
-                {text.themes.map((theme) => (
-                  <Accordion key={theme.id} type="single" collapsible className="w-full">
-                    <AccordionItem value={theme.id}>
-                      <AccordionTrigger className={`p-4 rounded-t-lg ${theme.color}`}>
-                        <div className="flex items-center">
-                          <div className="mr-2 text-xl">
-                            {theme.icon === "shield" && "🛡️"}
-                            {theme.icon === "speech" && "💬"}
-                            {theme.icon === "eye" && "👁️"}
-                            {theme.icon === "heart" && "❤️"}
-                            {theme.icon === "book" && "📚"}
-                          </div>
-                          <span className="text-lg font-medium">{theme.title}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="p-4 border border-t-0 rounded-b-lg">
-                        <p className="mb-4 text-gray-700">{theme.summary}</p>
-                        <div className="mt-4">
-                          <h4 className="font-medium mb-2">Key Examples:</h4>
-                          <ul className="space-y-1 list-disc pl-5">
-                            {theme.examples.map((example, idx) => (
-                              <li key={idx} className="text-gray-700">
-                                {example}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                ))}
-              </div>
-            </section>
+              {/* Plot Summary Card */}
+              <Link href={`/knowledge-bank/text-mastery/${textId}/plot-summary`}>
+                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors">
+                      <BookText className="h-8 w-8 text-orange-600" />
+                    </div>
+                    <CardTitle className="text-xl">Plot Summary</CardTitle>
+                    <CardDescription>Chapter by chapter breakdown and analysis</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-sm text-gray-600 mb-4">Detailed chapter summaries with key events, character development, and thematic significance for each section.  </p>
+                    <div className="flex items-center justify-center text-orange-600 group-hover:text-orange-700">
+                      <span className="text-sm font-medium">Read Summary</span>
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
 
-            {/* HSC Rubric Connections */}
-            <section id="rubric-connections" className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">HSC Rubric Connections</h2>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Common Module: Texts and Human Experiences</CardTitle>
-                  <CardDescription>How this text addresses key rubric requirements</CardDescription>
+              {/* Contemporary Connections Card */}
+              <Link href={`/knowledge-bank/text-mastery/${textId}/contemporary-connections`}>
+              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group"
+                    onClick={() => document.getElementById("contemporary-connections")?.scrollIntoView({ behavior: "smooth" })}>
+                <CardHeader className="text-center pb-4">
+                  <div className="mx-auto w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-200 transition-colors">
+                    <Globe className="h-8 w-8 text-teal-600" />
+                  </div>
+                  <CardTitle className="text-xl">Contemporary Connections</CardTitle>
+                  <CardDescription>Modern parallels and relevance today</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {text.rubricConnections.map((connection, idx) => (
-                      <div key={idx} className="border-b pb-4 last:border-0 last:pb-0">
-                        <h3 className="font-semibold text-lg mb-2">{connection.concept}</h3>
-                        <p className="text-gray-700 mb-3">{connection.explanation}</p>
-                        <div className="bg-gray-50 p-3 rounded-md">
-                          <h4 className="text-sm font-medium text-gray-600 mb-1">Textual Evidence:</h4>
-                          <p className="text-sm">{connection.textConnections}</p>
-                        </div>
-                      </div>
-                    ))}
+                <CardContent className="text-center">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Discover how {text.author}'s themes and warnings relate to contemporary issues and our modern world.
+                  </p>
+                  <div className="flex items-center justify-center text-teal-600 group-hover:text-teal-700">
+                    <span className="text-sm font-medium">Explore Connections</span>
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </div>
                 </CardContent>
               </Card>
-            </section>
+              </Link>
 
-            {/* Context Information */}
-            <section id="contexts" className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Context Information</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader className="bg-blue-50">
-                    <CardTitle className="flex items-center">
-                      <Globe className="mr-2 h-5 w-5" />
-                      {text.contexts.historical.title}
-                    </CardTitle>
+              {/* Essay Writing Guide Card */}
+              <Link href={`/knowledge-bank/text-mastery/${textId}/essay-guide`}>
+                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                  <CardHeader className="text-center pb-4">
+                    <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
+                      <FileText className="h-8 w-8 text-purple-600" />
+                    </div>
+                    <CardTitle className="text-xl">Essay Writing Guide</CardTitle>
+                    <CardDescription>Structure and techniques for HSC essays</CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-6">
-                    <p className="text-gray-700 mb-4">{text.contexts.historical.content}</p>
-                    <div className="mt-4">
-                      <h4 className="font-medium mb-2 text-sm">Key Points:</h4>
-                      <ul className="space-y-1 list-disc pl-5">
-                        {text.contexts.historical.keyPoints.map((point, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
+                  <CardContent className="text-center">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Master the art of writing compelling HSC essays with structured approaches, textual evidence, and
+                      analytical techniques.
+                    </p>
+                    <div className="flex items-center justify-center text-purple-600 group-hover:text-purple-700">
+                      <span className="text-sm font-medium">Start Writing</span>
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </div>
                   </CardContent>
                 </Card>
+              </Link>
 
-                <Card>
-                  <CardHeader className="bg-purple-50">
-                    <CardTitle className="flex items-center">
-                      <User className="mr-2 h-5 w-5" />
-                      {text.contexts.biographical.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <p className="text-gray-700 mb-4">{text.contexts.biographical.content}</p>
-                    <div className="mt-4">
-                      <h4 className="font-medium mb-2 text-sm">Key Points:</h4>
-                      <ul className="space-y-1 list-disc pl-5">
-                        {text.contexts.biographical.keyPoints.map((point, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                <Card>
-                  <CardHeader className="bg-amber-50">
-                    <CardTitle className="flex items-center">
-                      <BookText className="mr-2 h-5 w-5" />
-                      {text.contexts.cultural.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <p className="text-gray-700 mb-4">{text.contexts.cultural.content}</p>
-                    <div className="mt-4">
-                      <h4 className="font-medium mb-2 text-sm">Key Points:</h4>
-                      <ul className="space-y-1 list-disc pl-5">
-                        {text.contexts.cultural.keyPoints.map((point, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
+            </div>
 
-                <Card>
-                  <CardHeader className="bg-green-50">
-                    <CardTitle className="flex items-center">
-                      <BookOpen className="mr-2 h-5 w-5" />
-                      {text.contexts.philosophical.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <p className="text-gray-700 mb-4">{text.contexts.philosophical.content}</p>
-                    <div className="mt-4">
-                      <h4 className="font-medium mb-2 text-sm">Key Points:</h4>
-                      <ul className="space-y-1 list-disc pl-5">
-                        {text.contexts.philosophical.keyPoints.map((point, idx) => (
-                          <li key={idx} className="text-sm text-gray-700">
-                            {point}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </section>
 
-            {/* Timeline */}
-            <section id="timeline" className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Timeline</h2>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="relative">
-                    {/* Timeline line */}
-                    <div className="absolute left-0 md:left-1/2 h-full w-0.5 bg-gray-200 transform -translate-x-1/2"></div>
 
-                    {/* Timeline events */}
-                    <div className="space-y-8">
-                      {text.timelineEvents.map((event, idx) => (
-                        <div
-                          key={idx}
-                          className={`relative flex items-center ${idx % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}`}
-                        >
-                          <div className={`hidden md:block w-1/2 ${idx % 2 === 0 ? "pr-8 text-right" : "pl-8"}`}>
-                            <Badge
-                              variant={
-                                event.type === "Author"
-                                  ? "outline"
-                                  : event.type === "World"
-                                    ? "secondary"
-                                    : event.type === "Book"
-                                      ? "default"
-                                      : "outline"
-                              }
-                            >
-                              {event.type}
-                            </Badge>
-                            <h3 className="font-medium mt-1">{event.year}</h3>
-                            <p className="text-gray-700">{event.event}</p>
-                          </div>
-
-                          {/* Timeline dot */}
-                          <div className="absolute left-0 md:left-1/2 w-4 h-4 rounded-full bg-blue-500 transform -translate-x-1/2"></div>
-
-                          {/* Mobile and right side content */}
-                          <div className={`md:w-1/2 ${idx % 2 === 0 ? "md:pl-8 pl-6" : "md:pr-8 pl-6"} md:mt-0`}>
-                            <div className="md:hidden">
-                              <Badge
-                                variant={
-                                  event.type === "Author"
-                                    ? "outline"
-                                    : event.type === "World"
-                                      ? "secondary"
-                                      : event.type === "Book"
-                                        ? "default"
-                                        : "outline"
-                                }
-                              >
-                                {event.type}
-                              </Badge>
-                              <h3 className="font-medium mt-1">{event.year}</h3>
-                            </div>
-                            <p className={`${idx % 2 === 0 ? "" : ""} md:hidden`}>{event.event}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            {/* Contemporary Connections */}
-            <section id="contemporary-connections" className="mb-12">
-              <h2 className="text-2xl font-bold mb-6">Contemporary Connections</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {text.contemporaryConnections.map((connection, idx) => (
-                  <Card key={idx}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{connection.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700 mb-4">{connection.description}</p>
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <h4 className="text-sm font-medium text-gray-600 mb-1">Modern Example:</h4>
-                        <p className="text-sm">{connection.modernExample}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
-
-            
           </TabsContent>
 
           <TabsContent value="quotes" className="mt-0 focus-visible:outline-none focus-visible:ring-0">

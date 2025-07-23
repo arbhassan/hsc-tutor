@@ -139,6 +139,29 @@ export default function AdminPage() {
         <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
           <CardHeader className="flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Book Content Management
+            </CardTitle>
+            <CardDescription>
+              Edit all book content including contexts, quotes, plot summaries, and essay guides
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow flex flex-col justify-end">
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => router.push('/admin/book-content')}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Manage Content
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
+          <CardHeader className="flex-shrink-0">
+            <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
               Flashcard Cards
             </CardTitle>
