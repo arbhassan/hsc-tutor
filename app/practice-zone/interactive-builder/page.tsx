@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/lib/auth-context"
 
 // Sample questions for different texts
@@ -379,7 +380,12 @@ function InteractiveEssayBuilderContent() {
   const [essayComponent, setEssayComponent] = useState("introduction")
   const [essayContent, setEssayContent] = useState("")
   const [randomQuote, setRandomQuote] = useState("")
+  const [selectedQuote, setSelectedQuote] = useState("")
   const [randomTechnique, setRandomTechnique] = useState("")
+  const [showQuoteSuggestions, setShowQuoteSuggestions] = useState(false)
+  const [quoteSuggestions, setQuoteSuggestions] = useState([])
+  const [cursorPosition, setCursorPosition] = useState(0)
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
   
   // AI features state
   const [aiTip, setAiTip] = useState("")
@@ -660,6 +666,10 @@ function InteractiveEssayBuilderContent() {
     setAiTip("")
     setFeedback(null)
     setShowFeedback(false)
+    // Reset auto-complete state
+    setShowQuoteSuggestions(false)
+    setQuoteSuggestions([])
+    setSelectedSuggestionIndex(0)
     // Don't reset allStepsContent - keep all progress
     
     // Load content for step 0 of the new component
@@ -686,6 +696,138 @@ function InteractiveEssayBuilderContent() {
     getRandomQuote()
   }
 
+  // Handle quote selection from dropdown
+  const handleQuoteSelect = (quote: string) => {
+    setSelectedQuote(quote)
+  }
+
+  // Insert selected quote into textarea
+  const insertQuoteIntoText = () => {
+    if (!selectedQuote) return
+    
+    const quote = `"${selectedQuote}"`
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const text = essayContent
+      const before = text.substring(0, start)
+      const after = text.substring(end)
+      const newText = before + quote + after
+      
+      setEssayContent(newText)
+      
+      // Set cursor position after inserted quote
+      setTimeout(() => {
+        textarea.focus()
+        textarea.setSelectionRange(start + quote.length, start + quote.length)
+      }, 0)
+    }
+  }
+
+  // Get available quotes for current text
+  const getAvailableQuotes = () => {
+    if (selectedText && QUOTES[selectedText]) {
+      return QUOTES[selectedText]
+    }
+    return []
+  }
+
+  // Handle text change with auto-complete
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value
+    const position = e.target.selectionStart
+    setEssayContent(newText)
+    setCursorPosition(position)
+    
+    // Check for quote auto-complete only in body paragraph mode
+    if (essayComponent === "body-paragraph") {
+      checkForQuoteAutoComplete(newText, position)
+    }
+  }
+
+  // Check if user is typing a quote and show suggestions
+  const checkForQuoteAutoComplete = (text: string, position: number) => {
+    // Find if there's an opening quote before cursor
+    const beforeCursor = text.substring(0, position)
+    const lastQuoteIndex = beforeCursor.lastIndexOf('"')
+    
+    if (lastQuoteIndex !== -1) {
+      const afterQuote = beforeCursor.substring(lastQuoteIndex + 1)
+      const hasClosingQuote = text.substring(position).indexOf('"') !== -1
+      
+      // Only show suggestions if we're inside quotes and have typed something
+      if (!hasClosingQuote && afterQuote.length > 1) {
+        const availableQuotes = getAvailableQuotes()
+        const matchingQuotes = availableQuotes.filter(quote => 
+          quote.toLowerCase().includes(afterQuote.toLowerCase())
+        ).slice(0, 5) // Limit to 5 suggestions
+        
+        if (matchingQuotes.length > 0) {
+          setQuoteSuggestions(matchingQuotes)
+          setShowQuoteSuggestions(true)
+          setSelectedSuggestionIndex(0)
+          return
+        }
+      }
+    }
+    
+    setShowQuoteSuggestions(false)
+    setQuoteSuggestions([])
+  }
+
+  // Insert auto-complete suggestion
+  const insertSuggestion = (suggestion: string) => {
+    const beforeCursor = essayContent.substring(0, cursorPosition)
+    const afterCursor = essayContent.substring(cursorPosition)
+    const lastQuoteIndex = beforeCursor.lastIndexOf('"')
+    
+    if (lastQuoteIndex !== -1) {
+      const beforeQuote = beforeCursor.substring(0, lastQuoteIndex + 1)
+      const newText = beforeQuote + suggestion + '"' + afterCursor
+      setEssayContent(newText)
+      setShowQuoteSuggestions(false)
+      
+      // Focus back to textarea
+      setTimeout(() => {
+        const textarea = document.querySelector('textarea') as HTMLTextAreaElement
+        if (textarea) {
+          textarea.focus()
+          const newPosition = beforeQuote.length + suggestion.length + 1
+          textarea.setSelectionRange(newPosition, newPosition)
+        }
+      }, 0)
+    }
+  }
+
+  // Handle keyboard navigation for auto-complete
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showQuoteSuggestions && quoteSuggestions.length > 0) {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setSelectedSuggestionIndex(prev => 
+            prev < quoteSuggestions.length - 1 ? prev + 1 : 0
+          )
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setSelectedSuggestionIndex(prev => 
+            prev > 0 ? prev - 1 : quoteSuggestions.length - 1
+          )
+          break
+        case 'Enter':
+          e.preventDefault()
+          insertSuggestion(quoteSuggestions[selectedSuggestionIndex])
+          break
+        case 'Escape':
+          e.preventDefault()
+          setShowQuoteSuggestions(false)
+          break
+      }
+    }
+  }
+
   // Introduction steps - focused on answering the question
   const introSteps = [
     { name: "Understand the Question", description: "Break down what the question is asking you to do" },
@@ -694,13 +836,12 @@ function InteractiveEssayBuilderContent() {
     { name: "Points Preview", description: "Outline the key points you will use to prove your thesis" },
   ]
 
-  // PETAL steps - using the provided quote
+  // PETAL steps - single comprehensive paragraph
   const petalSteps = [
-    { name: "Point", description: "Make a clear statement that supports your thesis and answers the question" },
-    { name: "Evidence", description: "Use the provided quote as evidence to support your point" },
-    { name: "Technique", description: "Identify and explain the literary technique used in the quote" },
-    { name: "Analysis", description: "Explain how the evidence and technique support your point and answer the question" },
-    { name: "Link", description: "Connect back to your thesis and the question" },
+    { 
+      name: "Complete PETAL Paragraph", 
+      description: "Write a full body paragraph using the PETAL structure: Point, Evidence (quote), Technique, Analysis, and Link back to your thesis" 
+    },
   ]
 
   // Conclusion steps
@@ -918,14 +1059,45 @@ function InteractiveEssayBuilderContent() {
               {essayComponent === "body-paragraph" && (
                 <Card>
                   <CardContent className="pt-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-sm font-medium">Quote to Analyze</h3>
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-sm font-medium">Select Quote to Use</h3>
                       <Button variant="ghost" size="sm" onClick={handleRefreshQuote} className="h-8 w-8 p-0">
                         <RefreshCw className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                      <p className="text-sm italic">{randomQuote || "Generate a quote to analyze..."}</p>
+                    
+                    {/* Quote Dropdown */}
+                    <div className="space-y-3">
+                      <Select value={selectedQuote} onValueChange={handleQuoteSelect}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Choose a quote from the text..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[200px]">
+                          {getAvailableQuotes().map((quote, index) => (
+                            <SelectItem key={index} value={quote} className="text-sm">
+                              <div className="max-w-[300px] truncate">
+                                "{quote}"
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {selectedQuote && (
+                        <div className="space-y-2">
+                          <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                            <p className="text-sm italic">"{selectedQuote}"</p>
+                          </div>
+                          <Button 
+                            onClick={insertQuoteIntoText} 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full"
+                          >
+                            Insert Quote into Paragraph
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     {randomTechnique && (
@@ -936,6 +1108,24 @@ function InteractiveEssayBuilderContent() {
                         </Badge>
                       </div>
                     )}
+
+                    <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                      <h4 className="text-xs font-medium text-blue-700 mb-2">PETAL Structure Reminder:</h4>
+                      <div className="text-xs text-blue-600 space-y-1">
+                        <div><strong>P</strong>oint - Topic sentence that answers the question</div>
+                        <div><strong>E</strong>vidence - Use a quote from the dropdown or type " to auto-complete</div>
+                        <div><strong>T</strong>echnique - Identify the literary technique</div>
+                        <div><strong>A</strong>nalysis - Explain how it supports your argument</div>
+                        <div><strong>L</strong>ink - Connect back to your thesis</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 p-2 bg-green-50 rounded-md border border-green-200">
+                      <h4 className="text-xs font-medium text-green-700 mb-1">💡 Quick Tip:</h4>
+                      <p className="text-xs text-green-600">
+                        Start typing a quote with " and we'll suggest matching quotes from the text!
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -947,7 +1137,7 @@ function InteractiveEssayBuilderContent() {
                     {essayComponent === "introduction"
                       ? "Introduction Steps"
                       : essayComponent === "body-paragraph"
-                        ? "PETAL Structure"
+                        ? "Body Paragraph Task"
                         : "Conclusion Steps"}
                   </h3>
                   <ul className="space-y-3">
@@ -1048,12 +1238,41 @@ function InteractiveEssayBuilderContent() {
                     </Badge>
                   </div>
 
-                  <Textarea
-                    placeholder={`Write your ${steps[currentStep]?.name.toLowerCase()} here...`}
-                    className="min-h-[200px] mb-4"
-                    value={essayContent}
-                    onChange={(e) => setEssayContent(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Textarea
+                      placeholder={
+                        essayComponent === "body-paragraph" 
+                          ? "Write your complete PETAL paragraph here. Include your Point, Evidence (use quotes from the dropdown or type \" to auto-complete), Technique analysis, deeper Analysis of how it supports your argument, and Link back to your thesis..."
+                          : `Write your ${steps[currentStep]?.name.toLowerCase()} here...`
+                      }
+                      className={essayComponent === "body-paragraph" ? "min-h-[300px] mb-4" : "min-h-[200px] mb-4"}
+                      value={essayContent}
+                      onChange={handleTextChange}
+                      onKeyDown={handleKeyDown}
+                    />
+                    
+                    {/* Auto-complete suggestions */}
+                    {showQuoteSuggestions && quoteSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-[150px] overflow-y-auto">
+                        <div className="p-2 text-xs text-gray-500 border-b">
+                          Use ↑↓ to navigate, Enter to select, Esc to close
+                        </div>
+                        {quoteSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            className={`w-full text-left px-3 py-2 text-sm border-b border-gray-100 last:border-b-0 ${
+                              index === selectedSuggestionIndex 
+                                ? 'bg-blue-100 text-blue-900' 
+                                : 'hover:bg-gray-100'
+                            }`}
+                            onClick={() => insertSuggestion(suggestion)}
+                          >
+                            <div className="truncate">"{suggestion}"</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex justify-between items-center">
                     <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 0}>

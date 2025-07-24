@@ -464,14 +464,51 @@ export default function EssayMode() {
           finalScoreProvided: finalScore
         })
         
+        // Save to progress tracking system (existing functionality)
         await trackEssayCompletion(
           score,
           wordCount,
           Math.floor(quoteCount)
         )
 
-        // Track study time for the essay session
+        // Also save to submissions system for past submissions tracking
         const sessionStartStr = sessionStorage.getItem('essaySessionStart')
+        const completionTime = sessionStartStr ? 
+          Math.round((new Date().getTime() - new Date(sessionStartStr).getTime()) / (1000 * 60)) : null
+
+        const submissionData = {
+          submissionType: 'essay_mode',
+          contentType: 'essay',
+          title: `Essay Mode - ${selectedBook?.title || 'Essay'}`,
+          totalScore: score,
+          maxScore: 20, // Standard essay score out of 20
+          completionTimeMinutes: completionTime,
+          essay: {
+            question: selectedQuestion,
+            response: essayContent,
+            wordCount: wordCount,
+            quoteCount: Math.floor(quoteCount),
+            overallScore: score,
+            maxScore: 20,
+            module: selectedBook?.title || null
+          }
+        }
+
+        const submissionResponse = await fetch('/api/submissions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(submissionData)
+        })
+
+        if (!submissionResponse.ok) {
+          console.error('Failed to save submission:', await submissionResponse.text())
+        } else {
+          console.log('Successfully saved essay submission')
+        }
+
+        // Track study time for the essay session
         if (sessionStartStr) {
           const sessionStart = new Date(sessionStartStr)
           const sessionEnd = new Date()

@@ -575,7 +575,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          submission_type: 'daily_drill' | 'exam_simulator'
+          submission_type: 'daily_drill' | 'exam_simulator' | 'essay_mode'
           content_type: 'questions' | 'essay'
           submission_date: string
           title: string
@@ -588,7 +588,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          submission_type: 'daily_drill' | 'exam_simulator'
+          submission_type: 'daily_drill' | 'exam_simulator' | 'essay_mode'
           content_type: 'questions' | 'essay'
           submission_date?: string
           title: string
@@ -601,7 +601,7 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
-          submission_type?: 'daily_drill' | 'exam_simulator'
+          submission_type?: 'daily_drill' | 'exam_simulator' | 'essay_mode'
           content_type?: 'questions' | 'essay'
           submission_date?: string
           title?: string

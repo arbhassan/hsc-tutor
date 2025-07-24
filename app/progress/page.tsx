@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { Button } from "@/components/ui/button"
@@ -96,10 +97,20 @@ export default function ProgressPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Progress & Analytics</h1>
-          <p className="text-lg text-muted-foreground mt-2">
-            Track your performance and stay on top of your improvement journey.
-          </p>
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Progress & Analytics</h1>
+              <p className="text-lg text-muted-foreground mt-2">
+                Track your performance and stay on top of your improvement journey.
+              </p>
+            </div>
+            <Link href="/practice-zone/past-submissions">
+              <Button variant="outline" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                View Past Submissions
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Overview Section */}

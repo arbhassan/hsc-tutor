@@ -26,7 +26,7 @@ import { useAuth } from "@/lib/auth-context"
 
 interface Submission {
   id: string
-  submission_type: 'daily_drill' | 'exam_simulator'
+  submission_type: 'daily_drill' | 'exam_simulator' | 'essay_mode'
   content_type: 'questions' | 'essay'
   submission_date: string
   title: string
@@ -142,7 +142,7 @@ export default function PastSubmissionsPage() {
   }
 
   const getSubmissionTypeLabel = (type: string) => {
-    return type === 'daily_drill' ? 'Daily Drill' : 'Exam Simulator'
+    return type === 'daily_drill' ? 'Daily Drill' : type === 'exam_simulator' ? 'Exam Simulator' : 'Essay Mode'
   }
 
   const getContentTypeLabel = (type: string) => {
@@ -203,7 +203,8 @@ export default function PastSubmissionsPage() {
       questions: submissions.filter(s => s.content_type === 'questions').length,
       essays: submissions.filter(s => s.content_type === 'essay').length,
       dailyDrill: submissions.filter(s => s.submission_type === 'daily_drill').length,
-      examSimulator: submissions.filter(s => s.submission_type === 'exam_simulator').length
+      examSimulator: submissions.filter(s => s.submission_type === 'exam_simulator').length,
+      essayMode: submissions.filter(s => s.submission_type === 'essay_mode').length
     }
     return stats
   }
@@ -283,6 +284,7 @@ export default function PastSubmissionsPage() {
             <SelectItem value="all">All Submissions</SelectItem>
             <SelectItem value="daily_drill-all">Daily Drills</SelectItem>
             <SelectItem value="exam_simulator-all">Exam Simulator</SelectItem>
+            <SelectItem value="essay_mode-all">Essay Mode</SelectItem>
             <SelectItem value="all-questions">Questions Only</SelectItem>
             <SelectItem value="all-essay">Essays Only</SelectItem>
           </SelectContent>
@@ -306,6 +308,9 @@ export default function PastSubmissionsPage() {
             </Button>
             <Button variant="outline" asChild>
               <Link href="/practice-zone/exam-simulator">Start Exam Simulator</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/practice-zone/essay-mode">Start Essay Mode</Link>
             </Button>
           </div>
         </div>
@@ -341,7 +346,7 @@ export default function PastSubmissionsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-3 gap-3 text-sm">
                           <div className="flex items-center gap-1">
                             <span className="text-muted-foreground">Questions:</span>
                             <span className="font-medium">{stats.questions}</span>
@@ -357,6 +362,10 @@ export default function PastSubmissionsPage() {
                           <div className="flex items-center gap-1">
                             <span className="text-muted-foreground">Exam Sim:</span>
                             <span className="font-medium">{stats.examSimulator}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Essay Mode:</span>
+                            <span className="font-medium">{stats.essayMode}</span>
                           </div>
                         </div>
                         
