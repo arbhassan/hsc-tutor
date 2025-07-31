@@ -182,18 +182,12 @@ function OverviewTab({
 }) {
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8 max-w-md">
         <StatCard
           title="Study Streak"
           value={userProgress?.study_streak ? `${userProgress.study_streak} days` : "0 days"}
           description="Keep it up!"
           icon={<Flame className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Total Study Time"
-          value={userProgress?.total_study_time ? `${Math.round(userProgress.total_study_time * 10) / 10} hours` : "0 hours"}
-          description="All time"
-          icon={<Clock className="h-5 w-5" />}
         />
       </div>
 

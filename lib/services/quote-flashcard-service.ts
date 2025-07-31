@@ -47,7 +47,6 @@ export interface CardFilters {
   book_id?: string
   theme_ids?: string[]
   search?: string
-  difficulty_level?: number
   only_active?: boolean
 }
 
@@ -378,10 +377,6 @@ export class QuoteFlashcardService {
 
       if (filters.only_active !== false) {
         query = query.eq('is_active', true)
-      }
-
-      if (filters.difficulty_level) {
-        query = query.eq('difficulty_level', filters.difficulty_level)
       }
 
       const { data: cards, error } = await query.order('created_at', { ascending: false })
@@ -961,7 +956,7 @@ export class QuoteFlashcardService {
 
         const { error: insertError } = await this.supabase
           .from('quote_themes')
-          .insert(themeRelations)
+          .upsert(themeRelations, { onConflict: 'quote_id,theme_id' })
 
         if (insertError) {
           console.error('Error adding new themes:', insertError)

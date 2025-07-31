@@ -797,7 +797,6 @@ export interface Database {
           card_text: string
           missing_words: string[] // Changed from missing_word to array
           missing_positions: number[] // Changed from missing_position to array
-          difficulty_level: number
           is_active: boolean
           created_at: string
           updated_at: string
@@ -808,7 +807,6 @@ export interface Database {
           card_text: string
           missing_words: string[] // Changed from missing_word to array
           missing_positions: number[] // Changed from missing_position to array
-          difficulty_level?: number
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -819,7 +817,6 @@ export interface Database {
           card_text?: string
           missing_words?: string[] // Changed from missing_word to array
           missing_positions?: number[] // Changed from missing_position to array
-          difficulty_level?: number
           is_active?: boolean
           created_at?: string
           updated_at?: string

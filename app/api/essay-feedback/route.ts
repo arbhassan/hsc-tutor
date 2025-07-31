@@ -6,6 +6,8 @@ const openai = new OpenAI({
 })
 
 export async function POST(request: Request) {
+  let component, content, text, theme, allStepsContent
+  
   try {
     if (!process.env.OPENAI_API_KEY) {
       console.error('OPENAI_API_KEY is not configured')
@@ -15,7 +17,12 @@ export async function POST(request: Request) {
       )
     }
 
-    const { component, content, text, theme, allStepsContent } = await request.json()
+    const requestData = await request.json()
+    component = requestData.component
+    content = requestData.content
+    text = requestData.text
+    theme = requestData.theme
+    allStepsContent = requestData.allStepsContent
 
     if (!component || !content || !text || !theme) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
@@ -34,11 +41,20 @@ Theme: ${theme}
 Student's Introduction:
 ${content}
 
+IMPORTANT: You must analyze whatever content is provided above, even if it's incomplete, minimal, or nonsensical. Do not ask for more content - work with what's given.
+
 Analyze this introduction and provide specific, constructive feedback. Look for:
 - Clear thesis statement that addresses the theme
 - Relevant context about the text and author
 - Preview of main arguments
 - Direct connection to the essay question
+
+SCORING CRITERIA (be strict):
+- 1-2: No coherent content, irrelevant text, or just a few words
+- 3-4: Minimal effort, lacks clear thesis, no context or structure
+- 5-6: Basic attempt with some relevant content but missing key elements
+- 7-8: Good structure with most elements present, clear thesis and context
+- 9-10: Excellent introduction with sophisticated thesis, rich context, and clear argument preview
 
 Provide feedback in this JSON format:
 {
@@ -60,12 +76,21 @@ Theme: ${theme}
 Student's Body Paragraph:
 ${content}
 
+IMPORTANT: You must analyze whatever content is provided above, even if it's incomplete, minimal, or nonsensical. Do not ask for more content - work with what's given.
+
 Analyze this body paragraph using the PETAL structure and provide specific feedback. Look for:
 - Point: Clear topic sentence supporting the thesis
 - Evidence: Relevant quotes integrated well
 - Technique: Literary techniques identified and explained
 - Analysis: Deep analysis of how technique creates meaning
 - Link: Connection back to thesis and question
+
+SCORING CRITERIA (be strict):
+- 1-2: No coherent content, irrelevant text, or just a few words
+- 3-4: Minimal effort, lacks PETAL structure, no quotes or analysis
+- 5-6: Basic attempt with some PETAL elements but weak analysis or poor quote integration
+- 7-8: Good PETAL structure with clear analysis and appropriate quotes
+- 9-10: Excellent paragraph with sophisticated analysis, seamless quote integration, and insightful technique discussion
 
 Provide feedback in this JSON format:
 {
@@ -93,11 +118,20 @@ Theme: ${theme}
 Student's Conclusion:
 ${content}
 
+IMPORTANT: You must analyze whatever content is provided above, even if it's incomplete, minimal, or nonsensical. Do not ask for more content - work with what's given.
+
 Analyze this conclusion and provide specific feedback. Look for:
 - Thesis restated in fresh language
 - Key arguments synthesized
 - Broader implications discussed  
 - Strong final statement
+
+SCORING CRITERIA (be strict):
+- 1-2: No coherent content, irrelevant text, or just a few words
+- 3-4: Minimal effort, lacks structure, simply repeats introduction
+- 5-6: Basic attempt with some synthesis but weak final statement
+- 7-8: Good conclusion with clear synthesis and thoughtful final statement
+- 9-10: Excellent conclusion with sophisticated synthesis, broader implications, and memorable ending
 
 Provide feedback in this JSON format:
 {
@@ -161,58 +195,58 @@ Be encouraging while providing specific guidance for improvement.`
   } catch (error) {
     console.error('Error generating feedback:', error)
     
-    // Fallback feedback based on component
+    // Fallback feedback based on component - using stricter scoring
     const fallbackFeedback = {
       introduction: {
-        score: 7,
+        score: 4,
         strengths: [
-          "Good attempt at structuring your introduction",
-          "Shows understanding of the text and theme"
+          "You've attempted to write an introduction"
         ],
         improvements: [
-          "Make your thesis statement more specific and arguable",
-          "Add more context about the text and its significance"
+          "Develop a clear thesis statement that directly answers the question",
+          "Add relevant context about the text and author",
+          "Structure your introduction with a clear argument preview"
         ],
         specific_tips: [
-          "Try starting with a broader statement about the theme before narrowing to your specific argument",
-          "Make sure to preview the main points you'll discuss in your body paragraphs"
+          "Start with context, then present your thesis, then preview your main points",
+          "Make sure every sentence contributes to answering the essay question"
         ],
-        overall_comment: "You're on the right track! Focus on making your thesis more specific and providing clearer context."
+        overall_comment: "This is a starting point. Focus on developing a clear thesis and providing relevant context to improve your score."
       },
       'body-paragraph': {
-        score: 7,
+        score: 4,
         petal_analysis: {
-          point: "Good topic sentence that supports your argument",
-          evidence: "Quote is relevant but could be integrated more smoothly",
-          technique: "Technique identified correctly",
-          analysis: "Analysis could be deeper - explain the effect on the reader",
-          link: "Remember to link back to your thesis more explicitly"
+          point: "Needs a clear topic sentence that supports your thesis",
+          evidence: "Include relevant quotes from the text",
+          technique: "Identify specific literary techniques used",
+          analysis: "Explain how the technique creates meaning and supports your argument",
+          link: "Connect your analysis back to your thesis"
         },
         strengths: [
-          "Clear structure following PETAL format",
-          "Good use of textual evidence"
+          "You've attempted to write a body paragraph"
         ],
         improvements: [
-          "Deepen your analysis of how the technique creates meaning",
-          "Strengthen the link back to your overall argument"
+          "Follow the PETAL structure more clearly",
+          "Include specific quotes and analyze their techniques",
+          "Deepen your analysis of how evidence supports your argument"
         ],
-        overall_comment: "Strong paragraph structure! Focus on deepening your analysis and making clearer connections to your thesis."
+        overall_comment: "This needs significant development. Focus on including quotes, identifying techniques, and analyzing their effect."
       },
       conclusion: {
-        score: 7,
+        score: 4,
         strengths: [
-          "Good attempt at restating your main argument",
-          "Shows understanding of the text's broader significance"
+          "You've attempted to write a conclusion"
         ],
         improvements: [
-          "Avoid simply repeating your introduction",
-          "Make your final statement more impactful"
+          "Restate your thesis in fresh language",
+          "Synthesize your key arguments",
+          "End with a strong final statement about the text's significance"
         ],
         specific_tips: [
-          "Try connecting your analysis to broader themes or contemporary relevance",
-          "End with a thought-provoking statement that leaves a lasting impression"
+          "Don't just repeat your introduction - show how your argument has developed",
+          "Consider the broader implications of your analysis"
         ],
-        overall_comment: "Well done! Your conclusion effectively wraps up your argument. Work on making it more memorable and impactful."
+        overall_comment: "This conclusion needs more development. Focus on synthesizing your arguments and ending with impact."
       }
     }
     

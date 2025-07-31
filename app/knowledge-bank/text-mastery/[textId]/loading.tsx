@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Quote } from "lucide-react"
+import { BookOpen, Heart, Quote } from "lucide-react"
 
 export default function TextExploreLoading() {
   return (
@@ -13,16 +13,7 @@ export default function TextExploreLoading() {
       <header className="sticky top-0 z-10 bg-white border-b shadow-sm">
         <div className="container px-4 py-4 mx-auto">
           <div className="flex items-center justify-between">
-            <Link
-              href="/knowledge-bank/text-mastery"
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-            >
-              <ArrowLeft size={18} />
-              <span>Back to Text Mastery Hub</span>
-            </Link>
-            <Button variant="outline" size="sm" disabled>
-              <span>Download PDF Summary</span>
-            </Button>
+            
           </div>
         </div>
       </header>
@@ -50,11 +41,16 @@ export default function TextExploreLoading() {
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="context" className="flex gap-2 items-center" disabled>
               <BookOpen size={18} />
-              Context and Summary
+            Study Lessons
             </TabsTrigger>
             <TabsTrigger value="quotes" className="flex gap-2 items-center" disabled>
               <Quote size={18} />
               Quote Bank
+            </TabsTrigger>
+            <TabsTrigger value="quotes" className="flex gap-2 items-center" disabled>
+              <Heart />
+              <Heart size={18} />
+              Favorites 
             </TabsTrigger>
           </TabsList>
 

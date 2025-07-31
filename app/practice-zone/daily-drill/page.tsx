@@ -768,11 +768,6 @@ export default function DailyDrillPage() {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/practice-zone/past-submissions">
-                Past Submissions
-              </Link>
-            </Button>
             <span className="text-sm font-medium">
               Text {currentTextIndex + 1} of {unseenTexts.length}
             </span>

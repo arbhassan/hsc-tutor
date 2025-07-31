@@ -58,7 +58,6 @@ export default function QuoteFlashcardsNewPage() {
   const [filters, setFilters] = useState<CardFilters>({
     search: "",
     theme_ids: [],
-    difficulty_level: undefined,
     only_active: true
   })
 
@@ -162,10 +161,6 @@ export default function QuoteFlashcardsNewPage() {
       )
     }
 
-    if (filters.difficulty_level) {
-      filtered = filtered.filter(card => card.difficulty_level === filters.difficulty_level)
-    }
-
     setFilteredCards(filtered)
   }
 
@@ -177,7 +172,6 @@ export default function QuoteFlashcardsNewPage() {
     setFilters({
       search: "",
       theme_ids: [],
-      difficulty_level: undefined,
       only_active: true
     })
   }
@@ -538,8 +532,7 @@ export default function QuoteFlashcardsNewPage() {
 
           <Card className="mb-6">
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <Badge variant="outline">Level {currentCard.difficulty_level}</Badge>
+              <div className="flex justify-end items-center">
                 <div className="flex gap-1">
                   {currentCard.themes?.map((theme) => (
                     <Badge 
@@ -703,22 +696,7 @@ export default function QuoteFlashcardsNewPage() {
                       />
                     </div>
                   </div>
-                  <div className="w-32">
-                    <select
-                      value={filters.difficulty_level || "all"}
-                      onChange={(e) => updateFilters({ 
-                        difficulty_level: e.target.value === "all" ? undefined : parseInt(e.target.value) 
-                      })}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    >
-                      <option value="all">All Levels</option>
-                      <option value="1">Level 1</option>
-                      <option value="2">Level 2</option>
-                      <option value="3">Level 3</option>
-                      <option value="4">Level 4</option>
-                      <option value="5">Level 5</option>
-                    </select>
-                  </div>
+
                   <Button variant="outline" onClick={clearFilters}>
                     Clear
                   </Button>
@@ -776,7 +754,7 @@ export default function QuoteFlashcardsNewPage() {
                   <CreditCard className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-medium mb-2">No cards found</h3>
                   <p className="text-muted-foreground">
-                    {filters.search || filters.theme_ids?.length || filters.difficulty_level
+                    {filters.search || filters.theme_ids?.length
                       ? "Try adjusting your filters"
                       : "No cards available for this book yet"
                     }
@@ -787,8 +765,7 @@ export default function QuoteFlashcardsNewPage() {
                   {filteredCards.map((card) => (
                     <Card key={card.id} className="hover:shadow-md transition-shadow">
                       <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <Badge variant="outline">Level {card.difficulty_level}</Badge>
+                        <div className="flex justify-end items-start">
                           {studentSets.length > 0 && (
                             <Dialog>
                               <DialogTrigger asChild>
@@ -1035,8 +1012,7 @@ export default function QuoteFlashcardsNewPage() {
                 {cardsInSelectedSet.map((card) => (
                   <Card key={card.id} className="relative">
                     <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <Badge variant="outline">Level {card.difficulty_level}</Badge>
+                      <div className="flex justify-end items-start">
                         <Button
                           size="sm"
                           variant="outline"

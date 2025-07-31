@@ -136,14 +136,24 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
       // Fetch detailed content
       const bookContent = await detailedBookService.getBookData(bookId)
       if (bookContent) {
-        // Initialize contexts with all four types
-        const contextTypes = ['historical', 'political', 'biographical', 'philosophical']
-        const initializedContexts = contextTypes.map(type => ({
-          contextType: type,
-          title: bookContent.detailedContexts[type]?.title || `${type.charAt(0).toUpperCase() + type.slice(1)} Context`,
-          sections: bookContent.detailedContexts[type]?.sections || []
-        }))
-        setContexts(initializedContexts)
+        // Initialize contexts dynamically from existing data or with defaults
+        if (bookContent.detailedContexts && Object.keys(bookContent.detailedContexts).length > 0) {
+          const existingContexts = Object.keys(bookContent.detailedContexts).map(type => ({
+            contextType: type,
+            title: bookContent.detailedContexts[type]?.title || `${type.charAt(0).toUpperCase() + type.slice(1)} Context`,
+            sections: bookContent.detailedContexts[type]?.sections || []
+          }))
+          setContexts(existingContexts)
+        } else {
+          // Default context types for new books
+          const defaultContextTypes = ['historical', 'political', 'biographical', 'philosophical']
+          const initializedContexts = defaultContextTypes.map(type => ({
+            contextType: type,
+            title: `${type.charAt(0).toUpperCase() + type.slice(1)} Context`,
+            sections: []
+          }))
+          setContexts(initializedContexts)
+        }
 
         // Initialize rubric connections with all four types  
         const rubricTypes = ['anomaliesAndParadoxes', 'emotionalExperiences', 'relationships', 'humanCapacityForUnderstanding']
@@ -187,8 +197,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
         setTechniques(bookContent.techniques || [])
       } else {
         // Initialize with empty data if no content found
-        const contextTypes = ['historical', 'political', 'biographical', 'philosophical']
-        setContexts(contextTypes.map(type => ({
+        const defaultContextTypes = ['historical', 'political', 'biographical', 'philosophical']
+        setContexts(defaultContextTypes.map(type => ({
           contextType: type,
           title: `${type.charAt(0).toUpperCase() + type.slice(1)} Context`,
           sections: []
@@ -329,6 +339,20 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
     setTechniques(newTechniques)
   }
 
+  const addNewContext = () => {
+    const newContextType = `custom-${Date.now()}`
+    setContexts([...contexts, {
+      contextType: newContextType,
+      title: 'New Context',
+      sections: []
+    }])
+  }
+
+  const deleteContext = (index: number) => {
+    const newContexts = contexts.filter((_, i) => i !== index)
+    setContexts(newContexts)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -428,6 +452,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                             value={quote.text}
                             onChange={(e) => updateQuote(index, 'text', e.target.value)}
                             rows={3}
+                            className="whitespace-pre-wrap"
+                            style={{ whiteSpace: 'pre-wrap' }}
                           />
                         </div>
                         <div>
@@ -438,6 +464,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                             value={quote.explanation}
                             onChange={(e) => updateQuote(index, 'explanation', e.target.value)}
                             rows={3}
+                            className="whitespace-pre-wrap"
+                            style={{ whiteSpace: 'pre-wrap' }}
                           />
                         </div>
                       </div>
@@ -593,6 +621,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                           value={technique.definition}
                           onChange={(e) => updateTechnique(index, 'definition', e.target.value)}
                           rows={2}
+                          className="whitespace-pre-wrap"
+                          style={{ whiteSpace: 'pre-wrap' }}
                         />
                       </div>
                     </CardContent>
@@ -616,28 +646,62 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
           <TabsContent value="contexts">
             <Card>
               <CardHeader>
-                <CardTitle>Context Information</CardTitle>
-                <CardDescription>Edit historical, political, biographical, and philosophical contexts</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Context Information</CardTitle>
+                    <CardDescription>Edit historical, political, biographical, and philosophical contexts</CardDescription>
+                  </div>
+                  <Button onClick={addNewContext}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Context Type
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-8">
                 {contexts.map((context, contextIndex) => (
                   <Card key={contextIndex} className="border-l-4 border-l-indigo-500">
                     <CardHeader>
-                      <CardTitle className="text-lg capitalize">{context.contextType} Context</CardTitle>
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg capitalize">{context.contextType} Context</CardTitle>
+                        {contexts.length > 1 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteContext(contextIndex)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor={`context-title-${contextIndex}`}>Title</Label>
-                        <Input
-                          id={`context-title-${contextIndex}`}
-                          value={context.title}
-                          onChange={(e) => {
-                            const newContexts = [...contexts]
-                            newContexts[contextIndex].title = e.target.value
-                            setContexts(newContexts)
-                          }}
-                          placeholder="e.g., Historical Context"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`context-type-${contextIndex}`}>Context Type</Label>
+                          <Input
+                            id={`context-type-${contextIndex}`}
+                            value={context.contextType}
+                            onChange={(e) => {
+                              const newContexts = [...contexts]
+                              newContexts[contextIndex].contextType = e.target.value
+                              setContexts(newContexts)
+                            }}
+                            placeholder="e.g., historical, political, social"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`context-title-${contextIndex}`}>Title</Label>
+                          <Input
+                            id={`context-title-${contextIndex}`}
+                            value={context.title}
+                            onChange={(e) => {
+                              const newContexts = [...contexts]
+                              newContexts[contextIndex].title = e.target.value
+                              setContexts(newContexts)
+                            }}
+                            placeholder="e.g., Historical Context"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -705,7 +769,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                       }}
                                       placeholder="Enter paragraph content..."
                                       rows={3}
-                                      className="flex-1"
+                                      className="flex-1 whitespace-pre-wrap"
+                                      style={{ whiteSpace: 'pre-wrap' }}
                                     />
                                     <Button
                                       type="button"
@@ -837,7 +902,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                       }}
                                       placeholder="Explain the rubric connection..."
                                       rows={3}
-                                      className="flex-1"
+                                      className="flex-1 whitespace-pre-wrap"
+                                      style={{ whiteSpace: 'pre-wrap' }}
                                     />
                                     <Button
                                       type="button"
@@ -1009,6 +1075,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                     }}
                                     placeholder="Summarize what happens in this chapter..."
                                     rows={3}
+                                    className="whitespace-pre-wrap"
+                                    style={{ whiteSpace: 'pre-wrap' }}
                                   />
                                 </div>
 
@@ -1024,6 +1092,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                     }}
                                     placeholder="Explain the significance of this chapter..."
                                     rows={2}
+                                    className="whitespace-pre-wrap"
+                                    style={{ whiteSpace: 'pre-wrap' }}
                                   />
                                 </div>
                               </div>
@@ -1163,7 +1233,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                       }}
                                       placeholder="Explain the contemporary connection..."
                                       rows={3}
-                                      className="flex-1"
+                                      className="flex-1 whitespace-pre-wrap"
+                                      style={{ whiteSpace: 'pre-wrap' }}
                                     />
                                     <Button
                                       type="button"
@@ -1331,6 +1402,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                 }}
                                 placeholder="Example text..."
                                 rows={2}
+                                className="whitespace-pre-wrap"
+                                style={{ whiteSpace: 'pre-wrap' }}
                               />
                             </div>
 
@@ -1351,7 +1424,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                       }}
                                       placeholder="Content point..."
                                       rows={2}
-                                      className="flex-1"
+                                      className="flex-1 whitespace-pre-wrap"
+                                      style={{ whiteSpace: 'pre-wrap' }}
                                     />
                                     <Button
                                       type="button"
@@ -1557,6 +1631,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                         }}
                         placeholder="Enter the sample HSC question..."
                         rows={3}
+                        className="whitespace-pre-wrap"
+                        style={{ whiteSpace: 'pre-wrap' }}
                       />
                     </div>
 

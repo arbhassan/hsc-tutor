@@ -1233,9 +1233,11 @@ function InteractiveEssayBuilderContent() {
                       <h3 className="text-lg font-medium">{steps[currentStep]?.name}</h3>
                       <p className="text-sm text-muted-foreground">{steps[currentStep]?.description}</p>
                     </div>
-                    <Badge variant="outline">
-                      Step {currentStep + 1} of {steps.length}
-                    </Badge>
+                    {essayComponent !== "body-paragraph" && (
+                      <Badge variant="outline">
+                        Step {currentStep + 1} of {steps.length}
+                      </Badge>
+                    )}
                   </div>
 
                   <div className="relative">
@@ -1398,22 +1400,24 @@ function InteractiveEssayBuilderContent() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-medium">Your Progress</h3>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">
-                        {(() => {
+                    {essayComponent !== "body-paragraph" && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-muted-foreground">
+                          {(() => {
+                            const completedSteps = Object.keys(allStepsContent).filter(key => key.startsWith(essayComponent) && allStepsContent[key]?.trim()).length
+                            const currentStepKey = `${essayComponent}-${currentStep}`
+                            const currentStepHasContent = essayContent.trim() && !allStepsContent[currentStepKey]?.trim()
+                            return completedSteps + (currentStepHasContent ? 1 : 0)
+                          })()} / {steps.length} steps
+                        </span>
+                        <Progress value={(() => {
                           const completedSteps = Object.keys(allStepsContent).filter(key => key.startsWith(essayComponent) && allStepsContent[key]?.trim()).length
                           const currentStepKey = `${essayComponent}-${currentStep}`
                           const currentStepHasContent = essayContent.trim() && !allStepsContent[currentStepKey]?.trim()
-                          return completedSteps + (currentStepHasContent ? 1 : 0)
-                        })()} / {steps.length} steps
-                      </span>
-                      <Progress value={(() => {
-                        const completedSteps = Object.keys(allStepsContent).filter(key => key.startsWith(essayComponent) && allStepsContent[key]?.trim()).length
-                        const currentStepKey = `${essayComponent}-${currentStep}`
-                        const currentStepHasContent = essayContent.trim() && !allStepsContent[currentStepKey]?.trim()
-                        return ((completedSteps + (currentStepHasContent ? 1 : 0)) / steps.length) * 100
-                      })()} className="w-24" />
-                    </div>
+                          return ((completedSteps + (currentStepHasContent ? 1 : 0)) / steps.length) * 100
+                        })()} className="w-24" />
+                      </div>
+                    )}
                   </div>
                   <div className="p-4 bg-gray-50 rounded-md border border-gray-200 min-h-[100px]">
                     {steps.map((step, index) => {

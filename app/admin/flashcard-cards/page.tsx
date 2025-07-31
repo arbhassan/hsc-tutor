@@ -59,7 +59,6 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
     search: "",
     book_id: undefined,
     theme_ids: [],
-    difficulty_level: undefined,
     only_active: true
   })
   const [showForm, setShowForm] = useState(!!editId)
@@ -69,8 +68,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
 
   const [formData, setFormData] = useState({
     card_text: "",
-    missing_words: [""],
-    difficulty_level: 1
+    missing_words: [""]
   })
 
   // New state for bulk operations
@@ -91,8 +89,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
         setEditingCard(cardToEdit)
         setFormData({
           card_text: cardToEdit.card_text,
-          missing_words: cardToEdit.missing_words || [""],
-          difficulty_level: cardToEdit.difficulty_level
+          missing_words: cardToEdit.missing_words || [""]
         })
         setShowForm(true)
       } else {
@@ -152,8 +149,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
   const resetForm = () => {
     setFormData({
       card_text: "",
-      missing_words: [""],
-      difficulty_level: 1
+      missing_words: [""]
     })
     setEditingCard(null)
     setError("")
@@ -181,8 +177,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
     try {
       const success = await quoteFlashcardService.updateCard(editingCard.id, {
         card_text: formData.card_text,
-        missing_words: formData.missing_words,
-        difficulty_level: formData.difficulty_level
+        missing_words: formData.missing_words
       })
 
       if (success) {
@@ -411,7 +406,6 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
       search: "",
       book_id: undefined,
       theme_ids: [],
-      difficulty_level: undefined,
       only_active: true
     })
   }
@@ -472,7 +466,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
               Edit Flashcard Card
             </CardTitle>
             <CardDescription>
-              Update the card text, missing word, and difficulty level
+              Update the card text and missing words
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -548,21 +542,7 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty_level">Difficulty Level</Label>
-                  <select
-                    id="difficulty_level"
-                    value={formData.difficulty_level}
-                    onChange={(e) => setFormData(prev => ({ ...prev, difficulty_level: parseInt(e.target.value) }))}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  >
-                    <option value={1}>1 - Very Easy</option>
-                    <option value={2}>2 - Easy</option>
-                    <option value={3}>3 - Medium</option>
-                    <option value={4}>4 - Hard</option>
-                    <option value={5}>5 - Very Hard</option>
-                  </select>
-                </div>
+
               </div>
 
               <div className="flex gap-2 pt-4">
@@ -622,20 +602,6 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                           {book.title}
                         </option>
                       ))}
-                    </select>
-                  </div>
-                  <div className="w-32">
-                    <select
-                      value={filters.difficulty_level || "all"}
-                      onChange={(e) => updateFilters({ difficulty_level: e.target.value === "all" ? undefined : parseInt(e.target.value) })}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    >
-                      <option value="all">All Difficulty</option>
-                      <option value="1">Level 1</option>
-                      <option value="2">Level 2</option>
-                      <option value="3">Level 3</option>
-                      <option value="4">Level 4</option>
-                      <option value="5">Level 5</option>
                     </select>
                   </div>
                 </div>
@@ -709,33 +675,17 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                       <EyeOff className="h-4 w-4 mr-2" />
                       Hide
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkArchive(true)}
-                      disabled={isOperationInProgress}
-                    >
-                      <Archive className="h-4 w-4 mr-2" />
-                      Archive
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowRetagDialog(true)}
-                      disabled={isOperationInProgress}
-                    >
-                      <Tags className="h-4 w-4 mr-2" />
-                      Re-tag
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleBulkRegenerate}
-                      disabled={isOperationInProgress}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Regenerate
-                    </Button>
+                    {selectedCards.length < 2 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowRetagDialog(true)}
+                        disabled={isOperationInProgress}
+                      >
+                        <Tags className="h-4 w-4 mr-2" />
+                        Re-tag
+                      </Button>
+                    )}
                     <Button
                       variant="destructive"
                       size="sm"
@@ -893,9 +843,6 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                               {!card.is_active && (
                                 <Badge variant="destructive" className="text-xs">Hidden</Badge>
                               )}
-                              <Badge variant="outline" className="text-xs">
-                                Level {card.difficulty_level}
-                              </Badge>
                             </div>
                           </div>
                         </div>
