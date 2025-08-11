@@ -39,6 +39,7 @@ interface ContextSection {
 }
 
 interface DetailedContext {
+  id?: string
   contextType: string
   title: string
   sections: ContextSection[]
@@ -104,6 +105,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [techniques, setTechniques] = useState<Technique[]>([])
 
+
   useEffect(() => {
     if (bookId) {
       fetchBookData()
@@ -136,24 +138,9 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
       // Fetch detailed content
       const bookContent = await detailedBookService.getBookData(bookId)
       if (bookContent) {
-        // Initialize contexts dynamically from existing data or with defaults
-        if (bookContent.detailedContexts && Object.keys(bookContent.detailedContexts).length > 0) {
-          const existingContexts = Object.keys(bookContent.detailedContexts).map(type => ({
-            contextType: type,
-            title: bookContent.detailedContexts[type]?.title || `${type.charAt(0).toUpperCase() + type.slice(1)} Context`,
-            sections: bookContent.detailedContexts[type]?.sections || []
-          }))
-          setContexts(existingContexts)
-        } else {
-          // Default context types for new books
-          const defaultContextTypes = ['historical', 'political', 'biographical', 'philosophical']
-          const initializedContexts = defaultContextTypes.map(type => ({
-            contextType: type,
-            title: `${type.charAt(0).toUpperCase() + type.slice(1)} Context`,
-            sections: []
-          }))
-          setContexts(initializedContexts)
-        }
+        // Get contexts directly from the service (now returns an array)
+        const contextsData = await detailedBookService.getDetailedContexts(bookId)
+        setContexts(contextsData || [])
 
         // Initialize rubric connections with all four types  
         const rubricTypes = ['anomaliesAndParadoxes', 'emotionalExperiences', 'relationships', 'humanCapacityForUnderstanding']
@@ -246,7 +233,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
             book.id,
             context.contextType,
             context.title,
-            context.sections
+            context.sections,
+            context.id // Pass the ID for updates
           )
         ),
 
@@ -340,15 +328,54 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
   }
 
   const addNewContext = () => {
-    const newContextType = `custom-${Date.now()}`
-    setContexts([...contexts, {
-      contextType: newContextType,
-      title: 'New Context',
+    // Default to historical context, but allow any type
+    const defaultContextType = 'historical'
+    
+    // Count existing contexts of the default type to create unique titles
+    const existingContextsOfType = contexts.filter(c => c.contextType === defaultContextType)
+    const contextNumber = existingContextsOfType.length + 1
+    
+    const newContext = {
+      contextType: defaultContextType,
+      title: contextNumber === 1 
+        ? `${defaultContextType.charAt(0).toUpperCase() + defaultContextType.slice(1)} Context`
+        : `${defaultContextType.charAt(0).toUpperCase() + defaultContextType.slice(1)} Context ${contextNumber}`,
       sections: []
-    }])
+    }
+    
+    setContexts(prevContexts => [...prevContexts, newContext])
+    
+    toast({
+      title: "Context Added",
+      description: `Added new ${defaultContextType} context.`,
+      variant: "default"
+    })
   }
 
-  const deleteContext = (index: number) => {
+  const deleteContext = async (index: number) => {
+    const contextToDelete = contexts[index]
+    
+    // If the context has an ID, delete it from the database
+    if (contextToDelete.id) {
+      try {
+        await detailedBookService.deleteDetailedContext(contextToDelete.id)
+        toast({
+          title: "Context Deleted",
+          description: "Context has been deleted successfully.",
+          variant: "default"
+        })
+      } catch (error) {
+        console.error('Error deleting context:', error)
+        toast({
+          title: "Error",
+          description: "Failed to delete context from database.",
+          variant: "destructive"
+        })
+        return // Don't update UI if database delete failed
+      }
+    }
+    
+    // Update the UI
     const newContexts = contexts.filter((_, i) => i !== index)
     setContexts(newContexts)
   }
@@ -658,36 +685,48 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                 </div>
               </CardHeader>
               <CardContent className="space-y-8">
-                {contexts.map((context, contextIndex) => (
+                {contexts.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No context types added yet.</p>
+                    <p className="text-sm mt-2">Click "Add Context Type" to add historical, political, biographical, or philosophical contexts.</p>
+                  </div>
+                ) : (
+                  contexts.map((context, contextIndex) => (
                   <Card key={contextIndex} className="border-l-4 border-l-indigo-500">
                     <CardHeader>
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-lg capitalize">{context.contextType} Context</CardTitle>
-                        {contexts.length > 1 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteContext(contextIndex)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteContext(contextIndex)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor={`context-type-${contextIndex}`}>Context Type</Label>
-                          <Input
-                            id={`context-type-${contextIndex}`}
+                          <Select
                             value={context.contextType}
-                            onChange={(e) => {
+                            onValueChange={(value) => {
                               const newContexts = [...contexts]
-                              newContexts[contextIndex].contextType = e.target.value
+                              newContexts[contextIndex].contextType = value
                               setContexts(newContexts)
                             }}
-                            placeholder="e.g., historical, political, social"
-                          />
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select context type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="historical">Historical</SelectItem>
+                              <SelectItem value="political">Political</SelectItem>
+                              <SelectItem value="biographical">Biographical</SelectItem>
+                              <SelectItem value="philosophical">Philosophical</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label htmlFor={`context-title-${contextIndex}`}>Title</Label>
@@ -806,7 +845,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                ))
+                )}
               </CardContent>
             </Card>
           </TabsContent>

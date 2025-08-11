@@ -78,7 +78,7 @@ export default function ContextPage({ params }: { params: Promise<{ textId: stri
                       <h3 className="text-xl font-semibold mb-3">{section.title}</h3>
                     )}
                     {section.content.map((paragraph, paragraphIndex) => (
-                      <p key={paragraphIndex}>
+                      <p key={paragraphIndex} className="mb-4">
                         {paragraph}
                       </p>
                     ))}

@@ -204,32 +204,20 @@ class DetailedBookService {
       .from('book_detailed_contexts')
       .select('*')
       .eq('book_id', bookId)
+      .order('created_at', { ascending: true })
 
     if (error) {
       console.error('Error fetching detailed contexts:', error)
-      return {
-        historical: { title: 'Historical Context', sections: [] },
-        political: { title: 'Political Context', sections: [] },
-        biographical: { title: 'Biographical Context', sections: [] },
-        philosophical: { title: 'Philosophical Context', sections: [] }
-      }
+      return []
     }
 
-    const contexts: any = {
-      historical: { title: 'Historical Context', sections: [] },
-      political: { title: 'Political Context', sections: [] },
-      biographical: { title: 'Biographical Context', sections: [] },
-      philosophical: { title: 'Philosophical Context', sections: [] }
-    }
-
-    data?.forEach((context: DetailedContext) => {
-      contexts[context.context_type] = {
-        title: context.title,
-        sections: context.sections
-      }
-    })
-
-    return contexts
+    // Return all contexts as an array instead of grouping by type
+    return data?.map((context: DetailedContext) => ({
+      id: context.id,
+      contextType: context.context_type,
+      title: context.title,
+      sections: context.sections
+    })) || []
   }
 
   // Get rubric connections for a book
@@ -374,20 +362,57 @@ class DetailedBookService {
   }
 
   // Admin methods for updating content
-  async updateDetailedContext(bookId: string, contextType: string, title: string, sections: any[]) {
+  async updateDetailedContext(bookId: string, contextType: string, title: string, sections: any[], contextId?: string) {
+    // Validate context type before saving
+    const validContextTypes = ['historical', 'political', 'biographical', 'philosophical']
+    if (!validContextTypes.includes(contextType)) {
+      const error = new Error(`Invalid context type: ${contextType}. Must be one of: ${validContextTypes.join(', ')}`)
+      console.error('Error updating detailed context:', error)
+      throw error
+    }
+
+    if (contextId) {
+      // Update existing context
+      const { error } = await supabase
+        .from('book_detailed_contexts')
+        .update({
+          context_type: contextType,
+          title: title,
+          sections: sections,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contextId)
+
+      if (error) {
+        console.error('Error updating detailed context:', error)
+        throw error
+      }
+    } else {
+      // Create new context
+      const { error } = await supabase
+        .from('book_detailed_contexts')
+        .insert({
+          book_id: bookId,
+          context_type: contextType,
+          title: title,
+          sections: sections
+        })
+
+      if (error) {
+        console.error('Error creating detailed context:', error)
+        throw error
+      }
+    }
+  }
+
+  async deleteDetailedContext(contextId: string) {
     const { error } = await supabase
       .from('book_detailed_contexts')
-      .upsert({
-        book_id: bookId,
-        context_type: contextType,
-        title: title,
-        sections: sections
-      }, {
-        onConflict: 'book_id,context_type'
-      })
+      .delete()
+      .eq('id', contextId)
 
     if (error) {
-      console.error('Error updating detailed context:', error)
+      console.error('Error deleting detailed context:', error)
       throw error
     }
   }
