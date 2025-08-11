@@ -103,6 +103,11 @@ function SignInForm() {
                 "Sign In"
               )}
             </Button>
+            <div className="text-center text-sm text-muted-foreground">
+              <Link href="/auth/forgot-password" className="text-primary hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
             <p className="text-sm text-center text-muted-foreground">
               Don't have an account?{" "}
               <Link href="/auth/signup" className="text-primary hover:underline">
