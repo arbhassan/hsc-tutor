@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Question and response are required" }, { status: 400 })
     }
 
-    const basePrompt = `You are an experienced HSC English teacher who is STRICT and CRITICAL in marking essays. You have high standards and only award high marks for genuinely sophisticated responses that demonstrate deep understanding and analysis.
+    const basePrompt = `You are an experienced HSC English teacher who provides fair and constructive marking. You maintain HSC standards while recognizing student effort and partial understanding.
 
 **Module:** ${module}
 **Question:** ${question}
@@ -50,71 +50,63 @@ export async function POST(request: NextRequest) {
 **Student Essay:**
 ${response}
 
-**CRITICAL EVALUATION REQUIRED:**
+**MARKING APPROACH:**
+Assess the essay fairly, looking for evidence of understanding and effort. Give credit for partial responses and attempts at analysis.
 
-**BE STRICT - Only award marks when the response demonstrates:**
+**Band Guidelines:**
 
-**Band 6 (17-20) - ONLY for exceptional responses that:**
-- Show sophisticated, perceptive understanding of text and module concepts
-- Provide sustained, sophisticated analysis of techniques and their effects
-- Present a compelling, nuanced argument that fully addresses the question
-- Use precise, varied expression with sophisticated vocabulary
-- Integrate textual evidence seamlessly with insightful analysis
+**Band 6 (17-20) - For exceptional responses:**
+- Sophisticated understanding of text and module concepts
+- Sustained, insightful analysis of techniques and effects
+- Compelling argument that fully addresses the question
+- Precise expression and sophisticated vocabulary
+- Seamless integration of textual evidence
 
-**Band 5 (13-16) - For solid responses that:**
-- Show clear understanding of text and module concepts
-- Provide effective analysis with some sophistication
-- Present a clear argument that addresses the question well
-- Use effective expression with appropriate vocabulary
-- Use relevant textual evidence with sound analysis
+**Band 5 (13-16) - For solid responses:**
+- Clear understanding of text and module concepts
+- Effective analysis with good insight
+- Clear argument addressing the question well
+- Effective expression and vocabulary
+- Relevant textual evidence with sound analysis
 
-**Band 4 (9-12) - For adequate responses that:**
-- Show satisfactory understanding with some gaps
-- Provide competent but basic analysis
-- Address the question but may lack depth
-- Use generally clear expression
-- Use some relevant textual evidence
+**Band 4 (9-12) - For adequate responses:**
+- Satisfactory understanding with some gaps
+- Competent basic analysis
+- Addresses the question reasonably
+- Generally clear expression
+- Some relevant textual evidence
 
-**Band 3 (5-8) - For basic responses that:**
-- Show basic understanding with significant gaps
-- Provide limited analysis, mostly identification
-- Partially address the question
-- Use simple expression with some clarity issues
-- Use minimal relevant textual evidence
+**Band 3 (5-8) - For basic responses:**
+- Basic understanding, may have gaps
+- Limited analysis, mostly identification
+- Partially addresses the question
+- Simple but understandable expression
+- Minimal but some relevant textual evidence
 
-**Band 2 (3-4) - For poor responses that:**
-- Show elementary understanding with major gaps
-- Provide very limited analysis
-- Poorly address the question
-- Use unclear, simple expression
-- Use little relevant textual evidence
+**Band 2 (3-4) - For developing responses:**
+- Elementary understanding with gaps
+- Very limited analysis
+- Attempts to address the question
+- Simple expression, may lack clarity
+- Little relevant textual evidence
 
-**Band 1 (1-2) - For very poor responses that:**
-- Show minimal or no understanding
-- Provide no real analysis
-- Fail to address the question adequately
-- Use very unclear expression
-- Use irrelevant or no textual evidence
+**Band 1 (1-2) - For minimal responses:**
+- Minimal understanding shown
+- Little to no analysis
+- Basic attempt to address question
+- Unclear expression
+- Minimal textual evidence
 
-**AUTOMATIC ZERO MARKS - NO EXCEPTIONS:**
-- Random words, gibberish, or nonsensical content (like "asdfasf", "random words", etc.)
-- Completely off-topic or irrelevant content
-- No evidence of having read any prescribed text
-- Copy-pasted generic content with no specific references
-- Single words or meaningless phrases
-- Text that shows zero comprehension of the question or module
-- Responses that could be written without reading any text
+**Zero marks only for:**
+- Complete gibberish or random letters
+- Completely blank responses
+- Responses entirely unrelated to the subject
 
-**IMPORTANT: Award ZERO marks immediately if the response is nonsensical, random, or shows no engagement with a prescribed text. Do not award even 1 mark for effort or length.**
-
-**IMPORTANT CHECKS:**
-1. Does the response actually address the specific question asked?
-2. Does it show genuine understanding of a prescribed text (with specific examples)?
-3. Are literary techniques correctly identified and analyzed (not just listed)?
-4. Is there actual analysis of HOW techniques create meaning?
-5. Does it engage meaningfully with the module concepts?
-
-If the answer to most of these is NO, the response should receive low marks.
+**IMPORTANT PRINCIPLES:**
+- Give credit for genuine attempts and effort
+- Look for what the student DOES understand
+- Provide encouraging feedback while identifying areas for growth
+- Consider that understanding can be shown in different ways
 
 **Marking Criteria Weightings:**
 - Understanding of text and module concepts: ${markingCriteria.understanding}%
@@ -124,17 +116,17 @@ If the answer to most of these is NO, the response should receive low marks.
 
 Please provide detailed feedback in the following JSON format:
 {
-  "totalMark": number (0 if nonsensical/random response, otherwise out of 20),
-  "band": number (1 for zero marks, 2-6 for actual responses),
+  "totalMark": number (out of 20, give credit for effort and partial understanding),
+  "band": number (1-6 based on response quality),
   "criteriaBreakdown": {
-    "understanding": { "mark": number (0 if no text understanding), "comment": "specific comment" },
-    "analysis": { "mark": number (0 if no analysis), "comment": "specific comment" },
-    "response": { "mark": number (0 if doesn't address question), "comment": "specific comment" },
-    "expression": { "mark": number (0 if nonsensical), "comment": "specific comment" }
+    "understanding": { "mark": number, "comment": "specific comment recognizing effort" },
+    "analysis": { "mark": number, "comment": "specific comment" },
+    "response": { "mark": number, "comment": "specific comment" },
+    "expression": { "mark": number, "comment": "specific comment" }
   },
-  "strengths": ["strength1", "strength2"] (empty array if zero marks),
+  "strengths": ["strength1", "strength2"],
   "improvements": ["improvement1", "improvement2", "improvement3", "improvement4"],
-  "overallComment": "2-3 sentence overall assessment - be specific about zero marks",
+  "overallComment": "2-3 sentence overall assessment that is encouraging while identifying growth areas",
   "suggestedQuotes": [
     {"quote": "suggested quote", "explanation": "how this could strengthen the argument"},
     {"quote": "another quote", "explanation": "how this could be used"}
@@ -142,7 +134,7 @@ Please provide detailed feedback in the following JSON format:
   "nextSteps": ["specific practice recommendation 1", "specific practice recommendation 2"]
 }
 
-**REMINDER: Award 0 marks for responses like "asdfasf", random words, or any response showing no prescribed text engagement.**`
+**Remember: Be fair and encouraging. Look for evidence of learning and give credit where due.**`
 
     const finalPrompt = customPrompt || basePrompt
 
@@ -151,7 +143,7 @@ Please provide detailed feedback in the following JSON format:
           messages: [
             {
               role: "system",
-              content: "You are an expert HSC English teacher who is EXTREMELY STRICT and UNCOMPROMISING in your marking standards. You award ZERO marks without hesitation for random words, gibberish, or any response showing the student didn't read a prescribed text. You have over 15 years of experience identifying poor responses. Examples that get ZERO marks: 'asdfasf', 'random words', generic content with no text-specific references, responses that could be written without reading any prescribed text. You only award marks when students demonstrate genuine understanding of a specific prescribed text. You maintain the highest HSC standards with zero tolerance for nonsensical responses.",
+              content: "You are an experienced HSC English teacher who is fair and constructive in your marking. You maintain appropriate standards while recognizing student effort and partial understanding. You give credit where it's due and provide encouraging feedback that helps students improve. You look for evidence of learning and understanding, even if it's not perfect. You only award zero marks for truly nonsensical responses and always try to find something positive to build on.",
             },
             {
               role: "user",
@@ -167,23 +159,23 @@ Please provide detailed feedback in the following JSON format:
       
       // Validate and provide fallback data if parsing fails
       const validatedResult = {
-        totalMark: markingResult.totalMark || 0, // Zero marks for nonsensical responses
-        band: markingResult.band || 1,
+        totalMark: markingResult.totalMark || 3, // Give some marks for attempting the essay
+        band: markingResult.band || 2,
         criteriaBreakdown: markingResult.criteriaBreakdown || {
-          understanding: { mark: 0, comment: "No evidence of understanding any prescribed text or module concepts" },
-          analysis: { mark: 0, comment: "No analysis present, appears to be random or nonsensical content" },
-          response: { mark: 0, comment: "Does not address the question in any meaningful way" },
-          expression: { mark: 0, comment: "Unclear, nonsensical, or random content" }
+          understanding: { mark: 1, comment: "Shows some attempt to engage with the text or topic" },
+          analysis: { mark: 1, comment: "Basic attempt at analysis, could be developed further" },
+          response: { mark: 1, comment: "Makes some attempt to address the question" },
+          expression: { mark: 0, comment: "Expression could be clearer and more structured" }
         },
-        strengths: markingResult.strengths || [],
+        strengths: markingResult.strengths || ["Attempted the essay task", "Shows some engagement with the topic"],
         improvements: markingResult.improvements || [
-          "Must read and understand a prescribed text for the Common Module",
-          "Response must contain actual content related to the question",
-          "Needs to demonstrate basic essay writing skills",
-          "Must engage with the specific question asked",
-          "Requires evidence of having studied HSC English texts"
+          "Focus on reading and understanding your prescribed text more deeply",
+          "Practice identifying and analyzing specific literary techniques",
+          "Work on developing clearer thesis statements",
+          "Use more specific textual evidence to support your points",
+          "Practice essay structure with clear introduction, body, and conclusion"
         ],
-        overallComment: markingResult.overallComment || "This response shows no evidence of understanding the question, any prescribed text, or basic essay writing. Zero marks awarded for complete lack of engagement with the task.",
+        overallComment: markingResult.overallComment || "This response shows some attempt to engage with the essay task. With more focus on textual analysis and clearer expression, you can improve significantly.",
         suggestedQuotes: markingResult.suggestedQuotes || [
           {
             quote: "Consider including more specific textual evidence",
@@ -205,23 +197,23 @@ Please provide detailed feedback in the following JSON format:
       
       // Provide fallback marking result
       const fallbackResult = {
-        totalMark: 0,
-        band: 1,
+        totalMark: 3,
+        band: 2,
         criteriaBreakdown: {
-          understanding: { mark: 0, comment: "No evidence of understanding any prescribed text or module concepts" },
-          analysis: { mark: 0, comment: "No analysis present, appears to be random or nonsensical content" },
-          response: { mark: 0, comment: "Does not address the question in any meaningful way" },
-          expression: { mark: 0, comment: "Unclear, nonsensical, or random content that shows no essay writing ability" }
+          understanding: { mark: 1, comment: "Shows some attempt to engage with the text or topic" },
+          analysis: { mark: 1, comment: "Basic attempt at analysis, could be developed further" },
+          response: { mark: 1, comment: "Makes some attempt to address the question" },
+          expression: { mark: 0, comment: "Expression could be clearer and more structured" }
         },
-        strengths: [],
+        strengths: ["Attempted the essay task", "Shows some engagement with the topic"],
         improvements: [
-          "Must read and understand a prescribed text for the Common Module",
-          "Response must contain actual content related to the question",
-          "Needs to demonstrate basic essay writing skills",
-          "Must engage with the specific question asked",
-          "Requires evidence of having studied HSC English texts"
+          "Focus on reading and understanding your prescribed text more deeply",
+          "Practice identifying and analyzing specific literary techniques",
+          "Work on developing clearer thesis statements",
+          "Use more specific textual evidence to support your points",
+          "Practice essay structure with clear introduction, body, and conclusion"
         ],
-        overallComment: "This response shows no evidence of understanding the question, any prescribed text, or basic essay writing skills. Zero marks awarded for complete lack of engagement with the HSC English task.",
+        overallComment: "This response shows some attempt to engage with the essay task. With more focus on textual analysis and clearer expression, you can improve significantly.",
         suggestedQuotes: [
           {
             quote: "Consider incorporating quotes that directly relate to the module focus",
