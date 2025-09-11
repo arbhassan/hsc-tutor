@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 import { use, useEffect, useState } from "react"
 import { getBookData, BookData } from "@/lib/data/book-data"
+import { SlideNavigation, SlideData } from "@/components/ui/slide-navigation"
 
 export default function ThemesRubricPage({ params }: { params: Promise<{ textId: string }> }) {
   const { textId } = use(params)
@@ -53,40 +53,39 @@ export default function ThemesRubricPage({ params }: { params: Promise<{ textId:
     )
   }
 
-  return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b bg-white">
-        <div className="container mx-auto px-6 py-6">
-          <Link href={`/knowledge-bank/text-mastery/${textId}`} className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
-            <ArrowLeft size={20} />
-            Back to {text.title}
-          </Link>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Themes and HSC Rubric Connections</h1>
-
-        <div className="space-y-12">
-          {Object.entries(text.detailedRubricConnections).map(([key, rubricSection]) => (
-            <section key={key}>
-              <h2 className="text-2xl font-bold text-green-700 mb-4">{rubricSection.title}</h2>
-              <div className="prose prose-lg max-w-none">
-                {rubricSection.subsections.map((subsection, subsectionIndex) => (
-                  <div key={subsectionIndex}>
-                    <h3 className="text-xl font-semibold mb-3 mt-6">{subsection.title}</h3>
-                    {subsection.content.map((paragraph, paragraphIndex) => (
-                      <p key={paragraphIndex}>
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+  // Convert detailedRubricConnections to slides
+  const slides: SlideData[] = Object.entries(text.detailedRubricConnections).map(([key, rubricSection], index) => ({
+    id: key,
+    title: rubricSection.title,
+    badge: `Theme ${index + 1}`,
+    content: (
+      <div className="space-y-6">
+        {rubricSection.subsections.map((subsection, subsectionIndex) => (
+          <div key={subsectionIndex}>
+            <h3 className="text-xl font-semibold mb-3 text-green-700">{subsection.title}</h3>
+            <div className="space-y-4">
+              {subsection.content.map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex} className="text-gray-700 leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+    )
+  }))
+
+  return (
+    <SlideNavigation
+      slides={slides}
+      title="Themes and HSC Rubric Connections"
+      subtitle={text.title}
+      headerColor="green"
+      backLink={{
+        href: `/knowledge-bank/text-mastery/${textId}`,
+        text: `Back to ${text.title}`
+      }}
+    />
   )
 } 

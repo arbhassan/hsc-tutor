@@ -2,8 +2,8 @@
 
 import { use, useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 import { getBookData, BookData } from "@/lib/data/book-data"
+import { SlideNavigation, SlideData } from "@/components/ui/slide-navigation"
 
 export default function ContextPage({ params }: { params: Promise<{ textId: string }> }) {
   const { textId } = use(params)
@@ -53,42 +53,41 @@ export default function ContextPage({ params }: { params: Promise<{ textId: stri
     )
   }
 
-  return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b bg-white">
-        <div className="container mx-auto px-6 py-6">
-          <Link href={`/knowledge-bank/text-mastery/${textId}`} className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
-            <ArrowLeft size={20} />
-            Back to {text.title}
-          </Link>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Context Analysis</h1>
-
-        <div className="space-y-12">
-          {Object.entries(text.detailedContexts).map(([key, context]) => (
-            <section key={key}>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">{context.title}</h2>
-              <div className="prose prose-lg max-w-none">
-                {context.sections.map((section, sectionIndex) => (
-                  <div key={sectionIndex}>
-                    {section.title && (
-                      <h3 className="text-xl font-semibold mb-3">{section.title}</h3>
-                    )}
-                    {section.content.map((paragraph, paragraphIndex) => (
-                      <p key={paragraphIndex} className="mb-4">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+  // Convert detailedContexts to slides
+  const slides: SlideData[] = Object.entries(text.detailedContexts).map(([key, context], index) => ({
+    id: key,
+    title: context.title,
+    badge: `Context ${index + 1}`,
+    content: (
+      <div className="space-y-6">
+        {context.sections.map((section, sectionIndex) => (
+          <div key={sectionIndex}>
+            {section.title && (
+              <h3 className="text-xl font-semibold mb-3 text-blue-700">{section.title}</h3>
+            )}
+            <div className="space-y-4">
+              {section.content.map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex} className="text-gray-700 leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+    )
+  }))
+
+  return (
+    <SlideNavigation
+      slides={slides}
+      title="Context Analysis"
+      subtitle={text.title}
+      headerColor="blue"
+      backLink={{
+        href: `/knowledge-bank/text-mastery/${textId}`,
+        text: `Back to ${text.title}`
+      }}
+    />
   )
 } 

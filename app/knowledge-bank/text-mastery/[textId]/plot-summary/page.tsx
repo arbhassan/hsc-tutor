@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 import { use, useEffect, useState } from "react"
 import { getBookData, BookData } from "@/lib/data/book-data"
+import { SlideNavigation, SlideData } from "@/components/ui/slide-navigation"
 
 export default function PlotSummaryPage({ params }: { params: Promise<{ textId: string }> }) {
   const { textId } = use(params)
@@ -53,45 +53,50 @@ export default function PlotSummaryPage({ params }: { params: Promise<{ textId: 
     )
   }
 
-  return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b bg-white">
-        <div className="container mx-auto px-6 py-6">
-          <Link href={`/knowledge-bank/text-mastery/${textId}`} className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
-            <ArrowLeft size={20} />
-            Back to {text.title}
-          </Link>
-        </div>
-      </header>
+  // Convert plot summary parts to slides
+  const slides: SlideData[] = text.plotSummary.parts.map((part, partIndex) => ({
+    id: `part-${partIndex}`,
+    title: part.title,
+    badge: `Part ${partIndex + 1}`,
+    content: (
+      <div className="space-y-6">
+        {part.description && (
+          <div className="bg-orange-50 p-4 rounded-lg border-l-4 border-orange-400">
+            <p className="text-orange-800 italic">{part.description}</p>
+          </div>
+        )}
 
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Plot Summary and Analysis</h1>
-
-        <div className="space-y-12">
-          {text.plotSummary.parts.map((part, partIndex) => (
-            <section key={partIndex}>
-              <h2 className="text-2xl font-bold text-orange-700 mb-6">{part.title}</h2>
-              {part.description && (
-                <p className="text-gray-600 mb-6 italic">{part.description}</p>
-              )}
-
-              <div className="space-y-8">
-                {part.chapters.map((chapter, chapterIndex) => (
-                  <div key={chapterIndex}>
-                    <h3 className="text-xl font-semibold mb-3">{chapter.title}</h3>
-                    <p className="text-gray-700 mb-3">
-                      {chapter.summary}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>Significance:</strong> {chapter.significance}
-                    </p>
-                  </div>
-                ))}
+        <div className="space-y-8">
+          {part.chapters.map((chapter, chapterIndex) => (
+            <div key={chapterIndex} className="border-l-2 border-orange-200 pl-6">
+              <h3 className="text-xl font-semibold mb-3 text-orange-700">{chapter.title}</h3>
+              <div className="space-y-3">
+                <p className="text-gray-700 leading-relaxed">
+                  {chapter.summary}
+                </p>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    <strong className="text-orange-600">Significance:</strong> {chapter.significance}
+                  </p>
+                </div>
               </div>
-            </section>
+            </div>
           ))}
         </div>
       </div>
-    </div>
+    )
+  }))
+
+  return (
+    <SlideNavigation
+      slides={slides}
+      title="Plot Summary and Analysis"
+      subtitle={text.title}
+      headerColor="orange"
+      backLink={{
+        href: `/knowledge-bank/text-mastery/${textId}`,
+        text: `Back to ${text.title}`
+      }}
+    />
   )
 }

@@ -83,53 +83,6 @@ export default function TextMasteryPage() {
           </Card>
         </div>
 
-        {/* Features Grid */}
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-xl font-semibold mb-6 text-center">What You Can Do</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BookOpen className="mr-2 h-5 w-5" />
-                  Context Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Get comprehensive summaries of key contexts, themes, and background information.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Star className="mr-2 h-5 w-5" />
-                  Quote Bank
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Explore important quotes organized by themes and literary techniques.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="mr-2 h-5 w-5" />
-                  Character Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Deep dive into character development, motivations, and relationships.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
 
         
       </div>

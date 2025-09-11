@@ -834,6 +834,7 @@ function InteractiveEssayBuilderContent() {
     { name: "Thesis Statement", description: "State your main argument that directly answers the question" },
     { name: "Context", description: "Provide relevant background about the text and author" },
     { name: "Points Preview", description: "Outline the key points you will use to prove your thesis" },
+    { name: "Final Answer", description: "Clearly state your direct answer to the question in one or two sentences" },
   ]
 
   // PETAL steps - single comprehensive paragraph
@@ -1052,7 +1053,7 @@ function InteractiveEssayBuilderContent() {
 
         {/* Main Content Area */}
         {selectedText && currentQuestion && !currentQuestion.includes("being prepared") ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Left Column - Resources and Instructions */}
             <div className="lg:col-span-1 space-y-4">
               {/* Quote Card - Only show for body paragraphs */}
@@ -1186,46 +1187,10 @@ function InteractiveEssayBuilderContent() {
                 </CardContent>
               </Card>
 
-              {/* AI Tips Card */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Sparkles className="h-4 w-4 text-primary mr-2" />
-                      <CardTitle className="text-sm">Writing Tips</CardTitle>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={getAiTip}
-                      disabled={isLoadingTip}
-                      className="h-8 w-8 p-0"
-                    >
-                      {isLoadingTip ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
-                    {isLoadingTip ? (
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                        <p className="text-sm text-blue-700">Getting tips...</p>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-blue-700">{aiTip || "Tips will appear here to help you with the current step."}</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
-            {/* Right Column - Writing Area */}
-            <div className="lg:col-span-2">
+            {/* Center Column - Writing Area */}
+            <div className="md:col-span-2 lg:col-span-2">
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex justify-between items-center mb-4">
@@ -1439,6 +1404,45 @@ function InteractiveEssayBuilderContent() {
                       return content?.trim()
                     }) && (
                       <p className="text-sm text-muted-foreground">Your essay component will appear here as you complete each step...</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Writing Tips */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Sparkles className="h-4 w-4 text-primary mr-2" />
+                      <CardTitle className="text-sm">Writing Tips</CardTitle>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={getAiTip}
+                      disabled={isLoadingTip}
+                      className="h-8 w-8 p-0"
+                    >
+                      {isLoadingTip ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+                    {isLoadingTip ? (
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <p className="text-sm text-blue-700">Getting tips...</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-blue-700">{aiTip || "Tips will appear here to help you with the current step."}</p>
                     )}
                   </div>
                 </CardContent>

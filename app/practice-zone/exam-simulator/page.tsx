@@ -416,6 +416,33 @@ export default function ExamSimulatorPage() {
     }
   }
 
+  const handlePrevText = () => {
+    if (currentTextIndex > 0) {
+      setCurrentTextIndex(currentTextIndex - 1)
+      setCurrentQuestionIndex(0)
+    }
+  }
+
+  const handleNextText = () => {
+    if (currentTextIndex < unseenTexts.length - 1) {
+      setCurrentTextIndex(currentTextIndex + 1)
+      setCurrentQuestionIndex(0)
+    }
+  }
+
+  const handlePrevQuestionOnly = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1)
+    }
+  }
+
+  const handleNextQuestionOnly = () => {
+    const currentText = unseenTexts[currentTextIndex]
+    if (currentQuestionIndex < currentText.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1)
+    }
+  }
+
   const navigateToQuestion = (textIndex, questionIndex) => {
     setCurrentTextIndex(textIndex)
     setCurrentQuestionIndex(questionIndex)
@@ -977,7 +1004,7 @@ export default function ExamSimulatorPage() {
             <div className="flex items-center space-x-4">
               <span className="font-medium">Section I: Unseen Texts</span>
               <span className="text-sm text-muted-foreground">
-                Question {currentQuestionIndex + 1} of {currentText.questions.length}
+                Text {currentTextIndex + 1} Question {currentQuestionIndex + 1} of {currentText.questions.length}
               </span>
               {/* Autosave indicator */}
               {autoSaveStatus && (
@@ -1085,8 +1112,33 @@ export default function ExamSimulatorPage() {
                 )}
               </div>
 
-              <div className="text-sm text-muted-foreground mb-8">
+              <div className="text-sm text-muted-foreground mb-6">
                 Source: {currentText.source} by {currentText.author}
+              </div>
+
+              {/* Text Navigation */}
+              <div className="flex justify-between mb-8">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevText}
+                  disabled={currentTextIndex === 0 || remainingTime <= 0 || examSubmitted}
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Previous Text
+                </Button>
+                
+                <span className="text-sm text-muted-foreground self-center">
+                  Text {currentTextIndex + 1} of {unseenTexts.length}
+                </span>
+
+                <Button
+                  variant="outline"
+                  onClick={handleNextText}
+                  disabled={currentTextIndex === unseenTexts.length - 1 || remainingTime <= 0 || examSubmitted}
+                >
+                  Next Text
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -1096,7 +1148,7 @@ export default function ExamSimulatorPage() {
             <div className="max-w-2xl mx-auto">
               <div className="bg-muted p-4 rounded-lg mb-6">
                 <div className="flex justify-between mb-2">
-                  <h3 className="font-medium">Question {currentQuestionIndex + 1}</h3>
+                  <h3 className="font-medium">Text {currentTextIndex + 1} Question {currentQuestionIndex + 1}</h3>
                   <span className="text-sm text-muted-foreground">{currentQuestion.marks} marks</span>
                 </div>
                 <p>{currentQuestion.text}</p>
@@ -1113,11 +1165,12 @@ export default function ExamSimulatorPage() {
                 />
               </div>
 
+              {/* Question Navigation */}
               <div className="flex justify-between">
                 <Button
                   variant="outline"
-                  onClick={handlePrevQuestion}
-                  disabled={currentTextIndex === 0 && currentQuestionIndex === 0 || remainingTime <= 0 || examSubmitted}
+                  onClick={handlePrevQuestionOnly}
+                  disabled={currentQuestionIndex === 0 || remainingTime <= 0 || examSubmitted}
                 >
                   <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous Question
@@ -1133,8 +1186,8 @@ export default function ExamSimulatorPage() {
                   </Button>
                 ) : (
                   <Button 
-                    onClick={handleNextQuestion}
-                    disabled={remainingTime <= 0 || examSubmitted}
+                    onClick={handleNextQuestionOnly}
+                    disabled={currentQuestionIndex === currentText.questions.length - 1 || remainingTime <= 0 || examSubmitted}
                   >
                     Next Question
                     <ChevronRight className="ml-1 h-4 w-4" />

@@ -23,7 +23,10 @@ import {
   Sparkles,
   Check,
   Send,
-  AlertCircle
+  AlertCircle,
+  PanelLeft,
+  PanelRight,
+  ChevronLeft
 } from "lucide-react"
 import EssayGradingModal from "@/components/ui/essay-grading-modal"
 
@@ -105,12 +108,14 @@ export default function EssayMode() {
   const [timerRunning, setTimerRunning] = useState(false)
   const [savedDraft, setSavedDraft] = useState(false)
   const [aiFeedback, setAiFeedback] = useState([])
-  const [showAiFeedback, setShowAiFeedback] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [lastAnalyzedContent, setLastAnalyzedContent] = useState("")
   const [showGradingModal, setShowGradingModal] = useState(false)
   const [quotes, setQuotes] = useState<DatabaseQuote[]>([])
   const [quotesLoading, setQuotesLoading] = useState(false)
+  const [showQuoteBank, setShowQuoteBank] = useState(false)
+  const [showStructureGuide, setShowStructureGuide] = useState(false)
+  const [showWritingAssistant, setShowWritingAssistant] = useState(false)
 
   // Check if user has selected a book
   useEffect(() => {
@@ -149,6 +154,23 @@ export default function EssayMode() {
       loadQuotes()
     }
   }, [selectedBook])
+
+  // Load sidebar preferences from localStorage
+  useEffect(() => {
+    const savedQuoteBankPref = localStorage.getItem("showQuoteBank")
+    const savedStructureGuidePref = localStorage.getItem("showStructureGuide")
+    const savedWritingAssistantPref = localStorage.getItem("showWritingAssistant")
+    
+    if (savedQuoteBankPref !== null) {
+      setShowQuoteBank(JSON.parse(savedQuoteBankPref))
+    }
+    if (savedStructureGuidePref !== null) {
+      setShowStructureGuide(JSON.parse(savedStructureGuidePref))
+    }
+    if (savedWritingAssistantPref !== null) {
+      setShowWritingAssistant(JSON.parse(savedWritingAssistantPref))
+    }
+  }, [])
 
   // Check for saved draft and restore stage on page refresh
   useEffect(() => {
@@ -865,7 +887,8 @@ export default function EssayMode() {
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       {/* Left sidebar - Quote Bank */}
-      <div className="w-80 border-r bg-muted/30 overflow-hidden flex flex-col">
+      {showQuoteBank && (
+        <div className="w-80 border-r bg-muted/30 overflow-hidden flex flex-col">
         <div className="p-4 border-b bg-background">
           <h2 className="text-xl font-semibold flex items-center">
             <FileText size={18} className="mr-2" /> Quote Bank
@@ -952,20 +975,26 @@ export default function EssayMode() {
           )}
         </ScrollArea>
 
-        {/* Theme and question display */}
-        <div className="p-4 border-t bg-background">
-          <div className="space-y-2 mb-3">
-            <Badge variant="outline">Book: {selectedBook?.title}</Badge>
-          </div>
-          <h3 className="font-medium mb-2">Essay Question</h3>
-          <p className="text-sm text-muted-foreground">{selectedQuestion}</p>
         </div>
-      </div>
+      )}
 
               {/* Main content - Essay writing area with feedback */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center">
-          <div>
+          <div className="flex items-center space-x-2">
+            <Button 
+              size="sm" 
+              variant={showQuoteBank ? "default" : "outline"}
+              onClick={() => {
+                const newState = !showQuoteBank
+                setShowQuoteBank(newState)
+                localStorage.setItem("showQuoteBank", JSON.stringify(newState))
+              }}
+              className="flex items-center"
+            >
+              <PanelLeft size={16} className="mr-1" />
+              Quote Bank
+            </Button>
             <h2 className="text-xl font-bold">{selectedBook?.title} Essay</h2>
           </div>
           <div className="flex items-center space-x-2">
@@ -976,77 +1005,77 @@ export default function EssayMode() {
             <Button size="sm" variant={timerRunning ? "outline" : "default"} onClick={handleTimer}>
               {timerRunning ? "Pause Timer" : "Start Timer"}
             </Button>
+            <Button 
+              size="sm" 
+              variant={showWritingAssistant ? "default" : "outline"}
+              onClick={() => {
+                const newState = !showWritingAssistant
+                setShowWritingAssistant(newState)
+                localStorage.setItem("showWritingAssistant", JSON.stringify(newState))
+              }}
+              className="flex items-center"
+            >
+              <MessageCircle size={16} className="mr-1" />
+              Writing Assistant
+            </Button>
+            <Button 
+              size="sm" 
+              variant={showStructureGuide ? "default" : "outline"}
+              onClick={() => {
+                const newState = !showStructureGuide
+                setShowStructureGuide(newState)
+                localStorage.setItem("showStructureGuide", JSON.stringify(newState))
+              }}
+              className="flex items-center"
+            >
+              Structure Guide
+              <PanelRight size={16} className="ml-1" />
+            </Button>
           </div>
         </div>
 
-        {/* Feedback Tab */}
-        {showAiFeedback && (
-          <div className="bg-blue-50 border-b p-3">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium flex items-center text-blue-700">
-                <MessageCircle size={16} className="mr-2" />
-                Writing Assistant
-                {isAnalyzing && <RefreshCw size={14} className="ml-2 animate-spin" />}
-              </h3>
-              <div className="flex items-center space-x-2">
-                <Button size="sm" variant="ghost" onClick={clearAiFeedback}>
-                  Clear All
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowAiFeedback(false)}>
-                  <X size={14} />
-                </Button>
+        {/* Essay Question and Analysis */}
+        <div className="bg-slate-50 border-b p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium flex items-center text-slate-700">
+              <FileText size={16} className="mr-2" />
+              Essay Question & Analysis
+            </h3>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Essay Question */}
+            <div>
+              <h4 className="font-medium text-sm mb-2">Your Question:</h4>
+              <div className="bg-white p-3 rounded-md border">
+                <p className="text-sm font-medium">{selectedQuestion}</p>
               </div>
             </div>
-            
-            <ScrollArea className="h-32">
-              {aiFeedback.length === 0 ? (
-                <p className="text-sm text-blue-600">Start writing to get feedback on your essay structure and content...</p>
-              ) : (
-                <div className="space-y-2">
-                  {aiFeedback.slice(-6).map((feedback) => (
-                    <Alert key={feedback.id} className={`py-2 ${
-                      feedback.priority === 'high' ? 'border-red-200 bg-red-50' :
-                      feedback.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                      'border-green-200 bg-green-50'
-                    }`}>
-                      <AlertDescription className="text-xs flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant={
-                                feedback.type === 'strength' ? 'default' :
-                                feedback.type === 'missing' ? 'destructive' :
-                                'secondary'
-                              }
-                              className="text-xs px-1 py-0"
-                            >
-                              {feedback.section}
-                            </Badge>
-                            {feedback.priority === 'high' && (
-                              <Badge variant="destructive" className="text-xs px-1 py-0">
-                                High Priority
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="mt-1 text-sm">{feedback.message}</p>
-                          <span className="text-muted-foreground text-xs">({feedback.timestamp})</span>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-4 w-4 p-0 ml-2"
-                          onClick={() => dismissFeedback(feedback.id)}
-                        >
-                          <X size={12} />
-                        </Button>
-                      </AlertDescription>
-                    </Alert>
-                  ))}
+
+            {/* Question Analysis */}
+            <div>
+              <h4 className="font-medium text-sm mb-2">Question Analysis:</h4>
+              <div className="bg-white p-3 rounded-md border">
+                <p className="text-sm mb-2">Break down the question:</p>
+                <div className="bg-slate-50 p-3 rounded-md text-sm mb-3">
+                  <p className="font-medium">{selectedQuestion}</p>
                 </div>
-              )}
-            </ScrollArea>
+                <ul className="space-y-1 text-xs">
+                  {selectedQuestion.includes("How") && <li>• Focus on methods, techniques, and processes</li>}
+                  {selectedQuestion.includes("Explore") && <li>• Investigate multiple aspects or interpretations</li>}
+                  {selectedQuestion.includes("To what extent") && (
+                    <li>• Consider the degree or limits of the statement</li>
+                  )}
+                  {selectedQuestion.includes("Analyze") && <li>• Examine components and their relationships</li>}
+                  {selectedQuestion.includes("Compare") && <li>• Show similarities and differences</li>}
+                  {selectedQuestion.includes("Discuss") && <li>• Present multiple viewpoints and arguments</li>}
+                  {selectedQuestion.includes("Evaluate") && <li>• Make judgments based on criteria and evidence</li>}
+                  {selectedQuestion.includes("Assess") && <li>• Weigh up the importance or value of something</li>}
+                </ul>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
         <div className="flex-1 overflow-auto p-4">
           <Textarea
@@ -1079,12 +1108,6 @@ export default function EssayMode() {
             </p>
           </div>
           <div className="flex space-x-2">
-            {!showAiFeedback && (
-              <Button size="sm" variant="outline" onClick={() => setShowAiFeedback(true)}>
-                <MessageCircle size={14} className="mr-1" />
-                Show Feedback
-              </Button>
-            )}
             <Button 
               onClick={handleSubmitEssay} 
               className="flex items-center"
@@ -1097,109 +1120,187 @@ export default function EssayMode() {
         </div>
       </div>
 
-      {/* Right sidebar - Essay Structure Guide */}
-      <div className="w-80 border-l bg-muted/30 overflow-hidden flex flex-col">
-        <div className="p-4 border-b bg-background">
-          <h2 className="text-xl font-semibold">Essay Structure Guide</h2>
-          <p className="text-sm text-muted-foreground mt-1">How to structure your essay and analyze the question</p>
-        </div>
-
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-medium mb-2">Introduction</h3>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Begin with a contextual statement about the text</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Present your thesis statement that directly addresses the question</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Outline your main arguments (3-4 points)</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Establish the significance of your argument</span>
-                </li>
-              </ul>
+      {/* Right sidebar - Writing Assistant and Structure Guide */}
+      {(showWritingAssistant || showStructureGuide) && (
+        <div className="w-80 border-l bg-muted/30 overflow-hidden flex flex-col">
+          
+          {/* Tabs for switching between Writing Assistant and Structure Guide */}
+          <Tabs defaultValue={showWritingAssistant ? "assistant" : "structure"} className="h-full flex flex-col">
+            <div className="p-4 border-b bg-background">
+              <TabsList className={`grid w-full ${(showWritingAssistant && showStructureGuide) ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {showWritingAssistant && (
+                  <TabsTrigger value="assistant" className="text-xs">
+                    <MessageCircle size={14} className="mr-1" />
+                    Assistant
+                  </TabsTrigger>
+                )}
+                {showStructureGuide && (
+                  <TabsTrigger value="structure" className="text-xs">
+                    <FileText size={14} className="mr-1" />
+                    Structure
+                  </TabsTrigger>
+                )}
+              </TabsList>
             </div>
 
-            <Separator />
-
-            <div>
-              <h3 className="font-medium mb-2">Body Paragraphs</h3>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Start with a clear topic sentence that connects to your thesis</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Present textual evidence (quotes) that supports your point</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Analyze the evidence by discussing techniques and their effects</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Explain how this supports your overall argument</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Link back to the question</span>
-                </li>
-              </ul>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h3 className="font-medium mb-2">Conclusion</h3>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Restate your thesis in different words</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Summarize your key arguments</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Discuss the broader significance of your analysis</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>End with a thoughtful final statement</span>
-                </li>
-              </ul>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h3 className="font-medium mb-2">Question Analysis</h3>
-              <p className="text-sm mb-2">Break down the question:</p>
-              <div className="bg-background p-3 rounded-md text-sm">
-                <p className="font-medium">{selectedQuestion}</p>
-                <ul className="mt-2 space-y-1 text-xs">
-                  {selectedQuestion.includes("How") && <li>• Focus on methods, techniques, and processes</li>}
-                  {selectedQuestion.includes("Explore") && <li>• Investigate multiple aspects or interpretations</li>}
-                  {selectedQuestion.includes("To what extent") && (
-                    <li>• Consider the degree or limits of the statement</li>
+            {/* Writing Assistant Tab */}
+            {showWritingAssistant && (
+              <TabsContent value="assistant" className="flex-1 overflow-hidden flex flex-col m-0">
+                <div className="p-4 border-b bg-background">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium flex items-center text-blue-700">
+                      <MessageCircle size={16} className="mr-2" />
+                      Writing Assistant
+                      {isAnalyzing && <RefreshCw size={14} className="ml-2 animate-spin" />}
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <Button size="sm" variant="ghost" onClick={clearAiFeedback}>
+                        Clear All
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <ScrollArea className="flex-1 p-4">
+                  {aiFeedback.length === 0 ? (
+                    <p className="text-sm text-blue-600">Start writing to get feedback on your essay structure and content...</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {aiFeedback.slice(-6).map((feedback) => (
+                        <Alert key={feedback.id} className={`py-2 ${
+                          feedback.priority === 'high' ? 'border-red-200 bg-red-50' :
+                          feedback.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
+                          'border-green-200 bg-green-50'
+                        }`}>
+                          <AlertDescription className="text-xs flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge 
+                                  variant={
+                                    feedback.type === 'strength' ? 'default' :
+                                    feedback.type === 'missing' ? 'destructive' :
+                                    'secondary'
+                                  }
+                                  className="text-xs px-1 py-0"
+                                >
+                                  {feedback.section}
+                                </Badge>
+                                {feedback.priority === 'high' && (
+                                  <Badge variant="destructive" className="text-xs px-1 py-0">
+                                    High Priority
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm">{feedback.message}</p>
+                              <span className="text-muted-foreground text-xs">({feedback.timestamp})</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-4 w-4 p-0 ml-2"
+                              onClick={() => dismissFeedback(feedback.id)}
+                            >
+                              <X size={12} />
+                            </Button>
+                          </AlertDescription>
+                        </Alert>
+                      ))}
+                    </div>
                   )}
-                  {selectedQuestion.includes("Analyze") && <li>• Examine components and their relationships</li>}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-      </div>
+                </ScrollArea>
+              </TabsContent>
+            )}
+
+            {/* Structure Guide Tab */}
+            {showStructureGuide && (
+              <TabsContent value="structure" className="flex-1 overflow-hidden flex flex-col m-0">
+                <div className="p-4 border-b bg-background">
+                  <h3 className="font-medium">Essay Structure Guide</h3>
+                  <p className="text-sm text-muted-foreground mt-1">How to structure your essay effectively</p>
+                </div>
+
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-medium mb-2">Introduction</h3>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Begin with a contextual statement about the text</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Present your thesis statement that directly addresses the question</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Outline your main arguments (3-4 points)</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Establish the significance of your argument</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <h3 className="font-medium mb-2">Body Paragraphs</h3>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Start with a clear topic sentence that connects to your thesis</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Present textual evidence (quotes) that supports your point</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Analyze the evidence by discussing techniques and their effects</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Explain how this supports your overall argument</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Link back to the question</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <Separator />
+
+                    <div>
+                      <h3 className="font-medium mb-2">Conclusion</h3>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Restate your thesis in different words</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Summarize your key arguments</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>Discuss the broader significance of your analysis</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>End with a thoughtful final statement</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            )}
+          </Tabs>
+        </div>
+      )}
 
       {/* Essay Grading Modal */}
       <EssayGradingModal

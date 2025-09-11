@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 import { use, useEffect, useState } from "react"
 import { getBookData, BookData } from "@/lib/data/book-data"
+import { SlideNavigation, SlideData } from "@/components/ui/slide-navigation"
 
 export default function EssayGuidePage({ params }: { params: Promise<{ textId: string }> }) {
   const { textId } = use(params)
@@ -53,112 +53,157 @@ export default function EssayGuidePage({ params }: { params: Promise<{ textId: s
     )
   }
 
+  // Convert essay guide sections to slides
+  const slides: SlideData[] = [
+    // Structure slide
+    {
+      id: 'structure',
+      title: text.essayGuide.structure.title,
+      badge: 'Guide 1',
+      content: (
+        <div className="space-y-6">
+          {text.essayGuide.structure.parts.map((part, partIndex) => (
+            <div key={partIndex} className="border-l-2 border-purple-200 pl-6">
+              <h3 className="text-xl font-semibold mb-3 text-purple-700">
+                {part.title} {part.wordCount && <span className="text-sm font-normal text-gray-600">({part.wordCount})</span>}
+              </h3>
+              <div className="space-y-3">
+                {part.content.map((paragraph, paragraphIndex) => (
+                  <p key={paragraphIndex} className="text-gray-700 leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
+                {part.example && (
+                  <div className="bg-purple-50 p-3 rounded-lg">
+                    <p className="text-sm">
+                      <strong className="text-purple-700">Example Opening:</strong> {part.example}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    // Techniques slide
+    {
+      id: 'techniques',
+      title: text.essayGuide.techniques.title,
+      badge: 'Guide 2',
+      content: (
+        <div className="space-y-6">
+          {text.essayGuide.techniques.categories.map((category, categoryIndex) => (
+            <div key={categoryIndex}>
+              <h3 className="text-xl font-semibold mb-3 text-purple-700">{category.title}</h3>
+              <div className="space-y-3">
+                {category.techniques.map((technique, techniqueIndex) => (
+                  <div key={techniqueIndex} className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-gray-700">
+                      <strong className="text-purple-600">{technique.name}:</strong> {technique.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    // Common Mistakes slide
+    {
+      id: 'mistakes',
+      title: text.essayGuide.mistakes.title,
+      badge: 'Guide 3',
+      content: (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-xl font-semibold mb-3 text-red-600">Don't Do This:</h3>
+            <div className="space-y-2">
+              {text.essayGuide.mistakes.dontDo.map((mistake, index) => (
+                <div key={index} className="bg-red-50 p-3 rounded-lg border-l-4 border-red-400">
+                  <p className="text-red-800">{mistake}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold mb-3 text-green-600">Do This Instead:</h3>
+            <div className="space-y-2">
+              {text.essayGuide.mistakes.doInstead.map((advice, index) => (
+                <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-green-400">
+                  <p className="text-green-800">{advice}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    // Sample Question slide
+    {
+      id: 'sample-question',
+      title: text.essayGuide.sampleQuestion.title,
+      badge: 'Guide 4',
+      content: (
+        <div className="space-y-6">
+          <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
+            <p className="text-lg font-medium text-purple-800 mb-4">
+              {text.essayGuide.sampleQuestion.question}
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold mb-3 text-purple-700">Approach this question by:</h3>
+            <div className="space-y-2">
+              {text.essayGuide.sampleQuestion.approach.map((point, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-semibold mt-1">
+                    {index + 1}
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">{point}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    // Tips slide
+    {
+      id: 'tips',
+      title: text.essayGuide.tips.title,
+      badge: 'Guide 5',
+      content: (
+        <div className="space-y-6">
+          {text.essayGuide.tips.phases.map((phase, phaseIndex) => (
+            <div key={phaseIndex}>
+              <h3 className="text-xl font-semibold mb-3 text-purple-700">{phase.title}:</h3>
+              <div className="space-y-2">
+                {phase.tips.map((tip, tipIndex) => (
+                  <div key={tipIndex} className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-gray-700">{tip}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+  ]
+
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b bg-white">
-        <div className="container mx-auto px-6 py-6">
-          <Link href={`/knowledge-bank/text-mastery/${textId}`} className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
-            <ArrowLeft size={20} />
-            Back to {text?.title || 'Text'}
-          </Link>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Essay Writing Guide</h1>
-
-        <div className="space-y-12">
-          <section>
-            <h2 className="text-2xl font-bold text-purple-700 mb-4">{text.essayGuide.structure.title}</h2>
-            <div className="prose prose-lg max-w-none">
-              {text.essayGuide.structure.parts.map((part, partIndex) => (
-                <div key={partIndex}>
-                  <h3 className="text-xl font-semibold mb-3">
-                    {part.title} {part.wordCount && `(${part.wordCount})`}
-                  </h3>
-                  {part.content.map((paragraph, paragraphIndex) => (
-                    <p key={paragraphIndex}>
-                      {paragraph}
-                    </p>
-                  ))}
-                  {part.example && (
-                    <p>
-                      <strong>Example Opening:</strong> {part.example}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-bold text-purple-700 mb-4">{text.essayGuide.techniques.title}</h2>
-            <div className="prose prose-lg max-w-none">
-              {text.essayGuide.techniques.categories.map((category, categoryIndex) => (
-                <div key={categoryIndex}>
-                  <h3 className="text-xl font-semibold mb-3">{category.title}</h3>
-                  {category.techniques.map((technique, techniqueIndex) => (
-                    <p key={techniqueIndex}>
-                      <strong>{technique.name}:</strong> {technique.description}
-                    </p>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-bold text-purple-700 mb-4">{text.essayGuide.mistakes.title}</h2>
-            <div className="prose prose-lg max-w-none">
-              <h3 className="text-xl font-semibold mb-3">Don't Do This:</h3>
-              <ul>
-                {text.essayGuide.mistakes.dontDo.map((mistake, index) => (
-                  <li key={index}>{mistake}</li>
-                ))}
-              </ul>
-
-              <h3 className="text-xl font-semibold mb-3 mt-6">Do This Instead:</h3>
-              <ul>
-                {text.essayGuide.mistakes.doInstead.map((advice, index) => (
-                  <li key={index}>{advice}</li>
-                ))}
-              </ul>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-bold text-purple-700 mb-4">{text.essayGuide.sampleQuestion.title}</h2>
-            <div className="prose prose-lg max-w-none">
-              <p className="text-lg font-medium mb-4">
-                {text.essayGuide.sampleQuestion.question}
-              </p>
-
-              <h3 className="text-xl font-semibold mb-3">Approach this question by:</h3>
-              <ul>
-                {text.essayGuide.sampleQuestion.approach.map((point, index) => (
-                  <li key={index}>{point}</li>
-                ))}
-              </ul>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-bold text-purple-700 mb-4">{text.essayGuide.tips.title}</h2>
-            <div className="prose prose-lg max-w-none">
-              {text.essayGuide.tips.phases.map((phase, phaseIndex) => (
-                <div key={phaseIndex}>
-                  <h3 className="text-xl font-semibold mb-3">{phase.title}:</h3>
-                  <ul>
-                    {phase.tips.map((tip, tipIndex) => (
-                      <li key={tipIndex}>{tip}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
+    <SlideNavigation
+      slides={slides}
+      title="Essay Writing Guide"
+      subtitle={text.title}
+      headerColor="purple"
+      backLink={{
+        href: `/knowledge-bank/text-mastery/${textId}`,
+        text: `Back to ${text?.title || 'Text'}`
+      }}
+    />
   )
 }

@@ -1,7 +1,6 @@
 import type React from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Clock, FileText, Lightbulb } from "lucide-react"
 
 export default function PracticeZonePage() {
@@ -13,7 +12,7 @@ export default function PracticeZonePage() {
           Everything you need for regular, active practice to master HSC Paper 1.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           <PracticeCard
             title="Daily Drill"
             description="3-4 fresh unseen texts daily with instant marking and model answers."
@@ -65,28 +64,20 @@ export default function PracticeZonePage() {
               "Feedback and tips",
             ]}
           />
-        </div>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BookOpen className="mr-2 h-6 w-6" />
-              Exam Simulator
-            </CardTitle>
-            <CardDescription>Experience the full HSC Paper 1 exam under timed conditions.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>
-              Prepare for the real thing with our comprehensive exam simulator that replicates the exact format and
-              timing of the HSC Paper 1 examination.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild>
-              <Link href="/practice-zone/exam-simulator">Start Simulation</Link>
-            </Button>
-          </CardFooter>
-        </Card>
+          <PracticeCard
+            title="Exam Simulator"
+            description="Experience the full HSC Paper 1 exam under timed conditions."
+            icon={<BookOpen className="h-6 w-6" />}
+            href="/practice-zone/exam-simulator"
+            features={[
+              "Full exam format replication",
+              "Timed conditions",
+              "Comprehensive feedback",
+              "Real exam experience",
+            ]}
+          />
+        </div>
       </div>
     </div>
   )
@@ -106,29 +97,28 @@ function PracticeCard({
   features: string[]
 }) {
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          {icon}
-          <span className="ml-2">{title}</span>
-        </CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-2">
-          {features.map((feature, index) => (
-            <li key={index} className="flex items-start">
-              <span className="text-primary mr-2">•</span>
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-      <CardFooter>
-        <Button asChild>
-          <Link href={href}>Start Practice</Link>
-        </Button>
-      </CardFooter>
-    </Card>
+    <Link href={href} className="block">
+      <Card className="h-full cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 transform-gpu bg-gradient-to-br from-background to-muted/30 border-2 hover:border-primary/50 shadow-lg hover:shadow-primary/25">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-lg">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary mr-3">
+              {icon}
+            </div>
+            <span>{title}</span>
+          </CardTitle>
+          <CardDescription className="text-sm leading-relaxed">{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <ul className="space-y-2">
+            {features.map((feature, index) => (
+              <li key={index} className="flex items-start text-sm">
+                <span className="text-primary mr-2 font-bold">•</span>
+                <span className="text-muted-foreground">{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }

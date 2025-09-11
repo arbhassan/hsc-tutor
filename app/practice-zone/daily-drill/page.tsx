@@ -11,10 +11,13 @@ import {
   AlertCircle,
   ArrowRight,
   Check,
+  ChevronRight,
+  BookOpen,
 } from "lucide-react"
 import Link from "next/link"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useProgressTracker } from "@/hooks/use-progress-tracker"
 import { useAuth } from "@/lib/auth-context"
 
@@ -113,6 +116,11 @@ MARCUS: [Returning to seriousness] My whole life, it feels like.
         text: "Analyze the symbolic elements in this dramatic extract and their contribution to possible meanings. (5 marks)",
         marks: 5,
       },
+      {
+        id: 303,
+        text: "Compare the themes of transition and uncertainty in Text 1 and Text 3. In your response, analyze how both authors use different techniques to explore similar ideas. (6 marks)",
+        marks: 6,
+      },
     ],
   },
 ]
@@ -138,6 +146,19 @@ Weather imagery in the final stanza, where "whispers of doubt fall like rain," c
 Through these interconnected images of the bridge, water, and rain, the poet creates a multi-sensory representation of the speaker's emotional state, characterized by uncertainty, fear, and the tension between moving forward and looking back.`,
     commentary:
       "This response demonstrates sophisticated analysis of multiple image patterns in the poem. It identifies the central bridge metaphor and supporting imagery patterns, explaining how each contributes to representing the speaker's emotional state. The analysis is detailed and well-supported with specific textual references.",
+  },
+  303: {
+    answer: `Both Text 1 ("Miss This Place") and Text 3 ("The Waiting Room") explore themes of transition and uncertainty, though they employ different literary techniques to examine these universal human experiences.
+
+In Text 1, the author uses physical displacement as a metaphor for emotional transition. James's departure from the mountains represents not just a geographical change but a fundamental shift in identity. The author employs temporal references ("since he was three years old") to emphasize how deeply rooted his connection is to this place, making the transition more poignant. The uncertainty is conveyed through James's silence and physical gestures rather than words, with the description "James didn't say anything. He just nodded" suggesting emotional complexity that cannot be verbalized.
+
+Text 3 approaches these themes through dramatic techniques and symbolic elements. The playwright uses the waiting room as a liminal space that literally embodies the concept of transition - characters exist between one state and another. Uncertainty is manifested through the broken clock, which disrupts normal temporal progression and creates an atmosphere where characters cannot predict what comes next. The dialogue reveals uncertainty through what remains unsaid, particularly Marcus's cryptic responses about why he's there.
+
+Both texts employ structural techniques to reinforce these themes. Text 1 uses juxtaposition between short, halting sentences describing James's responses and longer, flowing descriptions of the mountains, creating a rhythm that mirrors emotional uncertainty. Text 3 uses stage directions and pauses to create gaps in communication that reflect the characters' uncertain emotional states.
+
+The key difference lies in their temporal approach: Text 1 focuses on a specific moment of departure with uncertainty about the future, while Text 3 presents characters suspended in an eternal present where time itself has become unreliable. Both authors ultimately suggest that transition and uncertainty are fundamental aspects of human experience, requiring individuals to navigate between the known and unknown with limited guidance.`,
+    commentary:
+      "This response effectively compares both texts, identifying common themes while analyzing the different techniques each author uses. It demonstrates sophisticated understanding of how different literary forms (prose fiction and drama) can explore similar themes through their unique structural and technical possibilities.",
   },
 }
 
@@ -249,7 +270,7 @@ const analyzeResponse = (response, questionId) => {
   const totalStrength = Object.values(feedback.petalAnalysis).reduce((sum, comp) => sum + comp.strength, 0)
 
   // Calculate score out of the question's marks
-  const questionMarks = questionId === 301 || questionId === 302 ? 5 : questionId === 102 ? 4 : 3
+  const questionMarks = questionId === 303 ? 6 : questionId === 301 || questionId === 302 ? 5 : questionId === 102 ? 4 : 3
   feedback.overallScore = Math.min(
     Math.round(((totalComponents / 5) * 0.6 + (totalStrength / 10) * 0.4) * questionMarks),
     questionMarks,
@@ -324,6 +345,11 @@ const analyzeResponse = (response, questionId) => {
       response.includes("stage direction") && response.includes("dialogue")
         ? "You've considered both dialogue and stage directions as requested. To improve, analyze how specific elements like the broken clock and the lighting create dramatic tension."
         : "Make sure to analyze both dialogue and stage directions as specified in the question. Pay attention to elements like the clock, lighting, and character interactions."
+  } else if (questionId === 303) {
+    feedback.specificFeedback =
+      response.includes("Text 1") && response.includes("Text 3") && (response.includes("transition") || response.includes("uncertainty"))
+        ? "Good identification of the key themes across both texts. To strengthen your response, ensure you're analyzing specific techniques used by each author and making clear connections between the texts."
+        : "This is a comparative question requiring analysis of both Text 1 and Text 3. Focus on the themes of transition and uncertainty, and make sure to discuss specific techniques used by each author."
   }
 
   return feedback
@@ -411,7 +437,19 @@ The characters' dialogue reveals symbolic elements in their interaction patterns
 
 The shared recognition of the broken clock creates symbolic unity between the characters, suggesting that waiting and uncertainty are universal human experiences that create unexpected connections between strangers.
 
-These symbolic elements work together to transform a simple waiting room scene into an exploration of how humans cope with uncertainty, the passage of time, and the search for meaning during transitional periods.`
+These symbolic elements work together to transform a simple waiting room scene into an exploration of how humans cope with uncertainty, the passage of time, and the search for meaning during transitional periods.`,
+
+    303: `Both Text 1 ("Miss This Place") and Text 3 ("The Waiting Room") explore themes of transition and uncertainty, though they employ different literary techniques to examine these universal human experiences.
+
+In Text 1, the author uses physical displacement as a metaphor for emotional transition. James's departure from the mountains represents not just a geographical change but a fundamental shift in identity. The author employs temporal references ("since he was three years old") to emphasize how deeply rooted his connection is to this place, making the transition more poignant. The uncertainty is conveyed through James's silence and physical gestures rather than words, with the description "James didn't say anything. He just nodded" suggesting emotional complexity that cannot be verbalized.
+
+Text 3 approaches these themes through dramatic techniques and symbolic elements. The playwright uses the waiting room as a liminal space that literally embodies the concept of transition - characters exist between one state and another. Uncertainty is manifested through the broken clock, which disrupts normal temporal progression and creates an atmosphere where characters cannot predict what comes next. The dialogue reveals uncertainty through what remains unsaid, particularly Marcus's cryptic responses about why he's there.
+
+Both texts employ structural techniques to reinforce these themes. Text 1 uses juxtaposition between short, halting sentences describing James's responses and longer, flowing descriptions of the mountains, creating a rhythm that mirrors emotional uncertainty. Text 3 uses stage directions and pauses to create gaps in communication that reflect the characters' uncertain emotional states.
+
+The key difference lies in their temporal approach: Text 1 focuses on a specific moment of departure with uncertainty about the future, while Text 3 presents characters suspended in an eternal present where time itself has become unreliable. Both authors ultimately suggest that transition and uncertainty are fundamental aspects of human experience, requiring individuals to navigate between the known and unknown with limited guidance.
+
+In conclusion, while both texts explore transition and uncertainty through different literary forms, they demonstrate how these universal themes can be effectively examined through careful attention to language, structure, and symbolic meaning.`
   }
 
   // Return the complete improved response for the question, or a generic one if not found
@@ -432,7 +470,9 @@ const STORAGE_KEYS = {
   SUBMITTED: 'dailyDrill_submitted',
   FEEDBACK: 'dailyDrill_feedback',
   IMPROVED_RESPONSES: 'dailyDrill_improvedResponses',
-  SESSION_ID: 'dailyDrill_sessionId'
+  SESSION_ID: 'dailyDrill_sessionId',
+  ALL_TEXT_RESPONSES: 'dailyDrill_allTextResponses',
+  TEXT_COMPLETION_STATUS: 'dailyDrill_textCompletionStatus'
 }
 
 // Helper functions for session persistence
@@ -479,6 +519,9 @@ export default function DailyDrillPage() {
   const [improvedResponses, setImprovedResponses] = useState({})
   const [copiedQuestions, setCopiedQuestions] = useState({})
   const [isLoaded, setIsLoaded] = useState(false)
+  const [allTextResponses, setAllTextResponses] = useState({}) // Store responses for all texts
+  const [textCompletionStatus, setTextCompletionStatus] = useState({}) // Track completion status per text
+  const [showTextNavigation, setShowTextNavigation] = useState(false)
 
   const { user } = useAuth()
   const { trackShortAnswerDetailed, trackStudySession } = useProgressTracker()
@@ -491,6 +534,8 @@ export default function DailyDrillPage() {
     const loadedSubmitted = loadFromStorage(STORAGE_KEYS.SUBMITTED, false)
     const loadedFeedback = loadFromStorage(STORAGE_KEYS.FEEDBACK, {})
     const loadedImprovedResponses = loadFromStorage(STORAGE_KEYS.IMPROVED_RESPONSES, {})
+    const loadedAllTextResponses = loadFromStorage(STORAGE_KEYS.ALL_TEXT_RESPONSES, {})
+    const loadedTextCompletionStatus = loadFromStorage(STORAGE_KEYS.TEXT_COMPLETION_STATUS, {})
 
     // Only restore state if there's an active session
     const sessionId = loadFromStorage(STORAGE_KEYS.SESSION_ID)
@@ -501,6 +546,8 @@ export default function DailyDrillPage() {
       setSubmitted(loadedSubmitted)
       setFeedback(loadedFeedback)
       setImprovedResponses(loadedImprovedResponses)
+      setAllTextResponses(loadedAllTextResponses)
+      setTextCompletionStatus(loadedTextCompletionStatus)
     }
 
     setIsLoaded(true)
@@ -543,11 +590,70 @@ export default function DailyDrillPage() {
     }
   }, [improvedResponses, isLoaded])
 
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.ALL_TEXT_RESPONSES, allTextResponses)
+    }
+  }, [allTextResponses, isLoaded])
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.TEXT_COMPLETION_STATUS, textCompletionStatus)
+    }
+  }, [textCompletionStatus, isLoaded])
+
   const currentText = unseenTexts[currentTextIndex]
 
   const getWordCount = (text) => {
     const words = text.trim().split(/\s+/)
     return text.trim() === "" ? 0 : words.length
+  }
+
+  // Save current text responses to allTextResponses before switching
+  const saveCurrentTextResponses = () => {
+    if (Object.keys(responses).length > 0) {
+      setAllTextResponses(prev => ({
+        ...prev,
+        [currentTextIndex]: responses
+      }))
+    }
+  }
+
+  // Load responses for a specific text
+  const loadTextResponses = (textIndex) => {
+    const textResponses = allTextResponses[textIndex] || {}
+    setResponses(textResponses)
+  }
+
+  // Switch to a different text
+  const switchToText = (textIndex) => {
+    if (textIndex !== currentTextIndex) {
+      // Save current text responses
+      saveCurrentTextResponses()
+      
+      // Switch to new text
+      setCurrentTextIndex(textIndex)
+      
+      // Load responses for the new text
+      loadTextResponses(textIndex)
+      
+      // Reset current text submission status
+      setSubmitted(false)
+      setFeedback({})
+      setImprovedResponses({})
+      setCopiedQuestions({})
+    }
+  }
+
+  // Check if text has any comparative questions (mentions comparing texts)
+  const hasComparativeQuestions = () => {
+    return currentText.questions.some(question => 
+      question.text.toLowerCase().includes('compare') || 
+      question.text.toLowerCase().includes('contrast') ||
+      question.text.toLowerCase().includes('text 1') ||
+      question.text.toLowerCase().includes('text 2') ||
+      question.text.toLowerCase().includes('text 3')
+    )
   }
 
   const updateResponse = (questionId, response) => {
@@ -682,6 +788,19 @@ export default function DailyDrillPage() {
 
   const startPractice = () => {
     setPracticeStarted(true)
+    // Auto-show text navigation if any text has comparative questions
+    const hasAnyComparative = unseenTexts.some(text => 
+      text.questions.some(question => 
+        question.text.toLowerCase().includes('compare') || 
+        question.text.toLowerCase().includes('contrast') ||
+        question.text.toLowerCase().includes('text 1') ||
+        question.text.toLowerCase().includes('text 2') ||
+        question.text.toLowerCase().includes('text 3')
+      )
+    )
+    if (hasAnyComparative) {
+      setShowTextNavigation(true)
+    }
     // Generate a session ID to track this practice session
     saveToStorage(STORAGE_KEYS.SESSION_ID, Date.now().toString())
   }
@@ -696,6 +815,9 @@ export default function DailyDrillPage() {
     setFeedback({})
     setImprovedResponses({})
     setCopiedQuestions({})
+    setAllTextResponses({})
+    setTextCompletionStatus({})
+    setShowTextNavigation(false)
   }
 
   // Show loading state while restoring from localStorage
@@ -767,16 +889,54 @@ export default function DailyDrillPage() {
               Back to Practice Zone
             </Link>
           </div>
+          
+          {/* Current Text Indicator */}
           <div className="flex items-center space-x-4">
             <span className="text-sm font-medium">
               Text {currentTextIndex + 1} of {unseenTexts.length}
             </span>
           </div>
         </div>
+        
+        {/* Collapsible Text Navigation Panel */}
+        {showTextNavigation && (
+          <div className="border-t bg-muted/50 p-4">
+            <div className="container">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Select
+                    value={currentTextIndex.toString()}
+                    onValueChange={(value) => switchToText(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unseenTexts.map((text, index) => (
+                        <SelectItem key={text.id} value={index.toString()}>
+                          Text {index + 1}: {text.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {hasComparativeQuestions() && (
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm text-amber-600">
+                      This text has comparative questions - use navigation to compare with other texts
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel - Unseen text (60%) */}
+        {/* Left panel - Unseen text only (60%) */}
         <div className="w-3/5 overflow-y-auto p-6 border-r">
           <div className="max-w-3xl mx-auto">
             <div className="mb-4">
@@ -804,31 +964,45 @@ export default function DailyDrillPage() {
               )}
             </div>
 
-            <div className="text-sm text-muted-foreground mb-8">
+            <div className="text-sm text-muted-foreground mb-6">
               Source: {currentText.source} by {currentText.author}
             </div>
 
-            <div className="space-y-4">
-              {currentText.questions.map((question, index) => (
-                <div key={question.id} className="bg-muted p-4 rounded-lg">
-                  <div className="flex justify-between mb-2">
-                    <h3 className="font-medium">Question {index + 1}</h3>
-                    <span className="text-sm text-muted-foreground">{question.marks} marks</span>
-                  </div>
-                  <p>{question.text}</p>
-                </div>
-              ))}
+            {/* Text Navigation - Previous and Next buttons */}
+            <div className="flex justify-between items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => switchToText(Math.max(0, currentTextIndex - 1))}
+                disabled={currentTextIndex === 0}
+                className="flex items-center"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Previous Text
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => switchToText(Math.min(unseenTexts.length - 1, currentTextIndex + 1))}
+                disabled={currentTextIndex === unseenTexts.length - 1}
+                className="flex items-center"
+              >
+                Next Text
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Right panel - Response area (40%) */}
+        {/* Right panel - Questions and Response area (40%) */}
         <div className="w-2/5 overflow-y-auto p-6">
           <div className="max-w-xl mx-auto">
             {!submitted ? (
               <>
+                {/* Questions and Responses Combined */}
                 <div className="mb-4">
-                  <h3 className="text-lg font-medium mb-2">Your Responses</h3>
+                  <h3 className="text-lg font-medium mb-2">Questions & Responses</h3>
                   <p className="text-sm text-muted-foreground mb-4">
                     Answer all questions for this text. You must complete all responses before submitting.
                   </p>
@@ -836,23 +1010,30 @@ export default function DailyDrillPage() {
                   <div className="space-y-6">
                     {currentText.questions.map((question, index) => (
                       <div key={question.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium">Question {index + 1}</h4>
-                          <div className="flex items-center space-x-2">
+                        {/* Question */}
+                        <div className="bg-muted p-4 rounded-lg mb-4">
+                          <div className="flex justify-between mb-2">
+                            <h4 className="font-medium">Question {index + 1}</h4>
+                            <span className="text-sm text-muted-foreground">{question.marks} marks</span>
+                          </div>
+                          <p className="text-sm">{question.text}</p>
+                        </div>
+                        
+                        {/* Response */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-sm font-medium text-muted-foreground">Your Response:</h5>
                             <span className="text-sm text-muted-foreground">
                               {getWordCount(responses[question.id] || "")} words
                             </span>
-                            <span className="text-sm text-muted-foreground">
-                              ({question.marks} marks)
-                            </span>
                           </div>
+                          <textarea
+                            className="w-full h-32 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                            value={responses[question.id] || ""}
+                            onChange={(e) => updateResponse(question.id, e.target.value)}
+                            placeholder="Type your response here..."
+                          />
                         </div>
-                        <textarea
-                          className="w-full h-32 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                          value={responses[question.id] || ""}
-                          onChange={(e) => updateResponse(question.id, e.target.value)}
-                          placeholder="Type your response here..."
-                        />
                       </div>
                     ))}
                   </div>
@@ -861,7 +1042,10 @@ export default function DailyDrillPage() {
                 <div className="flex justify-between">
                   <Button 
                     variant="outline" 
-                    onClick={() => setResponses({})}
+                    onClick={() => {
+                      saveCurrentTextResponses()
+                      setResponses({})
+                    }}
                     disabled={Object.keys(responses).length === 0}
                   >
                     Clear All

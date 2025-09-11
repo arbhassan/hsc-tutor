@@ -81,11 +81,6 @@ interface Quote {
   significance: 'high' | 'medium' | 'low'
 }
 
-interface Technique {
-  name: string
-  definition: string
-  example: string | null
-}
 
 export default function BookContentEditPage({ params }: { params: Promise<{ bookId: string }> }) {
   const router = useRouter()
@@ -103,7 +98,6 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
   const [contemporarySections, setContemporarySections] = useState<any[]>([])
   const [essayGuide, setEssayGuide] = useState<any>({})
   const [quotes, setQuotes] = useState<Quote[]>([])
-  const [techniques, setTechniques] = useState<Technique[]>([])
 
 
   useEffect(() => {
@@ -181,7 +175,6 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
         }
         setEssayGuide(initializedEssayGuide)
         setQuotes(bookContent.quotes || [])
-        setTechniques(bookContent.techniques || [])
       } else {
         // Initialize with empty data if no content found
         const defaultContextTypes = ['historical', 'political', 'biographical', 'philosophical']
@@ -262,10 +255,6 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
           detailedBookService.updateBookQuote(book.id, quote)
         ),
 
-        // Save techniques
-        ...techniques.map(technique =>
-          detailedBookService.updateBookTechnique(book.id, technique)
-        )
       ])
 
       toast({
@@ -312,20 +301,6 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
     setQuotes(newQuotes)
   }
 
-  const addNewTechnique = () => {
-    setTechniques([...techniques, { name: "", definition: "", example: null }])
-  }
-
-  const deleteTechnique = (index: number) => {
-    const newTechniques = techniques.filter((_, i) => i !== index)
-    setTechniques(newTechniques)
-  }
-
-  const updateTechnique = (index: number, field: keyof Technique, value: any) => {
-    const newTechniques = [...techniques]
-    newTechniques[index] = { ...newTechniques[index], [field]: value }
-    setTechniques(newTechniques)
-  }
 
   const addNewContext = () => {
     // Default to historical context, but allow any type
@@ -380,6 +355,94 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
     setContexts(newContexts)
   }
 
+  const addNewRubric = () => {
+    // Default to anomaliesAndParadoxes rubric type
+    const defaultRubricType = 'anomaliesAndParadoxes'
+    
+    // Count existing rubrics of the default type to create unique titles
+    const existingRubricsOfType = rubricConnections.filter(r => r.rubricType === defaultRubricType)
+    const rubricNumber = existingRubricsOfType.length + 1
+    
+    const newRubric = {
+      rubricType: defaultRubricType,
+      title: rubricNumber === 1 
+        ? defaultRubricType.replace(/([A-Z])/g, ' $1').trim()
+        : `${defaultRubricType.replace(/([A-Z])/g, ' $1').trim()} ${rubricNumber}`,
+      subsections: []
+    }
+    
+    setRubricConnections(prevRubrics => [...prevRubrics, newRubric])
+    
+    toast({
+      title: "Rubric Added",
+      description: `Added new ${defaultRubricType.replace(/([A-Z])/g, ' $1').trim()} rubric.`,
+      variant: "default"
+    })
+  }
+
+  const deleteRubric = (index: number) => {
+    const newRubrics = rubricConnections.filter((_, i) => i !== index)
+    setRubricConnections(newRubrics)
+    
+    toast({
+      title: "Rubric Deleted",
+      description: "Rubric has been deleted successfully.",
+      variant: "default"
+    })
+  }
+
+  const addNewContemporary = () => {
+    const newSection = { title: '', subsections: [] }
+    setContemporarySections(prevSections => [...prevSections, newSection])
+    
+    toast({
+      title: "Contemporary Section Added",
+      description: "Added new contemporary connections section.",
+      variant: "default"
+    })
+  }
+
+  const deleteContemporary = (index: number) => {
+    const newSections = contemporarySections.filter((_, i) => i !== index)
+    setContemporarySections(newSections)
+    
+    toast({
+      title: "Contemporary Section Deleted",
+      description: "Contemporary section has been deleted successfully.",
+      variant: "default"
+    })
+  }
+
+  const resetEssayGuide = () => {
+    setEssayGuide({
+      structure: { title: 'Essay Structure', parts: [] },
+      mistakes: { title: 'Common Mistakes to Avoid', dontDo: [], doInstead: [] },
+      sampleQuestion: { title: 'Sample HSC Question', question: '', approach: [] },
+      tips: { title: 'Writing Tips', phases: [] }
+    })
+    
+    toast({
+      title: "Essay Guide Reset",
+      description: "Essay guide has been reset to default structure.",
+      variant: "default"
+    })
+  }
+
+  const addEssayStructure = () => {
+    if (!essayGuide.structure) {
+      setEssayGuide({
+        ...essayGuide,
+        structure: { title: 'Essay Structure', parts: [] }
+      })
+    }
+    
+    toast({
+      title: "Essay Structure Added",
+      description: "Essay structure section is now available.",
+      variant: "default"
+    })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -429,9 +492,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
 
       <div className="container mx-auto px-6 py-8">
         <Tabs defaultValue="quotes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="quotes">Quotes</TabsTrigger>
-            <TabsTrigger value="techniques">Techniques</TabsTrigger>
             <TabsTrigger value="contexts">Contexts</TabsTrigger>
             <TabsTrigger value="rubric">Rubric</TabsTrigger>
             <TabsTrigger value="plot">Plot</TabsTrigger>
@@ -582,86 +644,6 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                     <Button onClick={addNewQuote}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Your First Quote
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Techniques Tab */}
-          <TabsContent value="techniques">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Literary Techniques</CardTitle>
-                    <CardDescription>Define literary techniques used in this book</CardDescription>
-                  </div>
-                  <Button onClick={addNewTechnique}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Technique
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {techniques.map((technique, index) => (
-                  <Card key={index} className="border-l-4 border-l-green-500">
-                    <CardContent className="pt-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <h4 className="text-lg font-semibold">Technique {index + 1}</h4>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteTechnique(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor={`technique-name-${index}`}>Technique Name</Label>
-                          <Input
-                            id={`technique-name-${index}`}
-                            placeholder="e.g., Metaphor, Symbolism"
-                            value={technique.name}
-                            onChange={(e) => updateTechnique(index, 'name', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`technique-example-${index}`}>Example (Optional)</Label>
-                          <Input
-                            id={`technique-example-${index}`}
-                            placeholder="Short example of the technique"
-                            value={technique.example || ''}
-                            onChange={(e) => updateTechnique(index, 'example', e.target.value || null)}
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4">
-                        <Label htmlFor={`technique-definition-${index}`}>Definition</Label>
-                        <Textarea
-                          id={`technique-definition-${index}`}
-                          placeholder="Define what this technique is and how it works..."
-                          value={technique.definition}
-                          onChange={(e) => updateTechnique(index, 'definition', e.target.value)}
-                          rows={2}
-                          className="whitespace-pre-wrap"
-                          style={{ whiteSpace: 'pre-wrap' }}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {techniques.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No techniques defined yet.</p>
-                    <Button onClick={addNewTechnique}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Technique
                     </Button>
                   </div>
                 )}
@@ -855,28 +837,74 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
           <TabsContent value="rubric">
             <Card>
               <CardHeader>
-                <CardTitle>HSC Rubric Connections</CardTitle>
-                <CardDescription>Connect themes to HSC assessment criteria</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>HSC Rubric Connections</CardTitle>
+                    <CardDescription>Connect themes to HSC assessment criteria</CardDescription>
+                  </div>
+                  <Button onClick={addNewRubric}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Rubric Type
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-8">
-                {rubricConnections.map((rubric, rubricIndex) => (
+                {rubricConnections.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No rubric types added yet.</p>
+                    <p className="text-sm mt-2">Click "Add Rubric Type" to add anomalies and paradoxes, emotional experiences, relationships, or human capacity for understanding.</p>
+                  </div>
+                ) : (
+                  rubricConnections.map((rubric, rubricIndex) => (
                   <Card key={rubricIndex} className="border-l-4 border-l-green-500">
                     <CardHeader>
-                      <CardTitle className="text-lg capitalize">{rubric.rubricType.replace(/([A-Z])/g, ' $1').trim()}</CardTitle>
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg capitalize">{rubric.rubricType.replace(/([A-Z])/g, ' $1').trim()}</CardTitle>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteRubric(rubricIndex)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor={`rubric-title-${rubricIndex}`}>Title</Label>
-                        <Input
-                          id={`rubric-title-${rubricIndex}`}
-                          value={rubric.title}
-                          onChange={(e) => {
-                            const newRubrics = [...rubricConnections]
-                            newRubrics[rubricIndex].title = e.target.value
-                            setRubricConnections(newRubrics)
-                          }}
-                          placeholder="e.g., Anomalies and Paradoxes"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`rubric-type-${rubricIndex}`}>Rubric Type</Label>
+                          <Select
+                            value={rubric.rubricType}
+                            onValueChange={(value) => {
+                              const newRubrics = [...rubricConnections]
+                              newRubrics[rubricIndex].rubricType = value
+                              setRubricConnections(newRubrics)
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select rubric type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="anomaliesAndParadoxes">Anomalies and Paradoxes</SelectItem>
+                              <SelectItem value="emotionalExperiences">Emotional Experiences</SelectItem>
+                              <SelectItem value="relationships">Relationships</SelectItem>
+                              <SelectItem value="humanCapacityForUnderstanding">Human Capacity for Understanding</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor={`rubric-title-${rubricIndex}`}>Title</Label>
+                          <Input
+                            id={`rubric-title-${rubricIndex}`}
+                            value={rubric.title}
+                            onChange={(e) => {
+                              const newRubrics = [...rubricConnections]
+                              newRubrics[rubricIndex].title = e.target.value
+                              setRubricConnections(newRubrics)
+                            }}
+                            placeholder="e.g., Anomalies and Paradoxes"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -979,7 +1007,8 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                ))
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1167,18 +1196,20 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                     <CardTitle>Contemporary Connections</CardTitle>
                     <CardDescription>Modern parallels and relevance</CardDescription>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setContemporarySections([...contemporarySections, { title: '', subsections: [] }])
-                    }}
-                  >
+                  <Button onClick={addNewContemporary}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Section
+                    Add Contemporary Section
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {contemporarySections.map((section, sectionIndex) => (
+                {contemporarySections.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No contemporary sections added yet.</p>
+                    <p className="text-sm mt-2">Click "Add Contemporary Section" to add modern parallels and relevance connections.</p>
+                  </div>
+                ) : (
+                  contemporarySections.map((section, sectionIndex) => (
                   <Card key={sectionIndex} className="border-l-4 border-l-teal-500">
                     <CardHeader>
                       <div className="flex justify-between items-start">
@@ -1186,10 +1217,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            const newSections = contemporarySections.filter((_, i) => i !== sectionIndex)
-                            setContemporarySections(newSections)
-                          }}
+                          onClick={() => deleteContemporary(sectionIndex)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1310,16 +1338,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-
-                {contemporarySections.length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No contemporary sections added yet.</p>
-                    <Button onClick={() => setContemporarySections([{ title: '', subsections: [] }])}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Section
-                    </Button>
-                  </div>
+                ))
                 )}
               </CardContent>
             </Card>
@@ -1329,12 +1348,33 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
           <TabsContent value="essay">
             <Card>
               <CardHeader>
-                <CardTitle>Essay Writing Guide</CardTitle>
-                <CardDescription>Structure, techniques, and tips for writing essays</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Essay Writing Guide</CardTitle>
+                    <CardDescription>Structure, techniques, and tips for writing essays</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={resetEssayGuide}>
+                      Reset Guide
+                    </Button>
+                    <Button onClick={addEssayStructure}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Initialize Guide
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-8">
-                {/* Essay Structure */}
-                <Card className="border-l-4 border-l-purple-500">
+                {!essayGuide.structure && !essayGuide.mistakes && !essayGuide.sampleQuestion && !essayGuide.tips ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No essay guide content added yet.</p>
+                    <p className="text-sm mt-2">Click "Initialize Guide" to set up the essay writing guide with structure, tips, and common mistakes.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Essay Structure */}
+                    {essayGuide.structure && (
+                    <Card className="border-l-4 border-l-purple-500">
                   <CardHeader>
                     <CardTitle className="text-lg">Essay Structure</CardTitle>
                   </CardHeader>
@@ -1509,9 +1549,11 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                     </div>
                   </CardContent>
                 </Card>
+                    )}
 
-                {/* Common Mistakes */}
-                <Card className="border-l-4 border-l-red-500">
+                    {/* Common Mistakes */}
+                    {essayGuide.mistakes && (
+                    <Card className="border-l-4 border-l-red-500">
                   <CardHeader>
                     <CardTitle className="text-lg">Common Mistakes</CardTitle>
                   </CardHeader>
@@ -1636,9 +1678,11 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                     </div>
                   </CardContent>
                 </Card>
+                    )}
 
-                {/* Sample Question */}
-                <Card className="border-l-4 border-l-yellow-500">
+                    {/* Sample Question */}
+                    {essayGuide.sampleQuestion && (
+                    <Card className="border-l-4 border-l-yellow-500">
                   <CardHeader>
                     <CardTitle className="text-lg">Sample HSC Question</CardTitle>
                   </CardHeader>
@@ -1728,9 +1772,11 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                     </div>
                   </CardContent>
                 </Card>
+                    )}
 
-                {/* Writing Tips */}
-                <Card className="border-l-4 border-l-blue-500">
+                    {/* Writing Tips */}
+                    {essayGuide.tips && (
+                    <Card className="border-l-4 border-l-blue-500">
                   <CardHeader>
                     <CardTitle className="text-lg">Writing Tips</CardTitle>
                   </CardHeader>
@@ -1866,6 +1912,9 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                     </div>
                   </CardContent>
                 </Card>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
