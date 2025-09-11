@@ -20,6 +20,7 @@ import {
   FileText,
   Monitor,
   Lock,
+  Quote as QuoteIcon,
 } from "lucide-react"
 
 export default function AdminPage() {
@@ -159,28 +160,37 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px] border-2 border-primary/20">
           <CardHeader className="flex-shrink-0">
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Flashcard Cards
+              <CreditCard className="h-5 w-5 text-primary" />
+              Flashcard Studio
+              <Badge variant="secondary" className="text-xs">NEW</Badge>
             </CardTitle>
             <CardDescription>
-              Manage auto-generated cards with bulk actions and editing
+              Unified flashcard and quote management with streamlined workflows. Create flashcards directly or via quotes.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow flex flex-col justify-end">
             <div className="flex gap-2">
               <Button 
-                onClick={() => router.push('/admin/flashcard-cards')}
+                onClick={() => router.push('/admin/flashcard-studio')}
                 className="flex-1"
               >
                 <Eye className="h-4 w-4 mr-2" />
-                Manage Cards
+                Open Studio
+              </Button>
+              <Button 
+                onClick={() => router.push('/admin/flashcard-studio?tab=create')}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Quick Create
               </Button>
             </div>
           </CardContent>
         </Card>
+
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
           <CardHeader className="flex-shrink-0">
@@ -235,35 +245,6 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
-          <CardHeader className="flex-shrink-0">
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Quote Bank
-            </CardTitle>
-            <CardDescription>
-              Upload quotes and auto-generate flashcards with theme tagging
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow flex flex-col justify-end">
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => router.push('/admin/quotes')}
-                className="flex-1"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Manage Quotes
-              </Button>
-              <Button 
-                onClick={() => router.push('/admin/quotes?action=create')}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Quote
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 {/* 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
