@@ -83,6 +83,10 @@ export default function ExamSimulatorPage() {
   const [currentSection, setCurrentSection] = useState("instructions") // instructions, sectionI, sectionII, results
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  // Track which text's questions are currently being displayed (independent of text navigation)
+  const [currentQuestionTextIndex, setCurrentQuestionTextIndex] = useState(0)
+  // Track question index for each text independently
+  const [questionIndicesPerText, setQuestionIndicesPerText] = useState({})
   const [responses, setResponses] = useState({})
   const [essayResponse, setEssayResponse] = useState("")
   const [essayQuestion, setEssayQuestion] = useState(null)
@@ -156,6 +160,8 @@ export default function ExamSimulatorPage() {
         currentSection,
         currentTextIndex,
         currentQuestionIndex,
+        currentQuestionTextIndex,
+        questionIndicesPerText,
         responses,
         essayResponse,
         essayQuestion,
@@ -177,7 +183,7 @@ export default function ExamSimulatorPage() {
         }, 2000)
       }, 200)
     }
-  }, [examStarted, examSubmitted, currentSection, currentTextIndex, currentQuestionIndex, responses, essayResponse, essayQuestion, elapsedTime, remainingTime, selectedSections, customExamTime, wordCount])
+  }, [examStarted, examSubmitted, currentSection, currentTextIndex, currentQuestionIndex, currentQuestionTextIndex, questionIndicesPerText, responses, essayResponse, essayQuestion, elapsedTime, remainingTime, selectedSections, customExamTime, wordCount])
 
   // Load saved exam progress
   const loadSavedProgress = () => {
@@ -192,6 +198,8 @@ export default function ExamSimulatorPage() {
         setCurrentSection(parsedData.currentSection)
         setCurrentTextIndex(parsedData.currentTextIndex || 0)
         setCurrentQuestionIndex(parsedData.currentQuestionIndex || 0)
+        setCurrentQuestionTextIndex(parsedData.currentQuestionTextIndex || 0)
+        setQuestionIndicesPerText(parsedData.questionIndicesPerText || {})
         setResponses(parsedData.responses || {})
         setEssayResponse(parsedData.essayResponse || "")
         setEssayQuestion(parsedData.essayQuestion || null)
@@ -253,7 +261,7 @@ export default function ExamSimulatorPage() {
 
       return () => clearTimeout(timeoutId)
     }
-  }, [responses, essayResponse, currentSection, currentTextIndex, currentQuestionIndex, saveExamProgress])
+  }, [responses, essayResponse, currentSection, currentTextIndex, currentQuestionIndex, currentQuestionTextIndex, questionIndicesPerText, saveExamProgress])
 
   // Separate effect for periodic saves (every 30 seconds) to capture timer state
   useEffect(() => {
@@ -398,11 +406,12 @@ export default function ExamSimulatorPage() {
   }
 
   const handleNextQuestion = () => {
-    const currentText = unseenTexts[currentTextIndex]
-    if (currentQuestionIndex < currentText.questions.length - 1) {
+    const currentQuestionText = unseenTexts[currentQuestionTextIndex]
+    if (currentQuestionIndex < currentQuestionText.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
-    } else if (currentTextIndex < unseenTexts.length - 1) {
-      setCurrentTextIndex(currentTextIndex + 1)
+    } else if (currentQuestionTextIndex < unseenTexts.length - 1) {
+      // Move to the next text's questions
+      setCurrentQuestionTextIndex(currentQuestionTextIndex + 1)
       setCurrentQuestionIndex(0)
     }
   }
@@ -410,41 +419,59 @@ export default function ExamSimulatorPage() {
   const handlePrevQuestion = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1)
-    } else if (currentTextIndex > 0) {
-      setCurrentTextIndex(currentTextIndex - 1)
-      setCurrentQuestionIndex(unseenTexts[currentTextIndex - 1].questions.length - 1)
+    } else if (currentQuestionTextIndex > 0) {
+      // Move to the previous text's questions
+      const prevQuestionTextIndex = currentQuestionTextIndex - 1
+      setCurrentQuestionTextIndex(prevQuestionTextIndex)
+      // Go to the last question of the previous text
+      const lastQuestionIndex = unseenTexts[prevQuestionTextIndex].questions.length - 1
+      setCurrentQuestionIndex(lastQuestionIndex)
     }
   }
 
   const handlePrevText = () => {
     if (currentTextIndex > 0) {
       setCurrentTextIndex(currentTextIndex - 1)
-      setCurrentQuestionIndex(0)
+      // Note: We no longer change currentQuestionIndex or currentQuestionTextIndex
+      // This allows independent text and question navigation
     }
   }
 
   const handleNextText = () => {
     if (currentTextIndex < unseenTexts.length - 1) {
       setCurrentTextIndex(currentTextIndex + 1)
-      setCurrentQuestionIndex(0)
+      // Note: We no longer change currentQuestionIndex or currentQuestionTextIndex
+      // This allows independent text and question navigation
     }
   }
 
   const handlePrevQuestionOnly = () => {
     if (currentQuestionIndex > 0) {
+      // Move to previous question in current text
       setCurrentQuestionIndex(currentQuestionIndex - 1)
+    } else if (currentQuestionTextIndex > 0) {
+      // Move to last question of previous text
+      const prevQuestionTextIndex = currentQuestionTextIndex - 1
+      setCurrentQuestionTextIndex(prevQuestionTextIndex)
+      const lastQuestionIndex = unseenTexts[prevQuestionTextIndex].questions.length - 1
+      setCurrentQuestionIndex(lastQuestionIndex)
     }
   }
 
   const handleNextQuestionOnly = () => {
-    const currentText = unseenTexts[currentTextIndex]
-    if (currentQuestionIndex < currentText.questions.length - 1) {
+    const currentQuestionText = unseenTexts[currentQuestionTextIndex]
+    if (currentQuestionIndex < currentQuestionText.questions.length - 1) {
+      // Move to next question in current text
       setCurrentQuestionIndex(currentQuestionIndex + 1)
+    } else if (currentQuestionTextIndex < unseenTexts.length - 1) {
+      // Move to first question of next text
+      setCurrentQuestionTextIndex(currentQuestionTextIndex + 1)
+      setCurrentQuestionIndex(0)
     }
   }
 
   const navigateToQuestion = (textIndex, questionIndex) => {
-    setCurrentTextIndex(textIndex)
+    setCurrentQuestionTextIndex(textIndex)
     setCurrentQuestionIndex(questionIndex)
     setShowQuestionNavigation(false)
   }
@@ -979,7 +1006,8 @@ export default function ExamSimulatorPage() {
     }
 
     const currentText = unseenTexts[currentTextIndex]
-    if (!currentText || !currentText.questions || currentText.questions.length === 0) {
+    const currentQuestionText = unseenTexts[currentQuestionTextIndex]
+    if (!currentQuestionText || !currentQuestionText.questions || currentQuestionText.questions.length === 0) {
       return (
         <div className="container mx-auto px-4 py-12 text-center">
           <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
@@ -992,8 +1020,8 @@ export default function ExamSimulatorPage() {
       )
     }
 
-    const currentQuestion = currentText.questions[currentQuestionIndex]
-    const responseKey = `${currentText.id}-${currentQuestion.id}`
+    const currentQuestion = currentQuestionText.questions[currentQuestionIndex]
+    const responseKey = `${currentQuestionText.id}-${currentQuestion.id}`
     const currentResponse = responses[responseKey] || ""
 
     return (
@@ -1004,7 +1032,7 @@ export default function ExamSimulatorPage() {
             <div className="flex items-center space-x-4">
               <span className="font-medium">Section I: Unseen Texts</span>
               <span className="text-sm text-muted-foreground">
-                Text {currentTextIndex + 1} Question {currentQuestionIndex + 1} of {currentText.questions.length}
+                Text {currentQuestionTextIndex + 1} Question {currentQuestionIndex + 1} of {currentQuestionText.questions.length}
               </span>
               {/* Autosave indicator */}
               {autoSaveStatus && (
@@ -1148,7 +1176,7 @@ export default function ExamSimulatorPage() {
             <div className="max-w-2xl mx-auto">
               <div className="bg-muted p-4 rounded-lg mb-6">
                 <div className="flex justify-between mb-2">
-                  <h3 className="font-medium">Text {currentTextIndex + 1} Question {currentQuestionIndex + 1}</h3>
+                  <h3 className="font-medium">Text {currentQuestionTextIndex + 1} Question {currentQuestionIndex + 1}</h3>
                   <span className="text-sm text-muted-foreground">{currentQuestion.marks} marks</span>
                 </div>
                 <p>{currentQuestion.text}</p>
@@ -1159,7 +1187,7 @@ export default function ExamSimulatorPage() {
                 <textarea
                   className="w-full h-64 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                   value={currentResponse}
-                  onChange={(e) => handleResponseChange(currentText.id, currentQuestion.id, e.target.value)}
+                  onChange={(e) => handleResponseChange(currentQuestionText.id, currentQuestion.id, e.target.value)}
                   placeholder={remainingTime <= 0 ? "Time expired - exam automatically submitted" : "Type your response here..."}
                   disabled={isPaused || remainingTime <= 0 || examSubmitted}
                 />
@@ -1170,14 +1198,14 @@ export default function ExamSimulatorPage() {
                 <Button
                   variant="outline"
                   onClick={handlePrevQuestionOnly}
-                  disabled={currentQuestionIndex === 0 || remainingTime <= 0 || examSubmitted}
+                  disabled={(currentQuestionTextIndex === 0 && currentQuestionIndex === 0) || remainingTime <= 0 || examSubmitted}
                 >
                   <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous Question
                 </Button>
 
-                {currentTextIndex === unseenTexts.length - 1 &&
-                currentQuestionIndex === currentText.questions.length - 1 ? (
+                {currentQuestionTextIndex === unseenTexts.length - 1 &&
+                currentQuestionIndex === currentQuestionText.questions.length - 1 ? (
                   <Button 
                     onClick={() => setShowSubmitSectionDialog(true)}
                     disabled={remainingTime <= 0 || examSubmitted}
@@ -1187,7 +1215,7 @@ export default function ExamSimulatorPage() {
                 ) : (
                   <Button 
                     onClick={handleNextQuestionOnly}
-                    disabled={currentQuestionIndex === currentText.questions.length - 1 || remainingTime <= 0 || examSubmitted}
+                    disabled={(currentQuestionTextIndex === unseenTexts.length - 1 && currentQuestionIndex === currentQuestionText.questions.length - 1) || remainingTime <= 0 || examSubmitted}
                   >
                     Next Question
                     <ChevronRight className="ml-1 h-4 w-4" />
@@ -1209,7 +1237,7 @@ export default function ExamSimulatorPage() {
                           {text.questions.map((question, questionIndex) => {
                             const responseKey = `${text.id}-${question.id}`
                             const isAnswered = responses[responseKey] && responses[responseKey].trim() !== ''
-                            const isCurrent = textIndex === currentTextIndex && questionIndex === currentQuestionIndex
+                            const isCurrent = textIndex === currentQuestionTextIndex && questionIndex === currentQuestionIndex
                             
                             return (
                               <button
@@ -2222,6 +2250,8 @@ export default function ExamSimulatorPage() {
                 setEssayResponse("")
                 setCurrentTextIndex(0)
                 setCurrentQuestionIndex(0)
+                setCurrentQuestionTextIndex(0)
+                setQuestionIndicesPerText({})
                 setMarkingResults(null)
                 setIsMarking(false)
                 setMarkingError(null)

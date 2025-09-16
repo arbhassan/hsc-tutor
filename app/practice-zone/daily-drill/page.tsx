@@ -466,6 +466,7 @@ In conclusion, the text demonstrates sophisticated use of literary techniques th
 const STORAGE_KEYS = {
   PRACTICE_STARTED: 'dailyDrill_practiceStarted',
   CURRENT_TEXT_INDEX: 'dailyDrill_currentTextIndex',
+  CURRENT_QUESTION_SET_INDEX: 'dailyDrill_currentQuestionSetIndex',
   RESPONSES: 'dailyDrill_responses',
   SUBMITTED: 'dailyDrill_submitted',
   FEEDBACK: 'dailyDrill_feedback',
@@ -512,6 +513,7 @@ const clearStorage = () => {
 
 export default function DailyDrillPage() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
+  const [currentQuestionSetIndex, setCurrentQuestionSetIndex] = useState(0) // Separate question set navigation
   const [responses, setResponses] = useState({})
   const [submitted, setSubmitted] = useState(false)
   const [practiceStarted, setPracticeStarted] = useState(false)
@@ -530,6 +532,7 @@ export default function DailyDrillPage() {
   useEffect(() => {
     const loadedPracticeStarted = loadFromStorage(STORAGE_KEYS.PRACTICE_STARTED, false)
     const loadedCurrentTextIndex = loadFromStorage(STORAGE_KEYS.CURRENT_TEXT_INDEX, 0)
+    const loadedCurrentQuestionSetIndex = loadFromStorage(STORAGE_KEYS.CURRENT_QUESTION_SET_INDEX, 0)
     const loadedResponses = loadFromStorage(STORAGE_KEYS.RESPONSES, {})
     const loadedSubmitted = loadFromStorage(STORAGE_KEYS.SUBMITTED, false)
     const loadedFeedback = loadFromStorage(STORAGE_KEYS.FEEDBACK, {})
@@ -542,6 +545,7 @@ export default function DailyDrillPage() {
     if (sessionId && loadedPracticeStarted) {
       setPracticeStarted(loadedPracticeStarted)
       setCurrentTextIndex(loadedCurrentTextIndex)
+      setCurrentQuestionSetIndex(loadedCurrentQuestionSetIndex)
       setResponses(loadedResponses)
       setSubmitted(loadedSubmitted)
       setFeedback(loadedFeedback)
@@ -565,6 +569,12 @@ export default function DailyDrillPage() {
       saveToStorage(STORAGE_KEYS.CURRENT_TEXT_INDEX, currentTextIndex)
     }
   }, [currentTextIndex, isLoaded])
+
+  useEffect(() => {
+    if (isLoaded) {
+      saveToStorage(STORAGE_KEYS.CURRENT_QUESTION_SET_INDEX, currentQuestionSetIndex)
+    }
+  }, [currentQuestionSetIndex, isLoaded])
 
   useEffect(() => {
     if (isLoaded) {
@@ -603,51 +613,82 @@ export default function DailyDrillPage() {
   }, [textCompletionStatus, isLoaded])
 
   const currentText = unseenTexts[currentTextIndex]
+  const currentQuestionSet = unseenTexts[currentQuestionSetIndex]
 
   const getWordCount = (text) => {
     const words = text.trim().split(/\s+/)
     return text.trim() === "" ? 0 : words.length
   }
 
-  // Save current text responses to allTextResponses before switching
-  const saveCurrentTextResponses = () => {
+  // Save current question set responses to allTextResponses before switching
+  const saveCurrentQuestionSetResponses = () => {
     if (Object.keys(responses).length > 0) {
       setAllTextResponses(prev => ({
         ...prev,
-        [currentTextIndex]: responses
+        [currentQuestionSetIndex]: responses
       }))
     }
   }
 
-  // Load responses for a specific text
+  // Load responses for a specific question set
+  const loadQuestionSetResponses = (questionSetIndex) => {
+    const questionSetResponses = allTextResponses[questionSetIndex] || {}
+    setResponses(questionSetResponses)
+  }
+
+  // Save current text responses to allTextResponses before switching (legacy for text navigation)
+  const saveCurrentTextResponses = () => {
+    if (Object.keys(responses).length > 0) {
+      setAllTextResponses(prev => ({
+        ...prev,
+        [currentQuestionSetIndex]: responses
+      }))
+    }
+  }
+
+  // Load responses for a specific text (legacy for text navigation)
   const loadTextResponses = (textIndex) => {
     const textResponses = allTextResponses[textIndex] || {}
     setResponses(textResponses)
   }
 
-  // Switch to a different text
+  // Switch to a different text (text display only)
   const switchToText = (textIndex) => {
     if (textIndex !== currentTextIndex) {
-      // Save current text responses
-      saveCurrentTextResponses()
-      
-      // Switch to new text
+      console.log(`Switching text display from ${currentTextIndex} to ${textIndex}`)
       setCurrentTextIndex(textIndex)
+    }
+  }
+
+  // Switch to a different question set
+  const switchToQuestionSet = (questionSetIndex) => {
+    if (questionSetIndex !== currentQuestionSetIndex) {
+      console.log(`Switching question set from ${currentQuestionSetIndex} to ${questionSetIndex}`)
+      console.log(`Previous question set:`, unseenTexts[currentQuestionSetIndex]?.questions)
+      console.log(`New question set:`, unseenTexts[questionSetIndex]?.questions)
       
-      // Load responses for the new text
-      loadTextResponses(textIndex)
+      // Save current question set responses
+      saveCurrentQuestionSetResponses()
       
-      // Reset current text submission status
+      // Switch to new question set
+      setCurrentQuestionSetIndex(questionSetIndex)
+      
+      // Load responses for the new question set
+      loadQuestionSetResponses(questionSetIndex)
+      
+      // Reset submission status for the new question set
       setSubmitted(false)
       setFeedback({})
       setImprovedResponses({})
       setCopiedQuestions({})
+      
+      console.log(`After switch - current question set:`, unseenTexts[questionSetIndex]?.questions)
     }
   }
 
-  // Check if text has any comparative questions (mentions comparing texts)
+  // Check if current question set has any comparative questions (mentions comparing texts)
   const hasComparativeQuestions = () => {
-    return currentText.questions.some(question => 
+    return currentQuestionSet.questions.some(question => 
       question.text.toLowerCase().includes('compare') || 
       question.text.toLowerCase().includes('contrast') ||
       question.text.toLowerCase().includes('text 1') ||
@@ -673,7 +714,7 @@ export default function DailyDrillPage() {
   }
 
   const allQuestionsAnswered = () => {
-    return currentText.questions.every(question => 
+    return currentQuestionSet.questions.every(question => 
       responses[question.id] && responses[question.id].trim().length > 0
     )
   }
@@ -686,7 +727,7 @@ export default function DailyDrillPage() {
       const newFeedback = {}
       const newImprovedResponses = {}
       
-      currentText.questions.forEach(question => {
+      currentQuestionSet.questions.forEach(question => {
         const response = responses[question.id]
         const responseFeedback = analyzeResponse(response, question.id)
         newFeedback[question.id] = responseFeedback
@@ -700,13 +741,13 @@ export default function DailyDrillPage() {
 
       // Calculate total score
       const totalScore = Object.values(newFeedback).reduce((sum: number, f: any) => sum + (f?.overallScore || 0), 0)
-      const maxScore = currentText.questions.reduce((sum, q) => sum + q.marks, 0)
+      const maxScore = currentQuestionSet.questions.reduce((sum, q) => sum + q.marks, 0)
 
       // Track progress and save submission if user is authenticated
       if (user?.id) {
         try {
           // Track progress for each question
-          for (const question of currentText.questions) {
+          for (const question of currentQuestionSet.questions) {
             const responseFeedback = newFeedback[question.id]
             if (responseFeedback) {
               await trackShortAnswerDetailed(
@@ -725,20 +766,20 @@ export default function DailyDrillPage() {
           const submissionData = {
             submissionType: 'daily_drill',
             contentType: 'questions',
-            title: `Daily Drill - ${currentText.title}`,
+            title: `Daily Drill - ${currentQuestionSet.title}`,
             totalScore,
             maxScore,
             completionTimeMinutes: 10, // estimated time
-            questions: currentText.questions.map((question, index) => ({
+            questions: currentQuestionSet.questions.map((question, index) => ({
               questionText: question.text,
               userResponse: responses[question.id] || '',
               aiFeedback: newFeedback[question.id]?.specificFeedback || '',
               marksAwarded: newFeedback[question.id]?.overallScore || 0,
               maxMarks: question.marks,
-              textTitle: currentText.title,
-              textAuthor: currentText.author,
-              textType: currentText.type,
-              textContent: currentText.content
+              textTitle: currentQuestionSet.title,
+              textAuthor: currentQuestionSet.author,
+              textType: currentQuestionSet.type,
+              textContent: currentQuestionSet.content
             }))
           }
 
@@ -758,29 +799,21 @@ export default function DailyDrillPage() {
     }
   }
 
-  const handleNextText = () => {
-    if (currentTextIndex < unseenTexts.length - 1) {
-      setCurrentTextIndex(currentTextIndex + 1)
-      setResponses({})
-      setSubmitted(false)
-      setFeedback({})
-      setImprovedResponses({})
-      setCopiedQuestions({})
+  const handleNextQuestionSet = () => {
+    if (currentQuestionSetIndex < unseenTexts.length - 1) {
+      // Move to next question set
+      const nextIndex = currentQuestionSetIndex + 1
+      switchToQuestionSet(nextIndex)
       
-      // Generate new session ID for the new text
+      // Generate new session ID for the new question set
       saveToStorage(STORAGE_KEYS.SESSION_ID, Date.now().toString())
     }
   }
 
   const handleNewDrill = () => {
-    // Move to next text or wrap around
-    const nextTextIndex = (currentTextIndex + 1) % unseenTexts.length
-    setCurrentTextIndex(nextTextIndex)
-    setResponses({})
-    setSubmitted(false)
-    setFeedback({})
-    setImprovedResponses({})
-    setCopiedQuestions({})
+    // Move to next question set or wrap around
+    const nextQuestionSetIndex = (currentQuestionSetIndex + 1) % unseenTexts.length
+    switchToQuestionSet(nextQuestionSetIndex)
     
     // Generate new session ID for the new drill
     saveToStorage(STORAGE_KEYS.SESSION_ID, Date.now().toString())
@@ -810,6 +843,7 @@ export default function DailyDrillPage() {
     clearStorage()
     setPracticeStarted(false)
     setCurrentTextIndex(0)
+    setCurrentQuestionSetIndex(0)
     setResponses({})
     setSubmitted(false)
     setFeedback({})
@@ -890,42 +924,73 @@ export default function DailyDrillPage() {
             </Link>
           </div>
           
-          {/* Current Text Indicator */}
+          {/* Current Text and Question Set Indicators */}
           <div className="flex items-center space-x-4">
             <span className="text-sm font-medium">
-              Text {currentTextIndex + 1} of {unseenTexts.length}
+              Viewing Text {currentTextIndex + 1} | Questions from Text {currentQuestionSetIndex + 1}
             </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTextNavigation(!showTextNavigation)}
+              className="flex items-center"
+            >
+              <BookOpen className="mr-1 h-4 w-4" />
+              {showTextNavigation ? 'Hide' : 'Show'} Navigation
+            </Button>
           </div>
         </div>
         
-        {/* Collapsible Text Navigation Panel */}
+        {/* Collapsible Navigation Panel */}
         {showTextNavigation && (
           <div className="border-t bg-muted/50 p-4">
             <div className="container">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Select
-                    value={currentTextIndex.toString()}
-                    onValueChange={(value) => switchToText(parseInt(value))}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {unseenTexts.map((text, index) => (
-                        <SelectItem key={text.id} value={index.toString()}>
-                          Text {index + 1}: {text.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium">Text Display:</label>
+                    <Select
+                      value={currentTextIndex.toString()}
+                      onValueChange={(value) => switchToText(parseInt(value))}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unseenTexts.map((text, index) => (
+                          <SelectItem key={text.id} value={index.toString()}>
+                            Text {index + 1}: {text.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium">Questions:</label>
+                    <Select
+                      value={currentQuestionSetIndex.toString()}
+                      onValueChange={(value) => switchToQuestionSet(parseInt(value))}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unseenTexts.map((text, index) => (
+                          <SelectItem key={text.id} value={index.toString()}>
+                            Text {index + 1}: {text.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
                 {hasComparativeQuestions() && (
                   <div className="flex items-center space-x-2">
                     <AlertCircle className="h-4 w-4 text-amber-500" />
                     <span className="text-sm text-amber-600">
-                      This text has comparative questions - use navigation to compare with other texts
+                      Current question set has comparative questions
                     </span>
                   </div>
                 )}
@@ -973,7 +1038,12 @@ export default function DailyDrillPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => switchToText(Math.max(0, currentTextIndex - 1))}
+                onClick={() => {
+                  const prevIndex = Math.max(0, currentTextIndex - 1)
+                  if (prevIndex !== currentTextIndex) {
+                    switchToText(prevIndex)
+                  }
+                }}
                 disabled={currentTextIndex === 0}
                 className="flex items-center"
               >
@@ -984,7 +1054,12 @@ export default function DailyDrillPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => switchToText(Math.min(unseenTexts.length - 1, currentTextIndex + 1))}
+                onClick={() => {
+                  const nextIndex = Math.min(unseenTexts.length - 1, currentTextIndex + 1)
+                  if (nextIndex !== currentTextIndex) {
+                    switchToText(nextIndex)
+                  }
+                }}
                 disabled={currentTextIndex === unseenTexts.length - 1}
                 className="flex items-center"
               >
@@ -1003,13 +1078,18 @@ export default function DailyDrillPage() {
                 {/* Questions and Responses Combined */}
                 <div className="mb-4">
                   <h3 className="text-lg font-medium mb-2">Questions & Responses</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Answer all questions for this text. You must complete all responses before submitting.
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-muted-foreground">
+                      Answer all questions for this text. You must complete all responses before submitting.
+                    </p>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                      Questions from Text {currentQuestionSetIndex + 1}: {currentQuestionSet.title}
+                    </span>
+                  </div>
 
                   <div className="space-y-6">
-                    {currentText.questions.map((question, index) => (
-                      <div key={question.id} className="border rounded-lg p-4">
+                    {currentQuestionSet.questions.map((question, index) => (
+                      <div key={`${currentQuestionSetIndex}-${question.id}`} className="border rounded-lg p-4">
                         {/* Question */}
                         <div className="bg-muted p-4 rounded-lg mb-4">
                           <div className="flex justify-between mb-2">
@@ -1043,7 +1123,7 @@ export default function DailyDrillPage() {
                   <Button 
                     variant="outline" 
                     onClick={() => {
-                      saveCurrentTextResponses()
+                      saveCurrentQuestionSetResponses()
                       setResponses({})
                     }}
                     disabled={Object.keys(responses).length === 0}
@@ -1066,8 +1146,8 @@ export default function DailyDrillPage() {
 
                   <TabsContent value="feedback" className="mt-4">
                     <div className="space-y-4">
-                      {currentText.questions.map((question, index) => (
-                        <Card key={question.id} className="p-4">
+                      {currentQuestionSet.questions.map((question, index) => (
+                        <Card key={`${currentQuestionSetIndex}-feedback-${question.id}`} className="p-4">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium">Question {index + 1} Analysis</h3>
                             <div className="flex items-center">
@@ -1112,13 +1192,13 @@ export default function DailyDrillPage() {
                         <h4 className="font-medium">Total Score</h4>
                         <p className="text-2xl font-bold">
                           {Object.values(feedback).reduce((sum, f) => sum + (f?.overallScore || 0), 0)} / {" "}
-                          {currentText.questions.reduce((sum, q) => sum + q.marks, 0)}
+                          {currentQuestionSet.questions.reduce((sum, q) => sum + q.marks, 0)}
                         </p>
                       </div>
                       <div className="flex space-x-2">
-                        {currentTextIndex < unseenTexts.length - 1 ? (
-                          <Button onClick={handleNextText}>
-                            Next Text
+                        {currentQuestionSetIndex < unseenTexts.length - 1 ? (
+                          <Button onClick={handleNextQuestionSet}>
+                            Next Question Set
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         ) : (
@@ -1133,8 +1213,8 @@ export default function DailyDrillPage() {
 
                   <TabsContent value="improved" className="mt-4">
                     <div className="space-y-4">
-                      {currentText.questions.map((question, index) => (
-                        <Card key={question.id} className="p-4">
+                      {currentQuestionSet.questions.map((question, index) => (
+                        <Card key={`${currentQuestionSetIndex}-improved-${question.id}`} className="p-4">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium">Question {index + 1} - Improved Answer</h3>
                             <Button
@@ -1166,8 +1246,8 @@ export default function DailyDrillPage() {
 
                   <TabsContent value="your-answers" className="mt-4">
                     <div className="space-y-4">
-                      {currentText.questions.map((question, index) => (
-                        <Card key={question.id} className="p-4">
+                      {currentQuestionSet.questions.map((question, index) => (
+                        <Card key={`${currentQuestionSetIndex}-your-answers-${question.id}`} className="p-4">
                           <h3 className="text-lg font-medium mb-2">Question {index + 1} - Your Answer</h3>
                           <div className="prose max-w-none text-sm break-words overflow-hidden">
                             <p className="whitespace-pre-wrap break-words">{responses[question.id] || ""}</p>

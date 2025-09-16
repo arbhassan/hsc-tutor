@@ -13,8 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   BookOpen,
   CheckCircle,
-  Clock,
-  Flame,
   TrendingUp,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
@@ -182,20 +180,7 @@ function OverviewTab({
 }) {
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8 max-w-md">
-        <StatCard
-          title="Study Streak"
-          value={userProgress?.study_streak ? `${userProgress.study_streak} days` : "0 days"}
-          description="Keep it up!"
-          icon={<Flame className="h-5 w-5" />}
-        />
-      </div>
-
-
-
-      
-
-
+      {/* Overview section content can be added here in the future */}
     </>
   )
 }
