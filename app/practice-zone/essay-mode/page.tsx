@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { useProgressTracker } from "@/hooks/use-progress-tracker"
@@ -1009,9 +1008,17 @@ export default function EssayMode() {
               size="sm" 
               variant={showWritingAssistant ? "default" : "outline"}
               onClick={() => {
-                const newState = !showWritingAssistant
-                setShowWritingAssistant(newState)
-                localStorage.setItem("showWritingAssistant", JSON.stringify(newState))
+                if (showWritingAssistant) {
+                  // If Writing Assistant is currently active, turn it off
+                  setShowWritingAssistant(false)
+                  localStorage.setItem("showWritingAssistant", "false")
+                } else {
+                  // Turn on Writing Assistant and turn off Structure Guide
+                  setShowWritingAssistant(true)
+                  setShowStructureGuide(false)
+                  localStorage.setItem("showWritingAssistant", "true")
+                  localStorage.setItem("showStructureGuide", "false")
+                }
               }}
               className="flex items-center"
             >
@@ -1022,9 +1029,17 @@ export default function EssayMode() {
               size="sm" 
               variant={showStructureGuide ? "default" : "outline"}
               onClick={() => {
-                const newState = !showStructureGuide
-                setShowStructureGuide(newState)
-                localStorage.setItem("showStructureGuide", JSON.stringify(newState))
+                if (showStructureGuide) {
+                  // If Structure Guide is currently active, turn it off
+                  setShowStructureGuide(false)
+                  localStorage.setItem("showStructureGuide", "false")
+                } else {
+                  // Turn on Structure Guide and turn off Writing Assistant
+                  setShowStructureGuide(true)
+                  setShowWritingAssistant(false)
+                  localStorage.setItem("showStructureGuide", "true")
+                  localStorage.setItem("showWritingAssistant", "false")
+                }
               }}
               className="flex items-center"
             >
@@ -1120,185 +1135,165 @@ export default function EssayMode() {
         </div>
       </div>
 
-      {/* Right sidebar - Writing Assistant and Structure Guide */}
+      {/* Right sidebar - Writing Assistant or Structure Guide */}
       {(showWritingAssistant || showStructureGuide) && (
         <div className="w-80 border-l bg-muted/30 overflow-hidden flex flex-col">
           
-          {/* Tabs for switching between Writing Assistant and Structure Guide */}
-          <Tabs defaultValue={showWritingAssistant ? "assistant" : "structure"} className="h-full flex flex-col">
-            <div className="p-4 border-b bg-background">
-              <TabsList className={`grid w-full ${(showWritingAssistant && showStructureGuide) ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                {showWritingAssistant && (
-                  <TabsTrigger value="assistant" className="text-xs">
-                    <MessageCircle size={14} className="mr-1" />
-                    Assistant
-                  </TabsTrigger>
-                )}
-                {showStructureGuide && (
-                  <TabsTrigger value="structure" className="text-xs">
-                    <FileText size={14} className="mr-1" />
-                    Structure
-                  </TabsTrigger>
-                )}
-              </TabsList>
-            </div>
-
-            {/* Writing Assistant Tab */}
-            {showWritingAssistant && (
-              <TabsContent value="assistant" className="flex-1 overflow-hidden flex flex-col m-0">
-                <div className="p-4 border-b bg-background">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium flex items-center text-blue-700">
-                      <MessageCircle size={16} className="mr-2" />
-                      Writing Assistant
-                      {isAnalyzing && <RefreshCw size={14} className="ml-2 animate-spin" />}
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      <Button size="sm" variant="ghost" onClick={clearAiFeedback}>
-                        Clear All
-                      </Button>
-                    </div>
+          {/* Writing Assistant Panel */}
+          {showWritingAssistant && (
+            <>
+              <div className="p-4 border-b bg-background">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium flex items-center text-blue-700">
+                    <MessageCircle size={16} className="mr-2" />
+                    Writing Assistant
+                    {isAnalyzing && <RefreshCw size={14} className="ml-2 animate-spin" />}
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <Button size="sm" variant="ghost" onClick={clearAiFeedback}>
+                      Clear All
+                    </Button>
                   </div>
                 </div>
-                
-                <ScrollArea className="flex-1 p-4">
-                  {aiFeedback.length === 0 ? (
-                    <p className="text-sm text-blue-600">Start writing to get feedback on your essay structure and content...</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {aiFeedback.slice(-6).map((feedback) => (
-                        <Alert key={feedback.id} className={`py-2 ${
-                          feedback.priority === 'high' ? 'border-red-200 bg-red-50' :
-                          feedback.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
-                          'border-green-200 bg-green-50'
-                        }`}>
-                          <AlertDescription className="text-xs flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge 
-                                  variant={
-                                    feedback.type === 'strength' ? 'default' :
-                                    feedback.type === 'missing' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs px-1 py-0"
-                                >
-                                  {feedback.section}
+              </div>
+              
+              <ScrollArea className="flex-1 p-4">
+                {aiFeedback.length === 0 ? (
+                  <p className="text-sm text-blue-600">Start writing to get feedback on your essay structure and content...</p>
+                ) : (
+                  <div className="space-y-3">
+                    {aiFeedback.slice(-6).map((feedback) => (
+                      <Alert key={feedback.id} className={`py-2 ${
+                        feedback.priority === 'high' ? 'border-red-200 bg-red-50' :
+                        feedback.priority === 'medium' ? 'border-yellow-200 bg-yellow-50' :
+                        'border-green-200 bg-green-50'
+                      }`}>
+                        <AlertDescription className="text-xs flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge 
+                                variant={
+                                  feedback.type === 'strength' ? 'default' :
+                                  feedback.type === 'missing' ? 'destructive' :
+                                  'secondary'
+                                }
+                                className="text-xs px-1 py-0"
+                              >
+                                {feedback.section}
+                              </Badge>
+                              {feedback.priority === 'high' && (
+                                <Badge variant="destructive" className="text-xs px-1 py-0">
+                                  High Priority
                                 </Badge>
-                                {feedback.priority === 'high' && (
-                                  <Badge variant="destructive" className="text-xs px-1 py-0">
-                                    High Priority
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-sm">{feedback.message}</p>
-                              <span className="text-muted-foreground text-xs">({feedback.timestamp})</span>
+                              )}
                             </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-4 w-4 p-0 ml-2"
-                              onClick={() => dismissFeedback(feedback.id)}
-                            >
-                              <X size={12} />
-                            </Button>
-                          </AlertDescription>
-                        </Alert>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </TabsContent>
-            )}
-
-            {/* Structure Guide Tab */}
-            {showStructureGuide && (
-              <TabsContent value="structure" className="flex-1 overflow-hidden flex flex-col m-0">
-                <div className="p-4 border-b bg-background">
-                  <h3 className="font-medium">Essay Structure Guide</h3>
-                  <p className="text-sm text-muted-foreground mt-1">How to structure your essay effectively</p>
-                </div>
-
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-medium mb-2">Introduction</h3>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Begin with a contextual statement about the text</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Present your thesis statement that directly addresses the question</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Outline your main arguments (3-4 points)</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Establish the significance of your argument</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h3 className="font-medium mb-2">Body Paragraphs</h3>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Start with a clear topic sentence that connects to your thesis</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Present textual evidence (quotes) that supports your point</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Analyze the evidence by discussing techniques and their effects</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Explain how this supports your overall argument</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Link back to the question</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <h3 className="font-medium mb-2">Conclusion</h3>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Restate your thesis in different words</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Summarize your key arguments</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>Discuss the broader significance of your analysis</span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>End with a thoughtful final statement</span>
-                        </li>
-                      </ul>
-                    </div>
+                            <p className="text-sm">{feedback.message}</p>
+                            <span className="text-muted-foreground text-xs">({feedback.timestamp})</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-4 w-4 p-0 ml-2"
+                            onClick={() => dismissFeedback(feedback.id)}
+                          >
+                            <X size={12} />
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    ))}
                   </div>
-                </ScrollArea>
-              </TabsContent>
-            )}
-          </Tabs>
+                )}
+              </ScrollArea>
+            </>
+          )}
+
+          {/* Structure Guide Panel */}
+          {showStructureGuide && (
+            <>
+              <div className="p-4 border-b bg-background">
+                <h3 className="font-medium">Essay Structure Guide</h3>
+                <p className="text-sm text-muted-foreground mt-1">How to structure your essay effectively</p>
+              </div>
+
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-medium mb-2">Introduction</h3>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Begin with a contextual statement about the text</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Present your thesis statement that directly addresses the question</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Outline your main arguments (3-4 points)</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Establish the significance of your argument</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-medium mb-2">Body Paragraphs</h3>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Start with a clear topic sentence that connects to your thesis</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Present textual evidence (quotes) that supports your point</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Analyze the evidence by discussing techniques and their effects</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Explain how this supports your overall argument</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Link back to the question</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h3 className="font-medium mb-2">Conclusion</h3>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Restate your thesis in different words</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Summarize your key arguments</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>Discuss the broader significance of your analysis</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>End with a thoughtful final statement</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </ScrollArea>
+            </>
+          )}
         </div>
       )}
 
