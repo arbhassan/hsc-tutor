@@ -53,7 +53,7 @@ export default function ContextPage({ params }: { params: Promise<{ textId: stri
     )
   }
 
-  // Group contexts by type and convert to slides
+  // Group contexts by type and create subsections
   const slides: SlideData[] = (() => {
     // Handle both array (Supabase) and object (static data) structures
     let contexts: any[] = []
@@ -81,49 +81,42 @@ export default function ContextPage({ params }: { params: Promise<{ textId: stri
       return acc
     }, {})
 
-    // Convert grouped contexts to slides
-    return Object.entries(groupedContexts).map(([contextType, contextGroup], index) => {
-      // If multiple contexts of same type, combine their titles
-      const title = contextGroup.length === 1 
-        ? contextGroup[0].title 
-        : `${contextGroup[0].title.replace(/ Context$/, '')} Context`
+    // Convert grouped contexts to slides with subsections
+    return Object.entries(groupedContexts).map(([contextType, contextGroup]) => {
+      // Format the main section title (e.g., "historical" -> "Historical Context")
+      const mainTitle = contextType.charAt(0).toUpperCase() + contextType.slice(1) + " Context"
 
-      // Combine all sections from contexts of the same type
-      const allSections = contextGroup.flatMap(context => context.sections)
+      // Create subsections for each context in the group
+      const subsections = contextGroup.map((context) => ({
+        id: context.id || `${contextType}-${context.title}`,
+        title: context.title,
+        content: (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              {context.sections.map((section, sectionIndex) => (
+                <div key={sectionIndex}>
+                  {section.title && (
+                    <h3 className="text-xl font-semibold mb-3 text-blue-700">{section.title}</h3>
+                  )}
+                  <div className="space-y-4">
+                    {section.content.map((paragraph, paragraphIndex) => (
+                      <p key={paragraphIndex} className="text-gray-700 leading-relaxed">
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      }))
 
       return {
         id: contextType,
-        title: title,
-        content: (
-          <div className="space-y-6">
-            {contextGroup.map((context, contextIndex) => (
-              <div key={contextIndex} className="space-y-4">
-                {contextGroup.length > 1 && (
-                  <div className="border-l-4 border-blue-500 pl-4 mb-4">
-                    <h2 className="text-2xl font-semibold text-blue-800 mb-2">{context.title}</h2>
-                  </div>
-                )}
-                {context.sections.map((section, sectionIndex) => (
-                  <div key={sectionIndex}>
-                    {section.title && (
-                      <h3 className="text-xl font-semibold mb-3 text-blue-700">{section.title}</h3>
-                    )}
-                    <div className="space-y-4">
-                      {section.content.map((paragraph, paragraphIndex) => (
-                        <p key={paragraphIndex} className="text-gray-700 leading-relaxed">
-                          {paragraph}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {contextGroup.length > 1 && contextIndex < contextGroup.length - 1 && (
-                  <hr className="border-gray-200 my-8" />
-                )}
-              </div>
-            ))}
-          </div>
-        )
+        title: mainTitle,
+        content: null, // Not used for grouped sections
+        subsections
       }
     })
   })()

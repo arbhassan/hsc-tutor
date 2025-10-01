@@ -11,6 +11,7 @@ export interface SlideData {
   title: string
   content: ReactNode
   badge?: string
+  subsections?: SlideData[]
 }
 
 interface SlideNavigationProps {
@@ -33,6 +34,51 @@ export function SlideNavigation({
 }: SlideNavigationProps) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+
+  // Flatten slides to include subsections
+  const flatSlides = React.useMemo(() => {
+    const flat: SlideData[] = []
+    slides.forEach(slide => {
+      if (slide.subsections && slide.subsections.length > 0) {
+        flat.push(...slide.subsections)
+      } else {
+        flat.push(slide)
+      }
+    })
+    return flat
+  }, [slides])
+
+  // Auto-expand section containing current slide
+  React.useEffect(() => {
+    let flatIndex = 0
+    for (const slide of slides) {
+      if (slide.subsections && slide.subsections.length > 0) {
+        if (currentSlideIndex >= flatIndex && currentSlideIndex < flatIndex + slide.subsections.length) {
+          setExpandedSections(prev => new Set(prev).add(slide.id))
+          break
+        }
+        flatIndex += slide.subsections.length
+      } else {
+        if (currentSlideIndex === flatIndex) {
+          break
+        }
+        flatIndex += 1
+      }
+    }
+  }, [currentSlideIndex, slides])
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev)
+      if (next.has(sectionId)) {
+        next.delete(sectionId)
+      } else {
+        next.add(sectionId)
+      }
+      return next
+    })
+  }
 
   const goToSlide = (index: number) => {
     setCurrentSlideIndex(index)
@@ -40,7 +86,7 @@ export function SlideNavigation({
   }
 
   const nextSlide = () => {
-    if (currentSlideIndex < slides.length - 1) {
+    if (currentSlideIndex < flatSlides.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1)
     }
   }
@@ -51,7 +97,7 @@ export function SlideNavigation({
     }
   }
 
-  const currentSlide = slides[currentSlideIndex]
+  const currentSlide = flatSlides[currentSlideIndex]
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -90,37 +136,118 @@ export function SlideNavigation({
           {/* Slide Navigation */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 space-y-2">
-              {slides.map((slide, index) => (
-                <button
-                  key={slide.id}
-                  onClick={() => goToSlide(index)}
-                  className={cn(
-                    "w-full text-left p-3 rounded-lg transition-colors duration-200",
-                    "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500",
-                    index === currentSlideIndex
-                      ? "bg-blue-50 border border-blue-200 text-blue-700"
-                      : "text-gray-700"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {index + 1}. {slide.title}
-                        </span>
-                        {slide.badge && (
-                          <Badge variant="secondary" className="text-xs">
-                            {slide.badge}
-                          </Badge>
+              {slides.map((slide, slideIndex) => {
+                if (slide.subsections && slide.subsections.length > 0) {
+                  const isExpanded = expandedSections.has(slide.id)
+                  let flatIndexOffset = 0
+                  for (let i = 0; i < slideIndex; i++) {
+                    if (slides[i].subsections && slides[i].subsections.length > 0) {
+                      flatIndexOffset += slides[i].subsections!.length
+                    } else {
+                      flatIndexOffset += 1
+                    }
+                  }
+                  
+                  return (
+                    <div key={slide.id} className="space-y-1">
+                      {/* Section Header */}
+                      <button
+                        onClick={() => toggleSection(slide.id)}
+                        className="w-full text-left p-3 rounded-lg transition-colors duration-200 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 font-semibold"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">{slide.title}</span>
+                          <ChevronRight className={cn(
+                            "h-4 w-4 transition-transform",
+                            isExpanded && "rotate-90"
+                          )} />
+                        </div>
+                      </button>
+                      
+                      {/* Subsections */}
+                      {isExpanded && (
+                        <div className="ml-3 space-y-1 border-l-2 border-gray-200 pl-2">
+                          {slide.subsections.map((subsection, subIndex) => {
+                            const flatIndex = flatIndexOffset + subIndex
+                            return (
+                              <button
+                                key={subsection.id}
+                                onClick={() => goToSlide(flatIndex)}
+                                className={cn(
+                                  "w-full text-left p-2 rounded-lg transition-colors duration-200",
+                                  "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                  flatIndex === currentSlideIndex
+                                    ? "bg-blue-50 border border-blue-200 text-blue-700"
+                                    : "text-gray-600"
+                                )}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">
+                                        {subsection.title}
+                                      </span>
+                                      {subsection.badge && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          {subsection.badge}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {flatIndex === currentSlideIndex && (
+                                    <ChevronRight className="h-4 w-4 text-blue-500" />
+                                  )}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                } else {
+                  let flatIndex = 0
+                  for (let i = 0; i < slideIndex; i++) {
+                    if (slides[i].subsections && slides[i].subsections.length > 0) {
+                      flatIndex += slides[i].subsections!.length
+                    } else {
+                      flatIndex += 1
+                    }
+                  }
+                  
+                  return (
+                    <button
+                      key={slide.id}
+                      onClick={() => goToSlide(flatIndex)}
+                      className={cn(
+                        "w-full text-left p-3 rounded-lg transition-colors duration-200",
+                        "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                        flatIndex === currentSlideIndex
+                          ? "bg-blue-50 border border-blue-200 text-blue-700"
+                          : "text-gray-700"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              {slide.title}
+                            </span>
+                            {slide.badge && (
+                              <Badge variant="secondary" className="text-xs">
+                                {slide.badge}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {flatIndex === currentSlideIndex && (
+                          <ChevronRight className="h-4 w-4 text-blue-500" />
                         )}
                       </div>
-                    </div>
-                    {index === currentSlideIndex && (
-                      <ChevronRight className="h-4 w-4 text-blue-500" />
-                    )}
-                  </div>
-                </button>
-              ))}
+                    </button>
+                  )
+                }
+              })}
             </div>
           </div>
 
@@ -128,12 +255,12 @@ export function SlideNavigation({
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
               <span>Progress</span>
-              <span>{currentSlideIndex + 1} of {slides.length}</span>
+              <span>{currentSlideIndex + 1} of {flatSlides.length}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((currentSlideIndex + 1) / slides.length) * 100}%` }}
+                style={{ width: `${((currentSlideIndex + 1) / flatSlides.length) * 100}%` }}
               />
             </div>
           </div>
@@ -169,7 +296,7 @@ export function SlideNavigation({
 
               <div className="flex items-center gap-4">
                 <div className="text-sm text-gray-600 hidden sm:block">
-                  {currentSlideIndex + 1} of {slides.length}
+                  {currentSlideIndex + 1} of {flatSlides.length}
                 </div>
                 
                 <div className="flex items-center gap-1">
@@ -187,7 +314,7 @@ export function SlideNavigation({
                     variant="outline"
                     size="sm"
                     onClick={nextSlide}
-                    disabled={currentSlideIndex === slides.length - 1}
+                    disabled={currentSlideIndex === flatSlides.length - 1}
                   >
                     <span className="hidden sm:inline mr-1">Next</span>
                     <ChevronRight className="h-4 w-4" />
@@ -244,7 +371,7 @@ export function SlideNavigation({
                 </Button>
 
                 <div className="flex items-center gap-2">
-                  {slides.map((_, index) => (
+                  {flatSlides.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => goToSlide(index)}
@@ -262,7 +389,7 @@ export function SlideNavigation({
                 <Button
                   variant="default"
                   onClick={nextSlide}
-                  disabled={currentSlideIndex === slides.length - 1}
+                  disabled={currentSlideIndex === flatSlides.length - 1}
                   className="flex items-center gap-2"
                 >
                   Next
