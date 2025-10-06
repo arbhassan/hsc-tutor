@@ -135,7 +135,7 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
     }
 
     // Theme filter
-    if (selectedThemes.length > 0 && !quote.themes.some((theme) => selectedThemes.includes(theme))) {
+    if (selectedThemes.length > 0 && !(quote.themes || []).some((theme) => selectedThemes.includes(theme))) {
       return false
     }
 
@@ -164,9 +164,11 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
     switch (sortOption) {
       case "theme":
-        return a.themes[0].localeCompare(b.themes[0])
+        const aTheme = a.themes && a.themes.length > 0 ? a.themes[0] : ""
+        const bTheme = b.themes && b.themes.length > 0 ? b.themes[0] : ""
+        return aTheme.localeCompare(bTheme)
       case "chapter":
-        return a.chapter.localeCompare(b.chapter)
+        return (a.chapter || "").localeCompare(b.chapter || "")
       case "significance":
         const significanceOrder = { high: 0, medium: 1, low: 2 }
         return (
@@ -183,7 +185,8 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
   // Group quotes by theme for theme-based display
   const quotesByTheme = sortedQuotes.reduce(
     (acc, quote) => {
-      quote.themes.forEach((theme) => {
+      const themes = quote.themes && quote.themes.length > 0 ? quote.themes : ["Uncategorized"]
+      themes.forEach((theme) => {
         if (!acc[theme]) {
           acc[theme] = []
         }
@@ -639,7 +642,7 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
                                   <span className="font-medium">Technique:</span> {quote.technique}
                                 </p>
                                 <div className="flex flex-wrap gap-1 mt-2">
-                                  {quote.themes.map((theme) => (
+                                  {(quote.themes || []).map((theme) => (
                                     <Badge key={theme} variant="secondary" className="text-xs">
                                       {theme}
                                     </Badge>
@@ -865,7 +868,7 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
                             <span className="font-medium">Technique:</span> {quote.technique}
                           </p>
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {quote.themes.map((theme) => (
+                            {(quote.themes || []).map((theme) => (
                               <Badge key={theme} variant="secondary" className="text-xs">
                                 {theme}
                               </Badge>
@@ -947,7 +950,7 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
               <div>
                 <h4 className="font-semibold text-sm text-gray-600 mb-2">Themes</h4>
                 <div className="flex flex-wrap gap-2">
-                  {selectedQuoteForDetails.themes.map((theme: string) => (
+                  {(selectedQuoteForDetails.themes || []).map((theme: string) => (
                     <Badge key={theme} variant="secondary" className="text-xs">
                       {theme}
                     </Badge>
