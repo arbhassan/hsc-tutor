@@ -944,6 +944,12 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
                     {selectedQuoteForDetails.significance}
                   </Badge>
                 </div>
+                {selectedQuoteForDetails.rubricConnection && (
+                  <div className="md:col-span-2">
+                    <h4 className="font-semibold text-sm text-gray-600 mb-1">Rubric Connection</h4>
+                    <p className="text-sm">{selectedQuoteForDetails.rubricConnection}</p>
+                  </div>
+                )}
               </div>
 
               {/* Themes */}

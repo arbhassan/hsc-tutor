@@ -105,6 +105,11 @@ INSERT INTO public.books (id, title, author, year, description, image, category,
  null, 'nonfiction', 
  ARRAY['Memory', 'Australian identity', 'Environment', 'Family'], false),
 
+('vertigo', 'Vertigo', 'Amanda Lohrey', '2008', 
+ 'A novel exploring themes of anxiety, modern life, spirituality, and the search for meaning in contemporary Australia.', 
+ null, 'prose', 
+ ARRAY['Anxiety', 'Spirituality', 'Modern life', 'Meaning', 'Australian identity'], false),
+
 -- Film/Media
 ('billy-elliot', 'Billy Elliot', 'Stephen Daldry', '2000', 
  'A film about a boy who wants to dance ballet despite social expectations.', 
@@ -114,7 +119,12 @@ INSERT INTO public.books (id, title, author, year, description, image, category,
 ('waste-land', 'Waste Land', 'Lucy Walker', '2010', 
  'A documentary about artist Vik Muniz working with garbage pickers in Brazil.', 
  null, 'film', 
- ARRAY['Art', 'Poverty', 'Transformation', 'Human Dignity'], false)
+ ARRAY['Art', 'Poverty', 'Transformation', 'Human Dignity'], false),
+
+('go-back-where-you-came-from', 'Go Back to Where You Came From Series 1: Episodes 1, 2 and 3 and The Response', 'Ivan O''Mahoney', '2011', 
+ 'A documentary series that follows six Australians as they are confronted with the issues faced by refugees and asylum seekers.', 
+ null, 'film', 
+ ARRAY['Refugees', 'Asylum seekers', 'Empathy', 'Social justice', 'Human rights', 'Immigration'], false)
 
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
