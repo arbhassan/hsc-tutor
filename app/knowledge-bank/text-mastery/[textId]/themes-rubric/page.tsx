@@ -57,7 +57,6 @@ export default function ThemesRubricPage({ params }: { params: Promise<{ textId:
   const slides: SlideData[] = Object.entries(text.detailedRubricConnections).map(([key, rubricSection], index) => ({
     id: key,
     title: rubricSection.title,
-    badge: `Theme ${index + 1}`,
     content: (
       <div className="space-y-6">
         {rubricSection.subsections.map((subsection, subsectionIndex) => (
