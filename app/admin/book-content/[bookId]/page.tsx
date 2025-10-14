@@ -734,7 +734,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                             size="sm"
                             onClick={() => {
                               const newContexts = [...contexts]
-                              newContexts[contextIndex].sections.push({ content: [''] })
+                              newContexts[contextIndex].sections.push({ title: '', content: [''] })
                               setContexts(newContexts)
                             }}
                           >
@@ -762,21 +762,19 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                                 </Button>
                               </div>
 
-                              {section.title !== undefined && (
-                                <div className="mb-3">
-                                  <Label htmlFor={`section-title-${contextIndex}-${sectionIndex}`}>Section Title (Optional)</Label>
-                                  <Input
-                                    id={`section-title-${contextIndex}-${sectionIndex}`}
-                                    value={section.title || ''}
-                                    onChange={(e) => {
-                                      const newContexts = [...contexts]
-                                      newContexts[contextIndex].sections[sectionIndex].title = e.target.value
-                                      setContexts(newContexts)
-                                    }}
-                                    placeholder="Optional section title"
-                                  />
-                                </div>
-                              )}
+                              <div className="mb-3">
+                                <Label htmlFor={`section-title-${contextIndex}-${sectionIndex}`}>Section Title (Optional)</Label>
+                                <Input
+                                  id={`section-title-${contextIndex}-${sectionIndex}`}
+                                  value={section.title || ''}
+                                  onChange={(e) => {
+                                    const newContexts = [...contexts]
+                                    newContexts[contextIndex].sections[sectionIndex].title = e.target.value
+                                    setContexts(newContexts)
+                                  }}
+                                  placeholder="Optional section title"
+                                />
+                              </div>
 
                               <div className="space-y-2">
                                 {section.content.map((paragraph, paragraphIndex) => (
