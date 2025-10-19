@@ -53,6 +53,37 @@ export default function EssayGuidePage({ params }: { params: Promise<{ textId: s
     )
   }
 
+  // Check if essay guide content is available
+  const hasEssayGuideContent = () => {
+    if (!text.essayGuide) return false
+    return (
+      (text.essayGuide.structure?.parts?.length > 0) ||
+      (text.essayGuide.techniques?.categories?.length > 0) ||
+      (text.essayGuide.mistakes?.dontDo?.length > 0) ||
+      (text.essayGuide.sampleQuestion?.question?.length > 0) ||
+      (text.essayGuide.tips?.phases?.length > 0)
+    )
+  }
+
+  if (!hasEssayGuideContent()) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Content Not Available</h1>
+          <p className="text-muted-foreground mb-4">
+            Essay writing guide for this text is currently being prepared. Please check back soon.
+          </p>
+          <Link 
+            href={`/knowledge-bank/text-mastery/${textId}`} 
+            className="inline-block px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            Back to {text.title}
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Convert essay guide sections to slides
   const slides: SlideData[] = [
     // Structure slide

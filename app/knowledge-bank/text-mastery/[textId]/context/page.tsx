@@ -53,6 +53,42 @@ export default function ContextPage({ params }: { params: Promise<{ textId: stri
     )
   }
 
+  // Check if context content is available
+  const hasContextContent = () => {
+    if (!text.detailedContexts) return false
+    
+    if (Array.isArray(text.detailedContexts)) {
+      return text.detailedContexts.some(context => 
+        context.sections && context.sections.length > 0 && 
+        context.sections.some(s => s.content && s.content.length > 0)
+      )
+    } else {
+      return Object.values(text.detailedContexts).some(context => 
+        context.sections && context.sections.length > 0 && 
+        context.sections.some(s => s.content && s.content.length > 0)
+      )
+    }
+  }
+
+  if (!hasContextContent()) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Content Not Available</h1>
+          <p className="text-muted-foreground mb-4">
+            Context analysis for this text is currently being prepared. Please check back soon.
+          </p>
+          <Link 
+            href={`/knowledge-bank/text-mastery/${textId}`} 
+            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Back to {text.title}
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Group contexts by type and create subsections
   const slides: SlideData[] = (() => {
     // Handle both array (Supabase) and object (static data) structures

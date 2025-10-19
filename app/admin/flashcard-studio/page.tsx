@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
@@ -30,7 +29,6 @@ import {
   BookOpen,
   Eye,
   EyeOff,
-  Tags,
   CreditCard,
   Zap,
   Settings,
@@ -111,9 +109,10 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
     quote_source: ""
   })
 
-  // Theme management
-  const [showThemeManager, setShowThemeManager] = useState(false)
-  const [newTheme, setNewTheme] = useState({ name: "", description: "", color: "#6366f1" })
+  // Manual theme input
+  const [cardThemeInput, setCardThemeInput] = useState("")
+  const [quoteThemeInput, setQuoteThemeInput] = useState("")
+
 
   // Load all data
   useEffect(() => {
@@ -186,6 +185,7 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
       source: "",
       theme_ids: [],
     })
+    setQuoteThemeInput("")
     setEditingQuote(null)
     setError("")
   }
@@ -200,6 +200,7 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
       quote_title: "",
       quote_source: ""
     })
+    setCardThemeInput("")
     setEditingCard(null)
     setError("")
   }
@@ -242,6 +243,37 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
     return true
   }
 
+  // Helper function to get or create theme IDs from comma-separated theme names
+  const getThemeIds = async (themeInput: string): Promise<string[]> => {
+    if (!themeInput.trim()) return []
+    
+    const themeNames = themeInput.split(',').map(name => name.trim()).filter(name => name.length > 0)
+    const themeIds: string[] = []
+    
+    for (const themeName of themeNames) {
+      // Check if theme already exists
+      let existingTheme = themes.find(t => t.name.toLowerCase() === themeName.toLowerCase())
+      
+      if (existingTheme) {
+        themeIds.push(existingTheme.id)
+      } else {
+        // Create new theme
+        const newTheme = await quoteFlashcardService.createTheme({
+          name: themeName,
+          description: "",
+          color: "#6366f1"
+        })
+        if (newTheme) {
+          themeIds.push(newTheme.id)
+          // Refresh themes list
+          await loadData()
+        }
+      }
+    }
+    
+    return themeIds
+  }
+
   const handleCreateDirectCard = async () => {
     if (!validateCardForm() || !user?.id) return
 
@@ -249,13 +281,16 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
       let quoteId: string
 
       if (cardFormData.auto_quote) {
+        // Get theme IDs from manual input
+        const themeIds = await getThemeIds(cardThemeInput)
+        
         // Create a quote first, then the card manually
         const newQuote = await quoteFlashcardService.createQuote(user.id, {
           title: cardFormData.quote_title || `Card: ${cardFormData.card_text.substring(0, 50)}...`,
           text: cardFormData.card_text,
           book_id: cardFormData.book_id,
           source: cardFormData.quote_source,
-          theme_ids: cardFormData.themes
+          theme_ids: themeIds
         })
 
         if (!newQuote) {
@@ -308,8 +343,16 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
     if (!validateQuoteForm() || !user?.id) return
 
     try {
+      // Get theme IDs from manual input
+      const themeIds = await getThemeIds(quoteThemeInput)
+      
+      const quoteData = {
+        ...quoteFormData,
+        theme_ids: themeIds
+      }
+      
       if (editingQuote) {
-        const success = await quoteFlashcardService.updateQuote(editingQuote.id, quoteFormData)
+        const success = await quoteFlashcardService.updateQuote(editingQuote.id, quoteData)
         if (success) {
           toast({
             title: "Success",
@@ -319,7 +362,7 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
           throw new Error("Failed to update quote")
         }
       } else {
-        const newQuote = await quoteFlashcardService.createQuote(user.id, quoteFormData)
+        const newQuote = await quoteFlashcardService.createQuote(user.id, quoteData)
         if (newQuote) {
           toast({
             title: "Success", 
@@ -344,28 +387,6 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
     }
   }
 
-  const handleCreateTheme = async () => {
-    try {
-      const theme = await quoteFlashcardService.createTheme(newTheme)
-      if (theme) {
-        toast({
-          title: "Success",
-          description: "Theme created successfully",
-        })
-        setNewTheme({ name: "", description: "", color: "#6366f1" })
-        await loadData()
-      } else {
-        throw new Error("Failed to create theme")
-      }
-    } catch (error) {
-      console.error('Error creating theme:', error)
-      toast({
-        title: "Error",
-        description: "Failed to create theme",
-        variant: "destructive",
-      })
-    }
-  }
 
   const filteredQuotes = quotes.filter(quote => {
     const matchesSearch = quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -421,83 +442,8 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
           </div>
         </div>
         
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => setShowThemeManager(!showThemeManager)}
-          >
-            <Tags className="h-4 w-4 mr-2" />
-            Manage Themes
-          </Button>
-        </div>
       </div>
 
-      {/* Theme Manager */}
-      {showThemeManager && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Tags className="h-5 w-5" />
-              Theme Management
-            </CardTitle>
-            <CardDescription>
-              Manage themes for organizing quotes and flashcards
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <Label htmlFor="theme-name">Theme Name</Label>
-                  <Input
-                    id="theme-name"
-                    value={newTheme.name}
-                    onChange={(e) => setNewTheme(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g. Ambition, Love, Betrayal"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label htmlFor="theme-description">Description</Label>
-                  <Input
-                    id="theme-description"
-                    value={newTheme.description}
-                    onChange={(e) => setNewTheme(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Brief description"
-                  />
-                </div>
-                <div className="w-24">
-                  <Label htmlFor="theme-color">Color</Label>
-                  <Input
-                    id="theme-color"
-                    type="color"
-                    value={newTheme.color}
-                    onChange={(e) => setNewTheme(prev => ({ ...prev, color: e.target.value }))}
-                  />
-                </div>
-                <Button 
-                  onClick={handleCreateTheme}
-                  disabled={!newTheme.name.trim()}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Theme
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {themes.map((theme) => (
-                  <Badge 
-                    key={theme.id}
-                    variant="outline"
-                    style={{ borderColor: theme.color, color: theme.color }}
-                  >
-                    {theme.name}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -632,37 +578,16 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
                   )}
 
                   <div className="space-y-2">
-                    <Label>Themes</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {themes.map((theme) => (
-                        <div key={theme.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`quick-theme-${theme.id}`}
-                            checked={cardFormData.themes.includes(theme.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setCardFormData(prev => ({
-                                  ...prev,
-                                  themes: [...prev.themes, theme.id]
-                                }))
-                              } else {
-                                setCardFormData(prev => ({
-                                  ...prev,
-                                  themes: prev.themes.filter(id => id !== theme.id)
-                                }))
-                              }
-                            }}
-                          />
-                          <Label 
-                            htmlFor={`quick-theme-${theme.id}`}
-                            className="text-sm"
-                            style={{ color: theme.color }}
-                          >
-                            {theme.name}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
+                    <Label htmlFor="quick-theme-input">Theme (optional)</Label>
+                    <Input
+                      id="quick-theme-input"
+                      value={cardThemeInput}
+                      onChange={(e) => setCardThemeInput(e.target.value)}
+                      placeholder="Type a theme name (e.g. Ambition, Love, Betrayal)"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      You can type any theme name for organization
+                    </p>
                   </div>
 
                   {error && (
@@ -749,37 +674,16 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Themes</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {themes.map((theme) => (
-                        <div key={theme.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`trad-theme-${theme.id}`}
-                            checked={quoteFormData.theme_ids?.includes(theme.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setQuoteFormData(prev => ({
-                                  ...prev,
-                                  theme_ids: [...(prev.theme_ids || []), theme.id]
-                                }))
-                              } else {
-                                setQuoteFormData(prev => ({
-                                  ...prev,
-                                  theme_ids: prev.theme_ids?.filter(id => id !== theme.id) || []
-                                }))
-                              }
-                            }}
-                          />
-                          <Label 
-                            htmlFor={`trad-theme-${theme.id}`}
-                            className="text-sm"
-                            style={{ color: theme.color }}
-                          >
-                            {theme.name}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
+                    <Label htmlFor="trad-theme-input">Theme (optional)</Label>
+                    <Input
+                      id="trad-theme-input"
+                      value={quoteThemeInput}
+                      onChange={(e) => setQuoteThemeInput(e.target.value)}
+                      placeholder="Type a theme name (e.g. Ambition, Love, Betrayal)"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      You can type any theme name for organization
+                    </p>
                   </div>
 
                   <Button 
@@ -858,18 +762,6 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
                             <span>{quote.card_count || 0} cards</span>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {quote.themes?.map((theme) => (
-                            <Badge 
-                              key={theme.id}
-                              variant="outline"
-                              style={{ borderColor: theme.color, color: theme.color }}
-                              className="text-xs"
-                            >
-                              {theme.name}
-                            </Badge>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -911,6 +803,7 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
                               source: quote.source || "",
                               theme_ids: quote.themes?.map(t => t.id) || []
                             })
+                            setQuoteThemeInput(quote.themes?.map(t => t.name).join(", ") || "")
                             setShowQuoteForm(true)
                           }}
                         >
@@ -1063,20 +956,6 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
                         </div>
                       )}
 
-                      {card.themes && card.themes.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {card.themes.map((theme) => (
-                            <Badge
-                              key={theme.id}
-                              variant="outline"
-                              style={{ borderColor: theme.color, color: theme.color }}
-                              className="text-xs"
-                            >
-                              {theme.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1165,37 +1044,16 @@ function FlashcardStudioPage({ action, editId, defaultTab }: { action: string | 
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Themes</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {themes.map((theme) => (
-                      <div key={theme.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`theme-${theme.id}`}
-                          checked={quoteFormData.theme_ids?.includes(theme.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setQuoteFormData(prev => ({
-                                ...prev,
-                                theme_ids: [...(prev.theme_ids || []), theme.id]
-                              }))
-                            } else {
-                              setQuoteFormData(prev => ({
-                                ...prev,
-                                theme_ids: prev.theme_ids?.filter(id => id !== theme.id) || []
-                              }))
-                            }
-                          }}
-                        />
-                        <Label 
-                          htmlFor={`theme-${theme.id}`}
-                          className="text-sm"
-                          style={{ color: theme.color }}
-                        >
-                          {theme.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                  <Label htmlFor="modal-theme-input">Theme (optional)</Label>
+                  <Input
+                    id="modal-theme-input"
+                    value={quoteThemeInput}
+                    onChange={(e) => setQuoteThemeInput(e.target.value)}
+                    placeholder="Type a theme name (e.g. Ambition, Love, Betrayal)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    You can type any theme name for organization
+                  </p>
                 </div>
 
                 <div className="flex gap-2 pt-4">

@@ -53,6 +53,33 @@ export default function ThemesRubricPage({ params }: { params: Promise<{ textId:
     )
   }
 
+  // Check if rubric content is available
+  const hasRubricContent = () => {
+    if (!text.detailedRubricConnections) return false
+    return Object.values(text.detailedRubricConnections).some(section => 
+      section.subsections && section.subsections.length > 0
+    )
+  }
+
+  if (!hasRubricContent()) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Content Not Available</h1>
+          <p className="text-muted-foreground mb-4">
+            Themes and rubric connections for this text are currently being prepared. Please check back soon.
+          </p>
+          <Link 
+            href={`/knowledge-bank/text-mastery/${textId}`} 
+            className="inline-block px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Back to {text.title}
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Convert detailedRubricConnections to slides
   const slides: SlideData[] = Object.entries(text.detailedRubricConnections).map(([key, rubricSection], index) => ({
     id: key,

@@ -53,6 +53,26 @@ export default function PlotSummaryPage({ params }: { params: Promise<{ textId: 
     )
   }
 
+  // Check if plot summary content is available
+  if (!text.plotSummary || !text.plotSummary.parts || text.plotSummary.parts.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Content Not Available</h1>
+          <p className="text-muted-foreground mb-4">
+            Plot summary for this text is currently being prepared. Please check back soon.
+          </p>
+          <Link 
+            href={`/knowledge-bank/text-mastery/${textId}`} 
+            className="inline-block px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+          >
+            Back to {text.title}
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Convert plot summary parts to slides
   const slides: SlideData[] = text.plotSummary.parts.map((part, partIndex) => ({
     id: `part-${partIndex}`,

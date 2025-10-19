@@ -901,20 +901,6 @@ function FlashcardCardsAdminPage({ action, editId }: { action: string | null, ed
                           </div>
                         )}
 
-                        {card.themes && card.themes.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {card.themes.map((theme) => (
-                              <Badge
-                                key={theme.id}
-                                variant="outline"
-                                style={{ borderColor: theme.color, color: theme.color }}
-                                className="text-xs"
-                              >
-                                {theme.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

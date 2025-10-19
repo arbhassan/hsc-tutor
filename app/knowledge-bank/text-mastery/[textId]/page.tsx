@@ -123,6 +123,59 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
     )
   }
 
+  // Helper functions to check if sections have content
+  const hasContextContent = () => {
+    if (!text.detailedContexts) return false
+    
+    // Handle both array (Supabase) and object (static data) structures
+    if (Array.isArray(text.detailedContexts)) {
+      // Supabase data structure - array of contexts
+      return text.detailedContexts.some(context => 
+        context.sections && context.sections.length > 0 && 
+        context.sections.some(s => s.content && s.content.length > 0)
+      )
+    } else {
+      // Static data structure - object with fixed keys
+      return (
+        (text.detailedContexts.historical?.sections?.length > 0 && 
+         text.detailedContexts.historical.sections.some(s => s.content?.length > 0)) ||
+        (text.detailedContexts.political?.sections?.length > 0 && 
+         text.detailedContexts.political.sections.some(s => s.content?.length > 0)) ||
+        (text.detailedContexts.biographical?.sections?.length > 0 && 
+         text.detailedContexts.biographical.sections.some(s => s.content?.length > 0)) ||
+        (text.detailedContexts.philosophical?.sections?.length > 0 && 
+         text.detailedContexts.philosophical.sections.some(s => s.content?.length > 0))
+      )
+    }
+  }
+
+  const hasRubricContent = () => {
+    return text.detailedRubricConnections && (
+      (text.detailedRubricConnections.anomaliesAndParadoxes?.subsections?.length > 0) ||
+      (text.detailedRubricConnections.emotionalExperiences?.subsections?.length > 0) ||
+      (text.detailedRubricConnections.relationships?.subsections?.length > 0) ||
+      (text.detailedRubricConnections.humanCapacityForUnderstanding?.subsections?.length > 0)
+    )
+  }
+
+  const hasPlotSummaryContent = () => {
+    return text.plotSummary?.parts?.length > 0
+  }
+
+  const hasContemporaryConnectionsContent = () => {
+    return text.detailedContemporaryConnections?.sections?.length > 0
+  }
+
+  const hasEssayGuideContent = () => {
+    return text.essayGuide && (
+      (text.essayGuide.structure?.parts?.length > 0) ||
+      (text.essayGuide.techniques?.categories?.length > 0) ||
+      (text.essayGuide.mistakes?.dontDo?.length > 0) ||
+      (text.essayGuide.sampleQuestion?.question?.length > 0) ||
+      (text.essayGuide.tips?.phases?.length > 0)
+    )
+  }
+
   // Extract unique values for filters
   const chapters = Array.from(new Set(text.quotes.map((q) => q.chapter)))
   const characters = Array.from(new Set(text.quotes.map((q) => q.character)))
@@ -331,124 +384,140 @@ export default function TextExplore({ params }: { params: Promise<{ textId: stri
 
           <TabsContent value="context" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             {/* Teaching Points Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Context Card */}
-              <Link href={`/knowledge-bank/text-mastery/${textId}/context`}>
-                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
-                      <BookOpen className="h-8 w-8 text-blue-600" />
-                    </div>
-                    <CardTitle className="text-xl">Context</CardTitle>
-                    <CardDescription>Historical, political, and biographical context</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-sm text-gray-600 mb-4">
-                      Explore the historical events, political climate, and {text.author}'s personal experiences that shaped
-                      this literary work.
-                    </p>
-                    <div className="flex items-center justify-center text-blue-600 group-hover:text-blue-700">
-                      <span className="text-sm font-medium">Learn More</span>
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+            {!hasContextContent() && !hasRubricContent() && !hasPlotSummaryContent() && !hasContemporaryConnectionsContent() && !hasEssayGuideContent() ? (
+              <Card className="p-8 text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Content Coming Soon</h3>
+                <p className="text-gray-600">
+                  Detailed study lessons for this text are currently being prepared. 
+                  Check back soon or explore the Quote Bank in the meantime.
+                </p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Context Card */}
+                {hasContextContent() && (
+                <Link href={`/knowledge-bank/text-mastery/${textId}/context`}>
+                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+                        <BookOpen className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <CardTitle className="text-xl">Context</CardTitle>
+                      <CardDescription>Historical, political, and biographical context</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Explore the historical events, political climate, and {text.author}'s personal experiences that shaped
+                        this literary work.
+                      </p>
+                      <div className="flex items-center justify-center text-blue-600 group-hover:text-blue-700">
+                        <span className="text-sm font-medium">Learn More</span>
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
 
               {/* Themes + Rubric Card */}
-              <Link href={`/knowledge-bank/text-mastery/${textId}/themes-rubric`}>
-                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
-                      <User className="h-8 w-8 text-green-600" />
-                    </div>
-                    <CardTitle className="text-xl">Themes + Rubric</CardTitle>
-                    <CardDescription>Key themes linked to HSC rubric points</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-sm text-gray-600 mb-4">
-                      Understand how the {text.genre.toLowerCase()}'s major themes connect directly to HSC Common Module rubric requirements
-                      and assessment criteria.
-                    </p>
-                    <div className="flex items-center justify-center text-green-600 group-hover:text-green-700">
-                      <span className="text-sm font-medium">Explore Themes</span>
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+              {hasRubricContent() && (
+                <Link href={`/knowledge-bank/text-mastery/${textId}/themes-rubric`}>
+                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+                        <User className="h-8 w-8 text-green-600" />
+                      </div>
+                      <CardTitle className="text-xl">Themes + Rubric</CardTitle>
+                      <CardDescription>Key themes linked to HSC rubric points</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Understand how the {text.genre.toLowerCase()}'s major themes connect directly to HSC Common Module rubric requirements
+                        and assessment criteria.
+                      </p>
+                      <div className="flex items-center justify-center text-green-600 group-hover:text-green-700">
+                        <span className="text-sm font-medium">Explore Themes</span>
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
 
               {/* Plot Summary Card */}
-              <Link href={`/knowledge-bank/text-mastery/${textId}/plot-summary`}>
-                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors">
-                      <BookText className="h-8 w-8 text-orange-600" />
-                    </div>
-                    <CardTitle className="text-xl">Plot Summary</CardTitle>
-                    <CardDescription>Chapter by chapter breakdown and analysis</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-sm text-gray-600 mb-4">Detailed chapter summaries with key events, character development, and thematic significance for each section.  </p>
-                    <div className="flex items-center justify-center text-orange-600 group-hover:text-orange-700">
-                      <span className="text-sm font-medium">Read Summary</span>
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+              {hasPlotSummaryContent() && (
+                <Link href={`/knowledge-bank/text-mastery/${textId}/plot-summary`}>
+                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors">
+                        <BookText className="h-8 w-8 text-orange-600" />
+                      </div>
+                      <CardTitle className="text-xl">Plot Summary</CardTitle>
+                      <CardDescription>Chapter by chapter breakdown and analysis</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">Detailed chapter summaries with key events, character development, and thematic significance for each section.  </p>
+                      <div className="flex items-center justify-center text-orange-600 group-hover:text-orange-700">
+                        <span className="text-sm font-medium">Read Summary</span>
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
 
               {/* Contemporary Connections Card */}
-              <Link href={`/knowledge-bank/text-mastery/${textId}/contemporary-connections`}>
-              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group"
-                    onClick={() => document.getElementById("contemporary-connections")?.scrollIntoView({ behavior: "smooth" })}>
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-200 transition-colors">
-                    <Globe className="h-8 w-8 text-teal-600" />
-                  </div>
-                  <CardTitle className="text-xl">Contemporary Connections</CardTitle>
-                  <CardDescription>Modern parallels and relevance today</CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Discover how {text.author}'s themes and warnings relate to contemporary issues and our modern world.
-                  </p>
-                  <div className="flex items-center justify-center text-teal-600 group-hover:text-teal-700">
-                    <span className="text-sm font-medium">Explore Connections</span>
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </div>
-                </CardContent>
-              </Card>
-              </Link>
+              {hasContemporaryConnectionsContent() && (
+                <Link href={`/knowledge-bank/text-mastery/${textId}/contemporary-connections`}>
+                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group"
+                        onClick={() => document.getElementById("contemporary-connections")?.scrollIntoView({ behavior: "smooth" })}>
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-200 transition-colors">
+                        <Globe className="h-8 w-8 text-teal-600" />
+                      </div>
+                      <CardTitle className="text-xl">Contemporary Connections</CardTitle>
+                      <CardDescription>Modern parallels and relevance today</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Discover how {text.author}'s themes and warnings relate to contemporary issues and our modern world.
+                      </p>
+                      <div className="flex items-center justify-center text-teal-600 group-hover:text-teal-700">
+                        <span className="text-sm font-medium">Explore Connections</span>
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
 
               {/* Essay Writing Guide Card */}
-              <Link href={`/knowledge-bank/text-mastery/${textId}/essay-guide`}>
-                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="text-center pb-4">
-                    <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
-                      <FileText className="h-8 w-8 text-purple-600" />
-                    </div>
-                    <CardTitle className="text-xl">Essay Writing Guide</CardTitle>
-                    <CardDescription>Structure and techniques for HSC essays</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-sm text-gray-600 mb-4">
-                      Master the art of writing compelling HSC essays with structured approaches, textual evidence, and
-                      analytical techniques.
-                    </p>
-                    <div className="flex items-center justify-center text-purple-600 group-hover:text-purple-700">
-                      <span className="text-sm font-medium">Start Writing</span>
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-
-
-            </div>
-
-
-
+              {hasEssayGuideContent() && (
+                <Link href={`/knowledge-bank/text-mastery/${textId}/essay-guide`}>
+                  <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
+                        <FileText className="h-8 w-8 text-purple-600" />
+                      </div>
+                      <CardTitle className="text-xl">Essay Writing Guide</CardTitle>
+                      <CardDescription>Structure and techniques for HSC essays</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-center">
+                      <p className="text-sm text-gray-600 mb-4">
+                        Master the art of writing compelling HSC essays with structured approaches, textual evidence, and
+                        analytical techniques.
+                      </p>
+                      <div className="flex items-center justify-center text-purple-600 group-hover:text-purple-700">
+                        <span className="text-sm font-medium">Start Writing</span>
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="quotes" className="mt-0 focus-visible:outline-none focus-visible:ring-0">

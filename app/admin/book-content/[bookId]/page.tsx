@@ -662,7 +662,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                   </div>
                   <Button onClick={addNewContext}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Context Type
+                    Add Context
                   </Button>
                 </div>
               </CardHeader>
@@ -677,7 +677,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                   <Card key={contextIndex} className="border-l-4 border-l-indigo-500">
                     <CardHeader>
                       <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg capitalize">{context.contextType} Context</CardTitle>
+                        <CardTitle className="text-lg">Context {contextIndex + 1}</CardTitle>
                         <Button
                           variant="outline"
                           size="sm"
@@ -688,41 +688,18 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor={`context-type-${contextIndex}`}>Context Type</Label>
-                          <Select
-                            value={context.contextType}
-                            onValueChange={(value) => {
-                              const newContexts = [...contexts]
-                              newContexts[contextIndex].contextType = value
-                              setContexts(newContexts)
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select context type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="historical">Historical</SelectItem>
-                              <SelectItem value="political">Political</SelectItem>
-                              <SelectItem value="biographical">Biographical</SelectItem>
-                              <SelectItem value="philosophical">Philosophical</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor={`context-title-${contextIndex}`}>Title</Label>
-                          <Input
-                            id={`context-title-${contextIndex}`}
-                            value={context.title}
-                            onChange={(e) => {
-                              const newContexts = [...contexts]
-                              newContexts[contextIndex].title = e.target.value
-                              setContexts(newContexts)
-                            }}
-                            placeholder="e.g., Historical Context"
-                          />
-                        </div>
+                      <div>
+                        <Label htmlFor={`context-title-${contextIndex}`}>Title</Label>
+                        <Input
+                          id={`context-title-${contextIndex}`}
+                          value={context.title}
+                          onChange={(e) => {
+                            const newContexts = [...contexts]
+                            newContexts[contextIndex].title = e.target.value
+                            setContexts(newContexts)
+                          }}
+                          placeholder="e.g., Historical Context"
+                        />
                       </div>
 
                       <div>
@@ -842,7 +819,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                   </div>
                   <Button onClick={addNewRubric}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Rubric Type
+                    Add Rubric 
                   </Button>
                 </div>
               </CardHeader>
@@ -857,7 +834,7 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                   <Card key={rubricIndex} className="border-l-4 border-l-green-500">
                     <CardHeader>
                       <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg capitalize">{rubric.rubricType.replace(/([A-Z])/g, ' $1').trim()}</CardTitle>
+                        <CardTitle className="text-lg">Rubric Connection {rubricIndex + 1}</CardTitle>
                         <Button
                           variant="outline"
                           size="sm"
@@ -868,41 +845,18 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor={`rubric-type-${rubricIndex}`}>Rubric Type</Label>
-                          <Select
-                            value={rubric.rubricType}
-                            onValueChange={(value) => {
-                              const newRubrics = [...rubricConnections]
-                              newRubrics[rubricIndex].rubricType = value
-                              setRubricConnections(newRubrics)
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select rubric type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="anomaliesAndParadoxes">Anomalies and Paradoxes</SelectItem>
-                              <SelectItem value="emotionalExperiences">Emotional Experiences</SelectItem>
-                              <SelectItem value="relationships">Relationships</SelectItem>
-                              <SelectItem value="humanCapacityForUnderstanding">Human Capacity for Understanding</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor={`rubric-title-${rubricIndex}`}>Title</Label>
-                          <Input
-                            id={`rubric-title-${rubricIndex}`}
-                            value={rubric.title}
-                            onChange={(e) => {
-                              const newRubrics = [...rubricConnections]
-                              newRubrics[rubricIndex].title = e.target.value
-                              setRubricConnections(newRubrics)
-                            }}
-                            placeholder="e.g., Anomalies and Paradoxes"
-                          />
-                        </div>
+                      <div>
+                        <Label htmlFor={`rubric-title-${rubricIndex}`}>Title</Label>
+                        <Input
+                          id={`rubric-title-${rubricIndex}`}
+                          value={rubric.title}
+                          onChange={(e) => {
+                            const newRubrics = [...rubricConnections]
+                            newRubrics[rubricIndex].title = e.target.value
+                            setRubricConnections(newRubrics)
+                          }}
+                          placeholder="e.g., Anomalies and Paradoxes"
+                        />
                       </div>
 
                       <div>

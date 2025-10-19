@@ -53,6 +53,26 @@ export default function ContemporaryConnectionsPage({ params }: { params: Promis
     )
   }
 
+  // Check if contemporary connections content is available
+  if (!text.detailedContemporaryConnections || !text.detailedContemporaryConnections.sections || text.detailedContemporaryConnections.sections.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Content Not Available</h1>
+          <p className="text-muted-foreground mb-4">
+            Contemporary connections for this text are currently being prepared. Please check back soon.
+          </p>
+          <Link 
+            href={`/knowledge-bank/text-mastery/${textId}`} 
+            className="inline-block px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700"
+          >
+            Back to {text.title}
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Convert contemporary connections sections to slides
   const slides: SlideData[] = text.detailedContemporaryConnections.sections.map((section, sectionIndex) => ({
     id: `section-${sectionIndex}`,

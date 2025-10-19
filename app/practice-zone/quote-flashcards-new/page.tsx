@@ -17,14 +17,12 @@ import {
   quoteFlashcardService, 
   type FlashcardCardWithDetails, 
   type StudentCardSetWithDetails, 
-  type CardFilters,
-  type Theme
+  type CardFilters
 } from "@/lib/services/quote-flashcard-service"
 import {
   Plus,
   Search,
   BookOpen,
-  Tags,
   CreditCard,
   Play,
   Edit,
@@ -50,14 +48,12 @@ export default function QuoteFlashcardsNewPage() {
   const [allCards, setAllCards] = useState<FlashcardCardWithDetails[]>([])
   const [filteredCards, setFilteredCards] = useState<FlashcardCardWithDetails[]>([])
   const [studentSets, setStudentSets] = useState<StudentCardSetWithDetails[]>([])
-  const [themes, setThemes] = useState<Theme[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("card-bank")
 
   // Filters for card bank
   const [filters, setFilters] = useState<CardFilters>({
     search: "",
-    theme_ids: [],
     only_active: true
   })
 
@@ -118,18 +114,16 @@ export default function QuoteFlashcardsNewPage() {
 
     try {
       setIsLoading(true)
-      const [cardsData, setsData, themesData] = await Promise.all([
+      const [cardsData, setsData] = await Promise.all([
         quoteFlashcardService.getCardsForStudy({
           book_id: selectedBook.id,
           only_active: true
         }),
-        quoteFlashcardService.getStudentCardSets(user.id),
-        quoteFlashcardService.getAllThemes()
+        quoteFlashcardService.getStudentCardSets(user.id)
       ])
 
       setAllCards(cardsData)
       setStudentSets(setsData)
-      setThemes(themesData)
     } catch (error) {
       console.error('Error loading data:', error)
       toast({
@@ -155,12 +149,6 @@ export default function QuoteFlashcardsNewPage() {
       )
     }
 
-    if (filters.theme_ids && filters.theme_ids.length > 0) {
-      filtered = filtered.filter(card =>
-        card.themes?.some(theme => filters.theme_ids!.includes(theme.id))
-      )
-    }
-
     setFilteredCards(filtered)
   }
 
@@ -171,7 +159,6 @@ export default function QuoteFlashcardsNewPage() {
   const clearFilters = () => {
     setFilters({
       search: "",
-      theme_ids: [],
       only_active: true
     })
   }
@@ -532,20 +519,6 @@ export default function QuoteFlashcardsNewPage() {
 
           <Card className="mb-6">
             <CardHeader>
-              <div className="flex justify-end items-center">
-                <div className="flex gap-1">
-                  {currentCard.themes?.map((theme) => (
-                    <Badge 
-                      key={theme.id}
-                      variant="outline"
-                      style={{ borderColor: theme.color, color: theme.color }}
-                      className="text-xs"
-                    >
-                      {theme.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
             </CardHeader>
             <CardContent>
               <div className="text-lg leading-relaxed mb-6 text-center">
@@ -702,33 +675,6 @@ export default function QuoteFlashcardsNewPage() {
                   </Button>
                 </div>
 
-                {themes.length > 0 && (
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Filter by Theme</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {themes.map((theme) => (
-                        <Badge
-                          key={theme.id}
-                          variant={filters.theme_ids?.includes(theme.id) ? "default" : "outline"}
-                          style={filters.theme_ids?.includes(theme.id) 
-                            ? { backgroundColor: theme.color, borderColor: theme.color } 
-                            : { borderColor: theme.color, color: theme.color }
-                          }
-                          className="cursor-pointer"
-                          onClick={() => {
-                            const currentThemes = filters.theme_ids || []
-                            const newThemes = currentThemes.includes(theme.id)
-                              ? currentThemes.filter(id => id !== theme.id)
-                              : [...currentThemes, theme.id]
-                            updateFilters({ theme_ids: newThemes })
-                          }}
-                        >
-                          {theme.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-between items-center mb-4">
@@ -754,7 +700,7 @@ export default function QuoteFlashcardsNewPage() {
                   <CreditCard className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-medium mb-2">No cards found</h3>
                   <p className="text-muted-foreground">
-                    {filters.search || filters.theme_ids?.length
+                    {filters.search
                       ? "Try adjusting your filters"
                       : "No cards available for this book yet"
                     }
@@ -806,21 +752,6 @@ export default function QuoteFlashcardsNewPage() {
                               {card.card_text}
                             </div>
                           </div>
-
-                          {card.themes && card.themes.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {card.themes.map((theme) => (
-                                <Badge
-                                  key={theme.id}
-                                  variant="outline"
-                                  style={{ borderColor: theme.color, color: theme.color }}
-                                  className="text-xs"
-                                >
-                                  {theme.name}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
 
                           {card.quote && (
                             <div className="text-xs text-muted-foreground">
@@ -1030,21 +961,6 @@ export default function QuoteFlashcardsNewPage() {
                             {card.card_text}
                           </div>
                         </div>
-
-                        {card.themes && card.themes.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {card.themes.map((theme) => (
-                              <Badge
-                                key={theme.id}
-                                variant="outline"
-                                style={{ borderColor: theme.color, color: theme.color }}
-                                className="text-xs"
-                              >
-                                {theme.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
 
                         {card.quote && (
                           <div className="text-xs text-muted-foreground">
