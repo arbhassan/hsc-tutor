@@ -688,18 +688,33 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor={`context-title-${contextIndex}`}>Title</Label>
-                        <Input
-                          id={`context-title-${contextIndex}`}
-                          value={context.title}
-                          onChange={(e) => {
-                            const newContexts = [...contexts]
-                            newContexts[contextIndex].title = e.target.value
-                            setContexts(newContexts)
-                          }}
-                          placeholder="e.g., Historical Context"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`context-type-${contextIndex}`}>Context Type</Label>
+                          <Input
+                            id={`context-type-${contextIndex}`}
+                            value={context.contextType}
+                            onChange={(e) => {
+                              const newContexts = [...contexts]
+                              newContexts[contextIndex].contextType = e.target.value
+                              setContexts(newContexts)
+                            }}
+                            placeholder="e.g., historical, political, biographical"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`context-title-${contextIndex}`}>Display Title</Label>
+                          <Input
+                            id={`context-title-${contextIndex}`}
+                            value={context.title}
+                            onChange={(e) => {
+                              const newContexts = [...contexts]
+                              newContexts[contextIndex].title = e.target.value
+                              setContexts(newContexts)
+                            }}
+                            placeholder="e.g., Historical Context"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -845,18 +860,33 @@ export default function BookContentEditPage({ params }: { params: Promise<{ book
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor={`rubric-title-${rubricIndex}`}>Title</Label>
-                        <Input
-                          id={`rubric-title-${rubricIndex}`}
-                          value={rubric.title}
-                          onChange={(e) => {
-                            const newRubrics = [...rubricConnections]
-                            newRubrics[rubricIndex].title = e.target.value
-                            setRubricConnections(newRubrics)
-                          }}
-                          placeholder="e.g., Anomalies and Paradoxes"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`rubric-type-${rubricIndex}`}>Rubric Type</Label>
+                          <Input
+                            id={`rubric-type-${rubricIndex}`}
+                            value={rubric.rubricType}
+                            onChange={(e) => {
+                              const newRubrics = [...rubricConnections]
+                              newRubrics[rubricIndex].rubricType = e.target.value
+                              setRubricConnections(newRubrics)
+                            }}
+                            placeholder="e.g., anomaliesAndParadoxes, relationships"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`rubric-title-${rubricIndex}`}>Display Title</Label>
+                          <Input
+                            id={`rubric-title-${rubricIndex}`}
+                            value={rubric.title}
+                            onChange={(e) => {
+                              const newRubrics = [...rubricConnections]
+                              newRubrics[rubricIndex].title = e.target.value
+                              setRubricConnections(newRubrics)
+                            }}
+                            placeholder="e.g., Anomalies and Paradoxes"
+                          />
+                        </div>
                       </div>
 
                       <div>

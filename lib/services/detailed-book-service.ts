@@ -7,7 +7,7 @@ const supabase = createClient()
 interface DetailedContext {
   id: string
   book_id: string
-  context_type: 'historical' | 'political' | 'biographical' | 'philosophical'
+  context_type: string
   title: string
   sections: Array<{
     title?: string
@@ -18,7 +18,7 @@ interface DetailedContext {
 interface RubricConnection {
   id: string
   book_id: string
-  rubric_type: 'anomaliesAndParadoxes' | 'emotionalExperiences' | 'relationships' | 'humanCapacityForUnderstanding'
+  rubric_type: string
   title: string
   subsections: Array<{
     title: string
@@ -363,14 +363,6 @@ class DetailedBookService {
 
   // Admin methods for updating content
   async updateDetailedContext(bookId: string, contextType: string, title: string, sections: any[], contextId?: string) {
-    // Validate context type before saving
-    const validContextTypes = ['historical', 'political', 'biographical', 'philosophical']
-    if (!validContextTypes.includes(contextType)) {
-      const error = new Error(`Invalid context type: ${contextType}. Must be one of: ${validContextTypes.join(', ')}`)
-      console.error('Error updating detailed context:', error)
-      throw error
-    }
-
     if (contextId) {
       // Update existing context
       const { error } = await supabase

@@ -46,7 +46,7 @@ export interface Database {
         Row: {
           id: string
           book_id: string
-          context_type: 'historical' | 'political' | 'biographical' | 'philosophical'
+          context_type: string
           title: string
           sections: any[] // JSONB array
           created_at: string
@@ -55,7 +55,7 @@ export interface Database {
         Insert: {
           id?: string
           book_id: string
-          context_type: 'historical' | 'political' | 'biographical' | 'philosophical'
+          context_type: string
           title: string
           sections: any[]
           created_at?: string
@@ -64,7 +64,7 @@ export interface Database {
         Update: {
           id?: string
           book_id?: string
-          context_type?: 'historical' | 'political' | 'biographical' | 'philosophical'
+          context_type?: string
           title?: string
           sections?: any[]
           created_at?: string
@@ -75,7 +75,7 @@ export interface Database {
         Row: {
           id: string
           book_id: string
-          rubric_type: 'anomaliesAndParadoxes' | 'emotionalExperiences' | 'relationships' | 'humanCapacityForUnderstanding'
+          rubric_type: string
           title: string
           subsections: any[] // JSONB array
           created_at: string
@@ -84,7 +84,7 @@ export interface Database {
         Insert: {
           id?: string
           book_id: string
-          rubric_type: 'anomaliesAndParadoxes' | 'emotionalExperiences' | 'relationships' | 'humanCapacityForUnderstanding'
+          rubric_type: string
           title: string
           subsections: any[]
           created_at?: string
@@ -93,7 +93,7 @@ export interface Database {
         Update: {
           id?: string
           book_id?: string
-          rubric_type?: 'anomaliesAndParadoxes' | 'emotionalExperiences' | 'relationships' | 'humanCapacityForUnderstanding'
+          rubric_type?: string
           title?: string
           subsections?: any[]
           created_at?: string
