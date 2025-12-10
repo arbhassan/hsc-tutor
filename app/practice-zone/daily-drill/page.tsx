@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   RefreshCw,
@@ -21,8 +22,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useProgressTracker } from "@/hooks/use-progress-tracker"
 import { useAuth } from "@/lib/auth-context"
 
-// Sample unseen texts for demonstration
-const unseenTexts = [
+// Interface for text data from API
+interface UnseenText {
+  id: string | number
+  type: string
+  title: string
+  author: string
+  content: string
+  source: string
+  questions: Array<{
+    id: string | number
+    text: string
+    marks: number
+    modelAnswer?: {
+      answer: string
+      commentary?: string
+    }
+  }>
+}
+
+// Fallback unseen texts for demonstration (if API fails)
+const fallbackUnseenTexts = [
   {
     id: 1,
     type: "Prose Fiction Extract",
@@ -524,9 +544,50 @@ export default function DailyDrillPage() {
   const [allTextResponses, setAllTextResponses] = useState({}) // Store responses for all texts
   const [textCompletionStatus, setTextCompletionStatus] = useState({}) // Track completion status per text
   const [showTextNavigation, setShowTextNavigation] = useState(false)
+  const [unseenTexts, setUnseenTexts] = useState<UnseenText[]>([])
+  const [textsLoading, setTextsLoading] = useState(true)
 
   const { user } = useAuth()
   const { trackShortAnswerDetailed, trackStudySession } = useProgressTracker()
+
+  // Load texts from API
+  useEffect(() => {
+    const loadTexts = async () => {
+      try {
+        setTextsLoading(true)
+        const response = await fetch('/api/daily-drill')
+        if (!response.ok) throw new Error('Failed to fetch texts')
+        
+        const data = await response.json()
+        
+        // Transform API data to match expected format
+        const transformedTexts = data.texts.map((text: any) => ({
+          id: text.id,
+          type: text.text_type,
+          title: text.title,
+          author: text.author,
+          content: text.content,
+          source: text.source,
+          questions: text.questions.map((q: any) => ({
+            id: q.id,
+            text: q.question_text,
+            marks: q.marks,
+            modelAnswer: q.modelAnswer // Include model answer from database
+          }))
+        }))
+        
+        setUnseenTexts(transformedTexts.length > 0 ? transformedTexts : fallbackUnseenTexts)
+      } catch (error) {
+        console.error('Error loading daily drill texts:', error)
+        // Use fallback data if API fails
+        setUnseenTexts(fallbackUnseenTexts)
+      } finally {
+        setTextsLoading(false)
+      }
+    }
+    
+    loadTexts()
+  }, [])
 
   // Load state from localStorage on component mount
   useEffect(() => {
@@ -732,8 +793,14 @@ export default function DailyDrillPage() {
         const responseFeedback = analyzeResponse(response, question.id)
         newFeedback[question.id] = responseFeedback
         
-        const improved = generateImprovedResponse(response, responseFeedback, question.id)
-        newImprovedResponses[question.id] = improved
+        // Use model answer from database if available, otherwise generate one
+        if (question.modelAnswer && question.modelAnswer.answer) {
+          newImprovedResponses[question.id] = question.modelAnswer.answer
+        } else {
+          // Fallback to generated response if no model answer exists
+          const improved = generateImprovedResponse(response, responseFeedback, question.id)
+          newImprovedResponses[question.id] = improved
+        }
       })
 
       setFeedback(newFeedback)
@@ -854,8 +921,8 @@ export default function DailyDrillPage() {
     setShowTextNavigation(false)
   }
 
-  // Show loading state while restoring from localStorage
-  if (!isLoaded) {
+  // Show loading state while restoring from localStorage or loading texts
+  if (!isLoaded || textsLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto text-center">
@@ -864,6 +931,28 @@ export default function DailyDrillPage() {
             <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto"></div>
           </div>
+          <p className="text-muted-foreground mt-4">Loading daily drill content...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If no texts available, show message
+  if (unseenTexts.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-3xl mx-auto text-center">
+          <h1 className="text-3xl font-bold mb-6">Daily Drill Practice</h1>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No texts available</AlertTitle>
+            <AlertDescription>
+              There are currently no daily drill texts available. Please check back later or contact your administrator.
+            </AlertDescription>
+          </Alert>
+          <Button onClick={() => window.location.href = '/practice-zone'} className="mt-4">
+            Return to Practice Zone
+          </Button>
         </div>
       </div>
     )
@@ -1140,7 +1229,7 @@ export default function DailyDrillPage() {
                 <Tabs defaultValue="feedback" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="feedback">Feedback</TabsTrigger>
-                    <TabsTrigger value="improved">Improved Answers</TabsTrigger>
+                    <TabsTrigger value="improved">Model Answers</TabsTrigger>
                     <TabsTrigger value="your-answers">Your Answers</TabsTrigger>
                   </TabsList>
 
@@ -1216,7 +1305,12 @@ export default function DailyDrillPage() {
                       {currentQuestionSet.questions.map((question, index) => (
                         <Card key={`${currentQuestionSetIndex}-improved-${question.id}`} className="p-4">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-medium">Question {index + 1} - Improved Answer</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-medium">Question {index + 1} - Model Answer</h3>
+                              {question.modelAnswer && (
+                                <Badge variant="secondary">From Database</Badge>
+                              )}
+                            </div>
                             <Button
                               variant="outline"
                               size="sm"
@@ -1239,6 +1333,16 @@ export default function DailyDrillPage() {
                               <p key={idx}>{paragraph}</p>
                             ))}
                           </div>
+
+                          {/* Show commentary if available from database */}
+                          {question.modelAnswer?.commentary && (
+                            <Alert className="mt-4">
+                              <AlertTitle>Commentary</AlertTitle>
+                              <AlertDescription className="text-sm">
+                                {question.modelAnswer.commentary}
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </Card>
                       ))}
                     </div>

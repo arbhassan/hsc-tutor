@@ -21,47 +21,6 @@ export default function KnowledgeBankPage() {
             href="/knowledge-bank/text-mastery"
           />
         </div>
-
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-4">Featured Resources</h2>
-          <div className="grid grid-cols-1 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Essay Structure and Writing Guide</CardTitle>
-                <CardDescription>Comprehensive guide to crafting Band 6 essays</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  <li className="flex items-start">
-                    <span className="text-primary mr-2">•</span>
-                    <span>Introduction with thesis statement, context, and points</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary mr-2">•</span>
-                    <span>Body paragraphs using PETAL structure</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary mr-2">•</span>
-                    <span>Developing sophisticated arguments and analysis</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary mr-2">•</span>
-                    <span>Integrating textual evidence effectively</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary mr-2">•</span>
-                    <span>Conclusion techniques for maximum impact</span>
-                  </li>
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Button asChild>
-                  <Link href="/knowledge-bank/essay-guide">View Guide</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
-        </section>
       </div>
     </div>
   )

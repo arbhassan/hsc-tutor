@@ -245,6 +245,36 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer flex flex-col min-h-[200px]">
+          <CardHeader className="flex-shrink-0">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Daily Drill
+            </CardTitle>
+            <CardDescription>
+              Manage unseen texts and questions for daily practice drills
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow flex flex-col justify-end">
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => router.push('/admin/daily-drill')}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Manage Texts
+              </Button>
+              <Button 
+                onClick={() => router.push('/admin/daily-drill?action=create')}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Text
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
 {/* 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>

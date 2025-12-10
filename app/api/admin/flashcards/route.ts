@@ -112,3 +112,38 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createClient()
+    
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const cardId = searchParams.get('id')
+
+    if (!cardId) {
+      return NextResponse.json({ error: 'Card ID is required' }, { status: 400 })
+    }
+
+    // Delete the flashcard
+    const { error } = await supabase
+      .from('flashcard_cards')
+      .delete()
+      .eq('id', cardId)
+
+    if (error) {
+      console.error('Error deleting flashcard:', error)
+      return NextResponse.json({ error: 'Failed to delete flashcard' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 })
+  } catch (error) {
+    console.error('Error in flashcards DELETE API:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

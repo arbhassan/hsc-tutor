@@ -139,6 +139,13 @@ export default function QuoteFlashcardsNewPage() {
   const applyFilters = () => {
     let filtered = [...allCards]
 
+    // Only include cards with valid missing_words
+    filtered = filtered.filter(card => 
+      card.missing_words && 
+      Array.isArray(card.missing_words) && 
+      card.missing_words.length > 0
+    )
+
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase()
       filtered = filtered.filter(card => 
@@ -321,17 +328,34 @@ export default function QuoteFlashcardsNewPage() {
   }
 
   const startStudySession = async (cards: FlashcardCardWithDetails[]) => {
-    if (cards.length === 0) {
+    // Filter out cards with invalid missing_words
+    const validCards = cards.filter(card => 
+      card.missing_words && 
+      Array.isArray(card.missing_words) && 
+      card.missing_words.length > 0
+    )
+    
+    if (validCards.length === 0) {
       toast({
-        title: "No Cards",
-        description: "No cards available for study",
+        title: "No Valid Cards",
+        description: cards.length > 0 
+          ? "The selected cards don't have valid answers configured. Please contact your teacher."
+          : "No cards available for study",
         variant: "destructive",
       })
       return
     }
 
+    // Show warning if some cards were filtered out
+    if (validCards.length < cards.length) {
+      toast({
+        title: "Some Cards Skipped",
+        description: `${cards.length - validCards.length} card(s) were skipped due to missing answer data.`,
+      })
+    }
+
     const newSession = {
-      cards: [...cards],
+      cards: validCards,
       currentIndex: 0,
       userInputs: {},
       results: {},
@@ -347,7 +371,8 @@ export default function QuoteFlashcardsNewPage() {
     if (!studySession) return
 
     const currentCard = studySession.cards[studySession.currentIndex]
-    const currentInputs = studySession.userInputs[currentCard.id] || new Array(currentCard.missing_words?.length || 1).fill("")
+    const missingWordsCount = currentCard.missing_words?.length || 0
+    const currentInputs = studySession.userInputs[currentCard.id] || new Array(missingWordsCount).fill("")
     const newInputs = [...currentInputs]
     newInputs[blankIndex] = value
 
@@ -490,9 +515,27 @@ export default function QuoteFlashcardsNewPage() {
   // Study session view
   if (studySession) {
     const currentCard = studySession.cards[studySession.currentIndex]
+    
+    // Validate current card has missing_words
+    if (!currentCard.missing_words || currentCard.missing_words.length === 0) {
+      // Skip to next card or end session if this card is invalid
+      if (studySession.currentIndex < studySession.cards.length - 1) {
+        const newSession = {
+          ...studySession,
+          currentIndex: studySession.currentIndex + 1
+        }
+        setStudySession(newSession)
+        window.history.pushState({ studySession: newSession }, "")
+      } else {
+        setStudySession(null)
+        window.history.replaceState({}, "")
+      }
+      return null
+    }
+    
     const progress = ((studySession.currentIndex + 1) / studySession.cards.length) * 100
     const hasAnswered = currentCard.id in studySession.results
-    const missingWordsCount = currentCard.missing_words?.length || 0
+    const missingWordsCount = currentCard.missing_words.length
     const userInputs = studySession.userInputs[currentCard.id] || new Array(missingWordsCount).fill("")
     const results = studySession.results[currentCard.id] || []
 
@@ -519,6 +562,11 @@ export default function QuoteFlashcardsNewPage() {
 
           <Card className="mb-6">
             <CardHeader>
+              {currentCard.quote?.title && (
+                <CardTitle className="text-center text-muted-foreground text-lg">
+                  {currentCard.quote.title}
+                </CardTitle>
+              )}
             </CardHeader>
             <CardContent>
               <div className="text-lg leading-relaxed mb-6 text-center">
@@ -528,7 +576,7 @@ export default function QuoteFlashcardsNewPage() {
               {!hasAnswered ? (
                 <div className="space-y-4">
                   <div className="text-sm text-muted-foreground text-center mb-4">
-                    Fill in the blanks (numbered 1-{missingWordsCount}):
+                    Fill in the blank{missingWordsCount !== 1 ? 's' : ''} (numbered 1-{missingWordsCount}):
                   </div>
                   <div className="grid grid-cols-1 gap-3">
                     {Array.from({ length: missingWordsCount }, (_, index) => (
@@ -554,7 +602,7 @@ export default function QuoteFlashcardsNewPage() {
                   <div className="text-center">
                     <Button 
                       onClick={checkAnswer}
-                      disabled={userInputs.some(input => !input?.trim())}
+                      disabled={missingWordsCount === 0 || userInputs.some(input => !input?.trim())}
                     >
                       Check All Answers
                     </Button>
@@ -751,6 +799,12 @@ export default function QuoteFlashcardsNewPage() {
                             <div className="p-2 bg-muted rounded text-center">
                               {card.card_text}
                             </div>
+                          </div>
+
+                          <div className="flex items-center justify-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {card.missing_words?.length || 0} blank{card.missing_words?.length !== 1 ? 's' : ''}
+                            </Badge>
                           </div>
 
                           {card.quote && (
@@ -960,6 +1014,12 @@ export default function QuoteFlashcardsNewPage() {
                           <div className="p-2 bg-muted rounded text-center">
                             {card.card_text}
                           </div>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {card.missing_words?.length || 0} blank{card.missing_words?.length !== 1 ? 's' : ''}
+                          </Badge>
                         </div>
 
                         {card.quote && (
